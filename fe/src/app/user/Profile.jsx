@@ -45,12 +45,17 @@ export default function Profile() {
         }
     }
 
-    return <Card className="rounded-3xl shadow-sm">
+    return <Card className="rounded-3xl border border-slate-200 shadow-sm" styles={{body: {padding: 24}}}>
+        <div className="mb-5">
+            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Thông tin tài khoản</div>
+            <div className="mt-1 text-2xl font-bold text-slate-900">Hồ sơ thí sinh</div>
+            <div className="mt-2 text-sm text-slate-500">Bạn có thể chỉnh sửa nhanh họ tên và đơn vị ngay trên trang này.</div>
+        </div>
         <Row gutter={[16, 16]}>
             <Col xs={24} xl={12}>
                 <Row gutter={[16, 16]}>
                     <Col xs={24} sm={8}>
-                        <span className={'text-lg font-bold'}>Họ tên thí sinh: </span>
+                        <span className={'text-base font-bold text-slate-700 sm:text-lg'}>Họ tên thí sinh:</span>
                     </Col>
                     {isEditName ? <Col xs={24} sm={16}>
                         <div className="flex flex-col gap-3 sm:flex-row">
@@ -63,7 +68,7 @@ export default function Profile() {
                         </div>
 
                     </Col> : <Col xs={24} sm={16}>
-                        <span onClick={() => setIsEditName(true)} className={'text-lg font-semibold'}>{user?.ho_ten}</span>
+                        <button type="button" onClick={() => setIsEditName(true)} className={'text-left text-base font-semibold text-slate-900 transition hover:text-blue-700 sm:text-lg'}>{user?.ho_ten || "Chưa cập nhật"}</button>
                     </Col>}
                 </Row>
 
@@ -73,7 +78,7 @@ export default function Profile() {
             <Col xs={24} xl={12}>
                 <Row gutter={[16, 16]}>
                     <Col xs={24} sm={8}>
-                        <span className={'text-lg font-bold'}>Đơn vị: </span>
+                        <span className={'text-base font-bold text-slate-700 sm:text-lg'}>Đơn vị:</span>
                     </Col>
                     {
                         isEditDonVi ? <Col xs={24} sm={16}>
@@ -116,7 +121,7 @@ export default function Profile() {
                             </div>
 
                         </Col> : <Col xs={24} sm={16}>
-                            <span onClick={() => setIsEditDonVi(true)} className={'text-lg font-semibold'}>{user?.don_vi?.ten}</span>
+                            <button type="button" onClick={() => setIsEditDonVi(true)} className={'text-left text-base font-semibold text-slate-900 transition hover:text-blue-700 sm:text-lg'}>{user?.don_vi?.ten || "Chưa cập nhật"}</button>
                         </Col>
                     }
                 </Row>

@@ -1,6 +1,6 @@
 'use client';
 
-import {Button, Input, Modal, Popconfirm, Table} from "antd";
+import {App, Button, Input, Modal, Popconfirm, Table} from "antd";
 
 import {useEffect, useState} from "react";
 
@@ -15,6 +15,7 @@ export default function TuLuanDotThiModal({
                                               cuocThiId
 
                                           }) {
+    const {message} = App.useApp();
 
     const [data, setData] = useState([]);
 
@@ -34,16 +35,19 @@ export default function TuLuanDotThiModal({
     // load
 
     const fetchData = async () => {
+        try {
+            const res =
+                await layTuLuanDotThi(
+                    dotThiId,
+                    cuocThiId
+                );
 
-        const res =
-            await layTuLuanDotThi(
-                dotThiId,
-                cuocThiId
+            setData(
+                res.data || []
             );
-
-        setData(
-            res.data || []
-        );
+        } catch (e) {
+            message.error(e.message);
+        }
 
     };
 
@@ -51,7 +55,12 @@ export default function TuLuanDotThiModal({
     useEffect(() => {
 
         if (open) {
-            fetchData();
+            const timer =
+                setTimeout(() => {
+                    void fetchData();
+                }, 0);
+
+            return () => clearTimeout(timer);
         }
 
     }, [open]);
@@ -60,17 +69,20 @@ export default function TuLuanDotThiModal({
     // add
 
     const handleAdd = async () => {
+        try {
+            await themTuLuanDotThi(
+                dotThiId,
+                cuocThiId,
+                {
+                    cau_hoi: "",
+                    goi_y: ""
+                }
+            );
 
-        await themTuLuanDotThi(
-            dotThiId,
-            cuocThiId,
-            {
-                cau_hoi: "",
-                goi_y: ""
-            }
-        );
-
-        fetchData();
+            fetchData();
+        } catch (e) {
+            message.error(e.message);
+        }
 
     };
 
@@ -88,17 +100,21 @@ export default function TuLuanDotThiModal({
                 i => i.id === id
             );
 
-        await suaTuLuanDotThi(
-            id,
-            dotThiId,
-            cuocThiId,
-            {
-                ...row,
-                [field]: value
-            }
-        );
+        try {
+            await suaTuLuanDotThi(
+                id,
+                dotThiId,
+                cuocThiId,
+                {
+                    ...row,
+                    [field]: value
+                }
+            );
 
-        fetchData();
+            fetchData();
+        } catch (e) {
+            message.error(e.message);
+        }
 
     };
 
@@ -109,13 +125,17 @@ export default function TuLuanDotThiModal({
         id
     ) => {
 
-        await xoaTuLuanDotThi(
-            id,
-            dotThiId,
-            cuocThiId
-        );
+        try {
+            await xoaTuLuanDotThi(
+                id,
+                dotThiId,
+                cuocThiId
+            );
 
-        fetchData();
+            fetchData();
+        } catch (e) {
+            message.error(e.message);
+        }
 
     };
 

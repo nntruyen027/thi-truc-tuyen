@@ -8,7 +8,7 @@ import {useRouter} from "next/navigation"
 
 import CountDown from "../CountDown"
 
-import {nopBai, nopKetQuaDuDoan, pauseThi, startThi, traLoi, traLoiTuLuan} from "~/services/thi/thi"
+import {nopBai, nopKetQuaDuDoan, pauseThi, pauseThiKeepAlive, startThi, traLoi, traLoiTuLuan} from "~/services/thi/thi"
 
 import {layDotThiHienTai} from "~/services/thi/dot-thi"
 
@@ -39,9 +39,12 @@ export default function Thi() {
     const savingRef = useRef(false)
 
     const startedRef = useRef(false)
+    const pausedRef = useRef(false)
+    const finishingRef = useRef(false)
 
     const [ketQuaDuDoan, setKetQuaDuDoan] = useState()
     const debounceRef = useRef(null)
+    const pendingTuLuanRef = useRef(null)
 
     // mobile detect
 
@@ -126,8 +129,14 @@ export default function Thi() {
     useEffect(() => {
 
         const f = () => {
-            if (baiThiId)
-                pauseThi(baiThiId)
+            if (
+                dotThi?.cho_phep_luu_bai &&
+                baiThiId &&
+                !pausedRef.current &&
+                !finishingRef.current
+            ) {
+                pauseThiKeepAlive(baiThiId)
+            }
         }
 
         window.addEventListener(
@@ -135,13 +144,34 @@ export default function Thi() {
             f
         )
 
+        window.addEventListener(
+            "pagehide",
+            f
+        )
+
         return () =>
+        {
             window.removeEventListener(
                 "beforeunload",
                 f
             )
 
-    }, [baiThiId])
+            window.removeEventListener(
+                "pagehide",
+                f
+            )
+
+            if (
+                dotThi?.cho_phep_luu_bai &&
+                baiThiId &&
+                !pausedRef.current &&
+                !finishingRef.current
+            ) {
+                pauseThiKeepAlive(baiThiId)
+            }
+        }
+
+    }, [baiThiId, dotThi?.cho_phep_luu_bai])
 
 
     // chọn trắc nghiệm
@@ -184,6 +214,11 @@ export default function Thi() {
 
     async function dien(id, val) {
 
+        pendingTuLuanRef.current = {
+            id,
+            val
+        }
+
         // update UI ngay
         setCauHoi(old =>
             old.map(x =>
@@ -212,11 +247,64 @@ export default function Thi() {
                     val
                 )
 
+                pendingTuLuanRef.current = null
+
             } catch (e) {
                 console.log(e)
             }
 
         }, 500) // delay 500ms
+
+    }
+
+
+    async function flushPendingTuLuan() {
+
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current)
+            debounceRef.current = null
+        }
+
+        if (!pendingTuLuanRef.current || !baiThiId) {
+            return
+        }
+
+        const {id, val} =
+            pendingTuLuanRef.current
+
+        await traLoiTuLuan(
+            baiThiId,
+            id,
+            val
+        )
+
+        pendingTuLuanRef.current = null
+
+    }
+
+
+    async function pauseCurrentAttempt(options = {}) {
+
+        const {
+            keepalive = false,
+            reason = "save"
+        } = options
+
+        if (!baiThiId || pausedRef.current) {
+            return false
+        }
+
+        if (keepalive) {
+            pausedRef.current = true
+            return pauseThiKeepAlive(baiThiId)
+        }
+
+        await pauseThi(
+            baiThiId,
+            {reason}
+        )
+        pausedRef.current = true
+        return true
 
     }
 
@@ -229,7 +317,12 @@ export default function Thi() {
 
             async onOk() {
 
-                await pauseThi(baiThiId)
+                finishingRef.current = true
+
+                await flushPendingTuLuan()
+                await pauseCurrentAttempt({
+                    reason: "submit"
+                })
 
                 if (dotThi?.du_doan)
                     await nopKetQuaDuDoan(
@@ -256,7 +349,10 @@ export default function Thi() {
 
             async onOk() {
 
-                await pauseThi(baiThiId)
+                await flushPendingTuLuan()
+                await pauseCurrentAttempt({
+                    reason: "save"
+                })
 
                 router.push("/user")
 
@@ -280,7 +376,12 @@ export default function Thi() {
 
         try {
 
-            await pauseThi(baiThiId)
+            finishingRef.current = true
+
+            await flushPendingTuLuan()
+            await pauseCurrentAttempt({
+                reason: "submit"
+            })
 
             if (dotThi?.du_doan)
                 await nopKetQuaDuDoan(
@@ -432,6 +533,7 @@ export default function Thi() {
                             block
                             style={{marginTop: 10}}
                             onClick={luuThoat}
+                            disabled={!dotThi?.cho_phep_luu_bai}
                         >
                             Lưu & thoát
                         </Button>

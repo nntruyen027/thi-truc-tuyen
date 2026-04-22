@@ -15,7 +15,8 @@ export default function DotThiModal({
                                         data,
                                         onClose,
                                         onSuccess,
-                                        cuocThiId
+                                        cuocThiId,
+                                        cuocThi
                                     }) {
 
     const { message } = App.useApp();
@@ -54,7 +55,7 @@ export default function DotThiModal({
 
         }
 
-    }, [open, data]);
+    }, [open, data, form]);
 
 
     // ===== save =====
@@ -140,6 +141,36 @@ export default function DotThiModal({
 
         return Promise.resolve();
 
+    };
+
+    const validateWindowInCuocThi = () => {
+        const start =
+            form.getFieldValue(
+                "thoi_gian_bat_dau"
+            );
+
+        const end =
+            form.getFieldValue(
+                "thoi_gian_ket_thuc"
+            );
+
+        if (!start || !end || !cuocThi?.thoi_gian_bat_dau || !cuocThi?.thoi_gian_ket_thuc) {
+            return Promise.resolve();
+        }
+
+        const cuocThiStart =
+            dayjs(cuocThi.thoi_gian_bat_dau);
+
+        const cuocThiEnd =
+            dayjs(cuocThi.thoi_gian_ket_thuc);
+
+        if (start.isBefore(cuocThiStart) || end.isAfter(cuocThiEnd)) {
+            return Promise.reject(
+                "Thời gian đợt thi phải nằm trong thời gian của cuộc thi"
+            );
+        }
+
+        return Promise.resolve();
     };
 
     return (
@@ -268,7 +299,8 @@ export default function DotThiModal({
                             label="Bắt đầu"
                             rules={[
                                 { required: true, message: "Chọn thời gian" },
-                                { validator: validateTime }
+                                { validator: validateTime },
+                                { validator: validateWindowInCuocThi }
                             ]}
                         >
                             <DatePicker
@@ -285,7 +317,8 @@ export default function DotThiModal({
                             label="Kết thúc"
                             rules={[
                                 { required: true, message: "Chọn thời gian" },
-                                { validator: validateTime }
+                                { validator: validateTime },
+                                { validator: validateWindowInCuocThi }
                             ]}
                         >
                             <DatePicker

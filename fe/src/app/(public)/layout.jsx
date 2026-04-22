@@ -3,6 +3,7 @@
 import {Layout} from "antd";
 import {Raleway} from 'next/font/google';
 import Footer from "~/app/components/public/Footer";
+import UserInteractionGuard from "~/app/components/common/UserInteractionGuard";
 
 const raleway = Raleway({
     subsets: ['latin', 'vietnamese'],
@@ -19,6 +20,7 @@ export default function PublicLayout({children}) {
                 minHeight: "100vh"
             }}
         >
+            <UserInteractionGuard />
             <Layout.Content className="flex-1">
                 {children}
             </Layout.Content>

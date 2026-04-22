@@ -43,7 +43,7 @@ export function useLinhVucSelect({defaultLimit = 20} = {}) {
         try {
             const res = await layLinhVuc({
                 page,
-                size: pagi.limit,
+                size: pagi.size,
                 search: debouncedLinhVuc,
             });
 

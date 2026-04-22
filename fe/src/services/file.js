@@ -52,6 +52,7 @@ export async function uploadFile(file, options = {}) {
 
     return await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
+
         xhr.open("POST", `${API_BASE_URL}${BASE_PATH}/upload`);
         xhr.timeout = 10 * 60 * 1000;
 
@@ -59,18 +60,8 @@ export async function uploadFile(file, options = {}) {
             xhr.setRequestHeader("Authorization", `Bearer ${access}`);
         }
 
-        xhr.setRequestHeader(
-            "Content-Type",
-            normalizedFile.type || "application/octet-stream"
-        );
-        xhr.setRequestHeader(
-            "X-File-Name",
-            encodeURIComponent(normalizedFile.name || "upload.bin")
-        );
-        xhr.setRequestHeader(
-            "X-File-Size",
-            String(normalizedFile.size || 0)
-        );
+        const formData = new FormData();
+        formData.append("file", normalizedFile);
 
         if (xhr.upload && typeof options.onUploadProgress === "function") {
             xhr.upload.onprogress = (event) => {
@@ -89,8 +80,7 @@ export async function uploadFile(file, options = {}) {
 
                 reject(
                     new Error(
-                        payload.message
-                        || `Tải file thất bại (${xhr.status})`
+                        payload.message || `Tải file thất bại (${xhr.status})`
                     )
                 );
             } catch {
@@ -106,9 +96,8 @@ export async function uploadFile(file, options = {}) {
             reject(new Error("Upload quá thời gian chờ"));
         };
 
-        xhr.send(normalizedFile);
+        xhr.send(formData);
     });
-
 }
 
 

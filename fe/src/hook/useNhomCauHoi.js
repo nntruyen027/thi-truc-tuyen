@@ -43,7 +43,7 @@ export function useNhomCauHoiSelect({defaultLimit = 20} = {}) {
         try {
             const res = await layNhomCauHoi({
                 page,
-                size: pagi.limit,
+                size: pagi.size,
                 search: debouncedNhomCauHoi,
             });
 

@@ -73,12 +73,10 @@ export default function BannerEditor({
             const res =
                 await uploadFile(file)
 
-            const url =
-                res.duong_dan
 
-            setImage(url)
+            setImage(res.url)
 
-            await save(url, zoom)
+            await save(res.url, zoom)
 
             message.success(
                 "Đã cập nhật"

@@ -11,6 +11,8 @@ import CountDown from "~/app/(public)/CountDown";
 import {useRouter} from "next/navigation";
 import TaiLieu from "~/app/(public)/TaiLieu";
 import TaiLieuKhac from "~/app/(public)/TaiLieuKhac";
+import KetQuaCongBo from "~/app/(public)/KetQuaCongBo";
+import Reveal from "~/app/components/common/Reveal";
 
 const tabItems = [
     {
@@ -103,6 +105,7 @@ export default function Page() {
 
     return (
         <div className="w-full">
+            <Reveal animation="soft">
             <Row>
                 <Col span={24}>
                     <div
@@ -132,6 +135,8 @@ export default function Page() {
                                 }}
                             />
                         )}
+
+                        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.08)_0%,rgba(15,23,42,0.22)_100%)]" />
                     </div>
                 </Col>
 
@@ -161,22 +166,68 @@ export default function Page() {
                     )}
                 </Col>
             </Row>
+            </Reveal>
 
             <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                 <Row gutter={[20, 20]}>
                     <Col xs={24} xl={12}>
+                        <div className="flex h-full flex-col gap-5">
                         {thoiGianConLai && (
-                            <CountDown time={thoiGianConLai}/>
+                            <Reveal delay={70}>
+                                <CountDown time={thoiGianConLai}/>
+                            </Reveal>
                         )}
+
+                        <Reveal delay={150} className="flex-1">
+                            <div className="flex h-full flex-col justify-between rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-5 shadow-sm md:p-6">
+                                <div className="space-y-3">
+                                    <div className="inline-flex w-fit rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">
+                                        Điều hành cuộc thi
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-900 md:text-2xl">
+                                        Theo dõi mốc thời gian và công bố kết quả
+                                    </h3>
+                            
+                                </div>
+
+                                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setTab("ket-qua")}
+                                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-blue-300 hover:bg-blue-50"
+                                    >
+                                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                            Công bố
+                                        </div>
+                                        <div className="mt-1 text-base font-semibold text-slate-900">
+                                            Xem bảng xếp hạng
+                                        </div>
+                                    </button>
+
+                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left">
+                                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                                            Trạng thái
+                                        </div>
+                                        <div className="mt-1 text-base font-semibold text-slate-900">
+                                            {dotThi?.cuoc_thi?.cho_phep_xem_lich_su ? "Đã mở công bố kết quả" : "Chưa công bố kết quả"}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </Reveal>
+                        </div>
                     </Col>
 
                     <Col xs={24} xl={12}>
-                        <div className="mt-3 flex min-h-full flex-col justify-center gap-6 rounded-3xl border border-slate-200 bg-white p-5 text-center shadow-sm md:p-8">
+                        <Reveal delay={110} className="h-full">
+                        <div className="mt-3 flex h-full min-h-full flex-col justify-between gap-6 rounded-3xl border border-slate-200 bg-white p-5 text-center shadow-sm md:p-8">
                             <div className="space-y-2">
                                 <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">
                                     Cổng thi trực tuyến
                                 </h2>
-        
+                                <p className="mx-auto max-w-2xl text-sm leading-7 text-slate-500 md:text-base">
+                                    Theo dõi thông tin cuộc thi, đọc tài liệu và truy cập nhanh vào khu vực làm bài trong cùng một màn hình.
+                                </p>
                             </div>
 
                             <div>
@@ -196,10 +247,10 @@ export default function Page() {
                                         key={item.key}
                                         type="button"
                                         onClick={() => setTab(item.key)}
-                                        className={`flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border px-3 py-4 text-center transition ${
+                                        className={`flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border px-3 py-4 text-center transition duration-300 ${
                                             tab === item.key
                                                 ? "border-blue-600 bg-blue-50 text-blue-700 shadow-sm"
-                                                : "border-slate-200 bg-slate-50 text-slate-700 hover:border-blue-300 hover:text-blue-700"
+                                                : "border-slate-200 bg-slate-50 text-slate-700 hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700"
                                         }`}
                                     >
                                         <img src={item.image} width={40} alt="" />
@@ -208,39 +259,40 @@ export default function Page() {
                                 ))}
                             </div>
                         </div>
+                        </Reveal>
                     </Col>
 
                     <Col span={24}>
-                        {tab === "ke-hoach" && (
-                            <TaiLieu
-                                title="Kế hoạch"
-                                khoa="ke_hoach"
-                            />
-                        )}
+                        <Reveal key={tab} delay={140}>
+                            {tab === "ke-hoach" && (
+                                <TaiLieu
+                                    title="Kế hoạch"
+                                    khoa="ke_hoach"
+                                />
+                            )}
 
-                        {tab === "the-le" && (
-                            <TaiLieu
-                                title="Thể lệ"
-                                khoa="the_le"
-                            />
-                        )}
+                            {tab === "the-le" && (
+                                <TaiLieu
+                                    title="Thể lệ"
+                                    khoa="the_le"
+                                />
+                            )}
 
-                        {tab === "tai-lieu" && (
-                            <TaiLieu
-                                title="Tài liệu"
-                                khoa="tai_lieu"
-                            />
-                        )}
+                            {tab === "tai-lieu" && (
+                                <TaiLieu
+                                    title="Tài liệu"
+                                    khoa="tai_lieu"
+                                />
+                            )}
 
-                        {tab === "ket-qua" && (
-                            <div className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center text-slate-500 shadow-sm">
-                                Chưa có kết quả
-                            </div>
-                        )}
+                            {tab === "ket-qua" && (
+                                <KetQuaCongBo dotThi={dotThi} />
+                            )}
 
-                        {tab === "document" && (
-                            <TaiLieuKhac/>
-                        )}
+                            {tab === "document" && (
+                                <TaiLieuKhac/>
+                            )}
+                        </Reveal>
                     </Col>
                 </Row>
             </div>

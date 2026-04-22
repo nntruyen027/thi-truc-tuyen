@@ -43,7 +43,7 @@ export function useDonViSelect({defaultLimit = 20} = {}) {
         try {
             const res = await getDonVi({
                 page,
-                size: pagi.limit,
+                size: pagi.size,
                 search: debouncedDonVi,
             });
 

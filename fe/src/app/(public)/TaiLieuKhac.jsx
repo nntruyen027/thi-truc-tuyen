@@ -59,40 +59,33 @@ export default function TaiLieuKhac() {
         <Collapse
             accordion={false}
             className="border-0"
-        >
+            items={docs.map((d) => ({
+                key: d.id,
+                label: d.tieuDe,
+                children: d.url && (
 
-            {docs.map((d) => (
+                    <iframe
+                        src={
+                            getPublicFileUrl(
+                                d.url
+                            ) +
+                            "#zoom=100&navpanes=0"
+                        }
+                        width="100%"
+                        height="100%"
+                        style={{
+                            border: "none",
+                            height: "min(75vh, 800px)",
+                            minHeight: "420px"
+                        }}
+                    />
 
-                <Panel
-                    header={d.tieuDe}
-                    key={d.id}
-                >
+                )   
+            }))
+            }
+                />
 
-                    {d.url && (
-
-                        <iframe
-                            src={
-                                getPublicFileUrl(
-                                    d.url
-                                ) +
-                                "#zoom=100&navpanes=0"
-                            }
-                            width="100%"
-                            height="100%"
-                            style={{
-                                border: "none",
-                                height: "min(75vh, 800px)",
-                                minHeight: "420px"
-                            }}
-                        />
-
-                    )}
-
-                </Panel>
-
-            ))}
-
-        </Collapse>
+        
         </Card>
 
     );

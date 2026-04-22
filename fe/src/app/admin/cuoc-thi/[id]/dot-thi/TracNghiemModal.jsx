@@ -1,6 +1,6 @@
 'use client';
 
-import {Button, InputNumber, Modal, Popconfirm, Select, Table} from "antd";
+import {App, Button, InputNumber, Modal, Popconfirm, Select, Table} from "antd";
 
 import {useEffect, useState} from "react";
 
@@ -22,6 +22,7 @@ export default function TracNghiemDotThiModal({
                                                   cuocThiId
                                               }) {
 
+    const {message} = App.useApp();
 
     const [data, setData] = useState([]);
 
@@ -37,14 +38,17 @@ export default function TracNghiemDotThiModal({
     // load
 
     const fetchData = async () => {
+        try {
+            const res =
+                await layTracNghiemDotThi(
+                    dotThiId,
+                    cuocThiId
+                );
 
-        const res =
-            await layTracNghiemDotThi(
-                dotThiId,
-                cuocThiId
-            );
-
-        setData(res.data);
+            setData(res.data);
+        } catch (e) {
+            message.error(e.message);
+        }
 
     };
 
@@ -52,7 +56,12 @@ export default function TracNghiemDotThiModal({
     useEffect(() => {
 
         if (open) {
-            fetchData();
+            const timer =
+                setTimeout(() => {
+                    void fetchData();
+                }, 0);
+
+            return () => clearTimeout(timer);
         }
 
 
@@ -62,18 +71,26 @@ export default function TracNghiemDotThiModal({
     // add
 
     const handleAdd = async () => {
+        if (!dsLinhVuc.length || !dsNhomCauHoi.length) {
+            message.error("Cần có sẵn lĩnh vực và nhóm câu hỏi trước khi cấu hình.");
+            return;
+        }
 
-        await themTracNghiemDotThi(
-            dotThiId,
-            cuocThiId,
-            {
-                linh_vuc_id: null,
-                nhom_id: null,
-                so_luong: 1
-            }
-        );
+        try {
+            await themTracNghiemDotThi(
+                dotThiId,
+                cuocThiId,
+                {
+                    linh_vuc_id: dsLinhVuc[0]?.id,
+                    nhom_id: dsNhomCauHoi[0]?.id,
+                    so_luong: 1
+                }
+            );
 
-        fetchData();
+            fetchData();
+        } catch (e) {
+            message.error(e.message);
+        }
 
     };
 
@@ -89,17 +106,21 @@ export default function TracNghiemDotThiModal({
         const row =
             data.find(i => i?.id === id);
 
-        await suaTracNghiemDotThi(
-            id,
-            dotThiId,
-            cuocThiId,
-            {
-                ...row,
-                [field]: value
-            }
-        );
+        try {
+            await suaTracNghiemDotThi(
+                id,
+                dotThiId,
+                cuocThiId,
+                {
+                    ...row,
+                    [field]: value
+                }
+            );
 
-        fetchData();
+            fetchData();
+        } catch (e) {
+            message.error(e.message);
+        }
 
     };
 
@@ -108,13 +129,17 @@ export default function TracNghiemDotThiModal({
 
     const handleDelete = async (id) => {
 
-        await xoaTracNghiemDotThi(
-            id,
-            dotThiId,
-            cuocThiId
-        );
+        try {
+            await xoaTracNghiemDotThi(
+                id,
+                dotThiId,
+                cuocThiId
+            );
 
-        fetchData();
+            fetchData();
+        } catch (e) {
+            message.error(e.message);
+        }
 
     };
 

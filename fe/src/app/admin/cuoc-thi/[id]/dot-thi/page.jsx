@@ -342,6 +342,7 @@ export default function DotThi() {
                 open={modalOpen}
                 data={editing}
                 cuocThiId={cuocThiId}
+                cuocThi={cuocThi}
                 onClose={() => setModalOpen(false)}
                 onSuccess={() => {
                     setModalOpen(false)

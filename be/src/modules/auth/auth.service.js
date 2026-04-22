@@ -96,7 +96,7 @@ exports.register = async (
     repeatPass,
     donViId
 ) => {
-    if (!repeatPass && repeatPass !== password)
+    if (!repeatPass || repeatPass !== password)
         throw "Mật khẩu không khớp!"
 
 

@@ -1,6 +1,7 @@
 const router =
     require("express").Router({mergeParams: true})
 const query = require("./dot_thi.query")
+const validation = require("../thi/thi.validation")
 const resUtil = require("../../utils/response");
 const auth = require("../../middlewares/auth");
 const role = require("../../middlewares/role");
@@ -86,6 +87,12 @@ router.post(
             } =
                 req.body
 
+            await validation.ensureDotThiWithinCuocThi({
+                cuocThiId,
+                thoiGianBatDau: thoi_gian_bat_dau,
+                thoiGianKetThuc: thoi_gian_ket_thuc,
+            })
+
             const data =
                 await query.themDotThi(
                     cuocThiId,
@@ -140,6 +147,15 @@ router.put(
                 trang_thai
             } =
                 req.body
+
+            const dotThi =
+                await query.layDotThiTheoId(id)
+
+            await validation.ensureDotThiWithinCuocThi({
+                cuocThiId: dotThi?.cuoc_thi_id,
+                thoiGianBatDau: thoi_gian_bat_dau,
+                thoiGianKetThuc: thoi_gian_ket_thuc,
+            })
 
             const data =
                 await query.suaDotThi(

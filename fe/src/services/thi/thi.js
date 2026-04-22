@@ -1,4 +1,6 @@
 import api from "~/services/api";
+import {API_BASE_URL} from "~/config/env";
+import {useAuthStore} from "~/store/auth";
 
 const BASE_PATH = "/thi";
 
@@ -325,14 +327,16 @@ export async function startThi(
 }
 
 export async function pauseThi(
-    baiThiId
+    baiThiId,
+    options = {}
 ) {
 
     try {
 
         const res =
             await api.post(
-                BASE_PATH + "/pause/" + baiThiId ,
+                BASE_PATH + "/pause/" + baiThiId,
+                options
             )
 
         return res.data.data
@@ -343,6 +347,49 @@ export async function pauseThi(
         throw new Error(
             e?.response?.data?.message
         )
+
+    }
+}
+
+export function pauseThiKeepAlive(
+    baiThiId
+) {
+
+    if (!baiThiId) {
+        return false;
+    }
+
+    const access =
+        useAuthStore.getState().access
+        || (typeof window !== "undefined"
+            ? localStorage.getItem("access")
+            : null);
+
+    if (!access || typeof window === "undefined" || typeof fetch !== "function") {
+        return false;
+    }
+
+    try {
+
+        void fetch(
+            API_BASE_URL + BASE_PATH + "/pause/" + baiThiId,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${access}`,
+                    "Content-Type": "application/json",
+                },
+                body: "{}",
+                keepalive: true,
+            }
+        );
+
+        return true;
+
+    }
+    catch {
+
+        return false;
 
     }
 }

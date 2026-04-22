@@ -1,6 +1,6 @@
 "use client";
 
-import {Avatar, Button, Drawer, Dropdown, Grid, Layout, Menu, theme, Typography} from "antd";
+import {Avatar, Button, ConfigProvider, Drawer, Dropdown, Grid, Layout, Menu, Typography} from "antd";
 import {
     BankOutlined,
     BarChartOutlined,
@@ -20,6 +20,8 @@ import {usePathname, useRouter} from "next/navigation";
 import {useModal} from "~/store/modal";
 import {useAuthStore} from "~/store/auth";
 import {usePageInfoStore} from "~/store/page-info";
+import AccountProfileModal from "./AccountProfileModal";
+import ChangePasswordModal from "./ChangePasswordModal";
 
 const {Sider, Header, Content} = Layout;
 
@@ -124,10 +126,6 @@ export default function RootLayout({children}) {
     const screens = Grid.useBreakpoint();
     const isMobile = !screens.lg;
 
-    const {
-        token: {colorBgContainer, borderRadiusLG, colorPrimary},
-    } = theme.useToken();
-
     const {SetIsUpdatePassOpen, setIsEditOpen} = useModal();
     const {user, clearAuth} = useAuthStore();
 
@@ -166,13 +164,13 @@ export default function RootLayout({children}) {
             key: "profile",
             label: "Thông tin tài khoản",
             icon: <UserOutlined/>,
-            onClick: setIsEditOpen,
+            onClick: () => setIsEditOpen(),
         },
         {
             key: "password",
             label: "Đổi mật khẩu",
             icon: <SafetyOutlined/>,
-            onClick: SetIsUpdatePassOpen,
+            onClick: () => SetIsUpdatePassOpen(),
         },
         {
             key: "logout",
@@ -197,18 +195,41 @@ export default function RootLayout({children}) {
     };
 
     const menuNode = (
-        <Menu
-            mode="inline"
-            items={menuItems}
-            selectedKeys={selectedKeys}
-            defaultOpenKeys={openKeys}
-            onClick={handleMenuClick}
-            style={{borderInlineEnd: 0}}
-        />
+        <ConfigProvider
+            theme={{
+                components: {
+                    Menu: {
+                        itemBg: "transparent",
+                        subMenuItemBg: "transparent",
+                        popupBg: "#f8fbff",
+                        itemColor: "#334155",
+                        itemHoverColor: "#1948be",
+                        itemHoverBg: "rgba(25,72,190,0.08)",
+                        itemSelectedColor: "#1948be",
+                        itemSelectedBg: "rgba(25,72,190,0.14)",
+                        groupTitleColor: "#64748b",
+                        itemBorderRadius: 16,
+                        itemHeight: 44,
+                        iconSize: 16,
+                        fontSize: 14,
+                    },
+                },
+            }}
+        >
+            <Menu
+                mode="inline"
+                theme="light"
+                items={menuItems}
+                selectedKeys={selectedKeys}
+                defaultOpenKeys={openKeys}
+                onClick={handleMenuClick}
+                style={{borderInlineEnd: 0, background: "transparent"}}
+            />
+        </ConfigProvider>
     );
 
     return (
-        <Layout className="min-h-screen bg-slate-100">
+        <Layout className="min-h-screen bg-[linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_100%)]">
             {!isMobile && (
                 <Sider
                     width={260}
@@ -217,26 +238,39 @@ export default function RootLayout({children}) {
                     trigger={null}
                     style={{
                         minHeight: "100vh",
-                        background: "white",
+                        background: "#f8fbff",
                         overflowY: "auto",
-                        borderInlineEnd: "1px solid #e5e7eb",
+                        borderInlineEnd: "1px solid rgba(148,163,184,0.2)",
                     }}
                 >
                     <div
-                        style={{background: colorPrimary}}
-                        className="px-4 py-4 text-center text-lg font-semibold tracking-[0.08em] text-white"
+                        className="border-b border-slate-200 px-5 py-5 text-slate-900"
                     >
-                        {collapsed ? "TTT" : "Thi trực tuyến"}
+                        <div className="flex items-center gap-3">
+                
+                            {!collapsed && (
+                                <div className="min-w-0">
+                                    <div className="truncate text-base font-semibold tracking-[0.08em]">
+                                        Thi trực tuyến
+                                    </div>
+                                    <div className="text-xs uppercase tracking-[0.18em] text-slate-400">
+                                        VNPT Admin
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    {menuNode}
+                    <div className="px-3 py-4">
+                        {menuNode}
+                    </div>
                 </Sider>
             )}
 
             <Layout className="bg-transparent">
                 <Header
-                    className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 sm:px-6"
-                    style={{background: colorBgContainer}}
+                    className="sticky top-0 z-20 flex h-[72px] items-center justify-between gap-3 border-b border-blue-900/10"
+                    style={{background: "rgb(25, 72, 190)", padding: isMobile ? "0 16px" : "0 24px"}}
                 >
                     <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                         {isMobile ? (
@@ -244,31 +278,41 @@ export default function RootLayout({children}) {
                                 type="text"
                                 icon={<MenuOutlined/>}
                                 onClick={() => setMobileMenuOpen(true)}
+                                className="!text-white"
                             />
                         ) : (
                             <Button
                                 type="text"
                                 icon={collapsed ? <MenuUnfoldOutlined/> : <MenuFoldOutlined/>}
                                 onClick={() => setCollapsed(!collapsed)}
+                                className="!text-white"
                             />
                         )}
-                        <h2 className="m-0 truncate text-base font-semibold text-slate-900 sm:text-xl">
-                            {title || "Trang quản trị"}
-                        </h2>
+                        <div className="min-w-0">
+                            <h2 style={{margin: '0'}} className="truncate text-lg font-semibold leading-none text-white sm:text-[22px]">
+                                {title || "Trang quản trị"}
+                            </h2>
+                        </div>
                     </div>
 
                     <Dropdown
                         menu={{items: userMenuItems}}
                         placement="bottomRight"
                     >
-                        <div className="flex cursor-pointer items-center gap-2">
+                        <div className="flex items-center gap-3 rounded-2xl px-2 py-2 transition hover:bg-white/10">
                             <Avatar
                                 src={user?.avatar}
                                 icon={<UserOutlined/>}
+                                className="!bg-white/15"
                             />
-                            <Typography.Text className="hidden font-medium sm:inline">
-                                {user?.hoTen || "Người dùng"}
-                            </Typography.Text>
+                            <div className="hidden min-w-0 sm:block">
+                                <Typography.Text className="block truncate font-medium !text-white">
+                                    {user?.hoTen || "Người dùng"}
+                                </Typography.Text>
+                                <div className="text-xs uppercase tracking-[0.14em] text-blue-100/80">
+                                    Quản trị viên
+                                </div>
+                            </div>
                         </div>
                     </Dropdown>
                 </Header>
@@ -277,10 +321,8 @@ export default function RootLayout({children}) {
                     style={{
                         margin: isMobile ? "16px" : "24px",
                         padding: isMobile ? 16 : 24,
-                        background: colorBgContainer,
-                        borderRadius: borderRadiusLG,
                     }}
-                    className="min-h-[calc(100vh-112px)]"
+                    className="min-h-[calc(100vh-112px)] rounded-[32px] border border-white/70 bg-white/85 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur"
                 >
                     {children}
                 </Content>
@@ -291,10 +333,22 @@ export default function RootLayout({children}) {
                 open={isMobile && mobileMenuOpen}
                 onClose={() => setMobileMenuOpen(false)}
                 title="Thi trực tuyến"
-                styles={{body: {padding: 0}}}
+                styles={{
+                    header: {
+                        background: "#f8fbff",
+                        color: "#0f172a",
+                        borderBottom: "1px solid rgba(148,163,184,0.18)",
+                    },
+                    body: {
+                        padding: 0,
+                        background: "#f8fbff",
+                    }
+                }}
             >
                 {menuNode}
             </Drawer>
+            <AccountProfileModal />
+            <ChangePasswordModal />
         </Layout>
     );
 }

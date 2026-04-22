@@ -1,12 +1,12 @@
 'use client'
 
 import {useEffect, useState} from "react";
-import {App, Button, Dropdown, Input, Modal, Table} from "antd";
+import {App, Button, Dropdown, Input, Modal, Switch, Table, Tag} from "antd";
 
 import {useDebounce} from "~/hook/data";
 import {usePageInfoStore} from "~/store/page-info";
 
-import {layCuocThi, xoaCuocThi} from "~/services/thi/cuoc-thi";
+import {layCuocThi, suaCuocThi, xoaCuocThi} from "~/services/thi/cuoc-thi";
 import {DeleteOutlined, DiffOutlined, EditOutlined, EllipsisOutlined} from "@ant-design/icons";
 import CuocThiModal from "./CuocThiModal";
 import dayjs from "dayjs";
@@ -112,6 +112,31 @@ export default function CuocThi() {
         }
     };
 
+    const toggleCongBoKetQua = async (record, checked) => {
+        try {
+            await suaCuocThi(record.id, {
+                ...record,
+                cho_phep_xem_lich_su: checked,
+            });
+
+            message.success(
+                checked
+                    ? "Đã công bố kết quả"
+                    : "Đã hủy công bố kết quả"
+            );
+
+            fetchData(
+                pagination.current,
+                pagination.pageSize,
+                debouncedSearch,
+                sorter.sortField,
+                sorter.sortType
+            );
+        } catch (e) {
+            message.error(e.message);
+        }
+    };
+
 
     // ===== search =====
 
@@ -186,6 +211,24 @@ export default function CuocThi() {
             dataIndex: "trang_thai",
             sorter: true,
             render: (text) => text ? 'Mở' : 'Đóng'
+        },
+        {
+            title: "Công bố kết quả",
+            dataIndex: "cho_phep_xem_lich_su",
+            width: 180,
+            render: (value, record) => (
+                <div className="flex items-center gap-3">
+                    <Switch
+                        checked={!!value}
+                        onChange={(checked) =>
+                            toggleCongBoKetQua(record, checked)
+                        }
+                    />
+                    <Tag color={value ? "green" : "default"}>
+                        {value ? "Đang công bố" : "Chưa công bố"}
+                    </Tag>
+                </div>
+            )
         },
         {
             title: 'Hành động',

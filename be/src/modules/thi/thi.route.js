@@ -2,6 +2,7 @@ const router =
     require("express").Router({mergeParams: true})
 
 const query = require("./thi.query")
+const validation = require("./thi.validation")
 
 const resUtil = require("../../utils/response")
 const auth = require("../../middlewares/auth")
@@ -314,7 +315,9 @@ router.post(
             const thiSinhId =
                 req.user.id
 
-            const data =
+            await validation.ensureDotThiQuestionConfigValid(dotThiId)
+
+            const result =
                 await query.startThi(
                     dotThiId,
                     thiSinhId,
@@ -322,7 +325,7 @@ router.post(
 
             resUtil.ok(
                 res,
-                data
+                result
             )
 
         } catch (err) {
@@ -345,7 +348,13 @@ router.post(
         try {
 
             const baiThiId = req.params.baiThiId
+            const reason = req.body?.reason
 
+            if (reason !== "submit") {
+                await validation.ensurePauseAllowed(
+                    baiThiId
+                )
+            }
 
             const data =
                 await query.pauseThi(

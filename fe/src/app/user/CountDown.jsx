@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {Card, theme} from "antd";
 
 export default function CountDown({seconds, onEnd}) {
@@ -9,12 +9,18 @@ export default function CountDown({seconds, onEnd}) {
 
     const {colorPrimary} = token;
 
-    const [t, setT] = useState(seconds);
+    const [t, setT] = useState(seconds ?? 0);
+    const [seed] = useState(seconds ?? 0);
+    const onEndRef = useRef(onEnd);
+
+    useEffect(() => {
+        onEndRef.current = onEnd;
+    }, [onEnd]);
 
 
     useEffect(() => {
 
-        if (!seconds) return;
+        if (seed == null) return;
 
         const timer = setInterval(() => {
 
@@ -24,7 +30,7 @@ export default function CountDown({seconds, onEnd}) {
 
                     clearInterval(timer);
 
-                    onEnd?.();
+                    onEndRef.current?.();
 
                     return 0;
 
@@ -38,12 +44,15 @@ export default function CountDown({seconds, onEnd}) {
 
         return () => clearInterval(timer);
 
-    }, [seconds]);
+    }, [seed]);
 
 
-    const gio = Math.floor(t / 3600);
-    const phut = Math.floor((t % 3600) / 60);
-    const giay = t % 60;
+    const total =
+        Math.max(0, t || 0);
+
+    const gio = Math.floor(total / 3600);
+    const phut = Math.floor((total % 3600) / 60);
+    const giay = total % 60;
 
 
     return (

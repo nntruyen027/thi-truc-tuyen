@@ -1,4 +1,5 @@
 const dbHelper = require("../../utils/dbHelper")
+const db = require("../../config/db")
 
 exports.login = (user, pass) => {
 
@@ -38,7 +39,7 @@ exports.saveRefresh = (
 }
 
 exports.updatePassword = (username, password) => {
-    return dbHelper.call(
+    return db.query(
         "update auth.users set password = $2 where username = $1",
         [username, password]
     )

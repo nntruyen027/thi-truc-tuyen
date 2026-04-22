@@ -133,7 +133,7 @@ export default function CuocThiModal({
 
         <Modal
             open={open}
-            destroyOnClose
+            destroyOnHidden
             title={
                 data
                     ? "Sửa cuộc thi"
@@ -242,8 +242,9 @@ export default function CuocThiModal({
                     <Col md={12} lg={6}>
                         <Form.Item
                             name="cho_phep_xem_lich_su"
-                            label="Xem lại lịch sử"
-
+                            label="Công bố kết quả"
+                            tooltip="Bật để hiển thị bảng xếp hạng và kết quả ở giao diện người dùng."
+                            valuePropName="checked"
                         >
                             <Switch/>
                         </Form.Item>
@@ -251,8 +252,9 @@ export default function CuocThiModal({
                     <Col md={12} lg={6}>
                         <Form.Item
                             name="cho_phep_xem_lai_dap_an"
-                            label="Xem lại đáp án"
-
+                            label="Cho xem đáp án"
+                            tooltip="Bật để thí sinh có thể xem lại đáp án sau cuộc thi."
+                            valuePropName="checked"
                         >
                             <Switch/>
                         </Form.Item>
@@ -261,7 +263,7 @@ export default function CuocThiModal({
                         <Form.Item
                             name="co_tu_luan"
                             label="Tự luận"
-
+                            valuePropName="checked"
                         >
                             <Switch/>
                         </Form.Item>
@@ -269,8 +271,8 @@ export default function CuocThiModal({
                     <Col md={12} lg={6}>
                         <Form.Item
                             name="trang_thai"
-                            label="Trạng thái"
-
+                            label="Kích hoạt"
+                            valuePropName="checked"
                         >
                             <Switch/>
                         </Form.Item>
