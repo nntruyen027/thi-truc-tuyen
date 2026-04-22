@@ -1,12 +1,36 @@
 'use client'
 
 import {useEffect, useState} from "react";
-import {App, Button, Card, Dropdown, Input, Table, Tag, Typography} from "antd";
-import {EditOutlined, EllipsisOutlined, ReloadOutlined, SearchOutlined, TeamOutlined} from "@ant-design/icons";
+import {
+    App,
+    Button,
+    Card,
+    Dropdown,
+    Input,
+    Modal,
+    Table,
+    Tag,
+    Typography
+} from "antd";
+import {
+    DeleteOutlined,
+    EditOutlined,
+    EllipsisOutlined,
+    PlusOutlined,
+    ReloadOutlined,
+    SafetyCertificateOutlined,
+    SearchOutlined
+} from "@ant-design/icons";
 
 import {useDebounce} from "~/hook/data";
 import {usePageInfoStore} from "~/store/page-info";
-import {capNhatMatKhau, layDsNguoiDung} from "~/services/dm_chung/nguoi_dung";
+import {
+    capNhatMatKhau,
+    capNhatQuyenNguoiDung,
+    layDsNguoiDung,
+    xoaNguoiDung
+} from "~/services/dm_chung/nguoi_dung";
+import UserModal from "./UserModal";
 
 const {Text, Title} = Typography;
 
@@ -22,6 +46,10 @@ export default function NguoiDung() {
         total: 0
     });
     const [searchText, setSearchText] = useState("");
+    const [editing, setEditing] = useState(null);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState(null);
+
     const debouncedSearch = useDebounce(searchText, 400);
 
     const fetchData = async (
@@ -51,12 +79,67 @@ export default function NguoiDung() {
         }
     };
 
+    const reloadCurrentPage = async () => {
+        await fetchData(
+            pagination.current,
+            pagination.pageSize,
+            debouncedSearch
+        );
+    };
+
     const handleUpdatePass = async (username) => {
         try {
             await capNhatMatKhau(username);
             message.success("Đã đặt lại mật khẩu mặc định: Thitructuyen@2026");
         } catch (e) {
             message.error(e.message);
+        }
+    };
+
+    const handleToggleAdmin = async (record) => {
+        try {
+            const nextRole =
+                record.role === "admin"
+                    ? "user"
+                    : "admin";
+
+            await capNhatQuyenNguoiDung(record.id, nextRole);
+
+            message.success(
+                nextRole === "admin"
+                    ? "Đã gán quyền admin"
+                    : "Đã thu hồi quyền admin"
+            );
+
+            await reloadCurrentPage();
+        } catch (e) {
+            message.error(e.message);
+        }
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTarget) {
+            return;
+        }
+
+        try {
+            await xoaNguoiDung(deleteTarget.id);
+            message.success("Đã xóa tài khoản");
+
+            const nextPage =
+                data.length === 1 && pagination.current > 1
+                    ? pagination.current - 1
+                    : pagination.current;
+
+            await fetchData(
+                nextPage,
+                pagination.pageSize,
+                debouncedSearch
+            );
+        } catch (e) {
+            message.error(e.message);
+        } finally {
+            setDeleteTarget(null);
         }
     };
 
@@ -104,29 +187,55 @@ export default function NguoiDung() {
         {
             title: "Đơn vị",
             dataIndex: "don_vi",
-            render: (text) => text?.ten || <Tag>Chưa gán</Tag>,
+            render: (value) => value?.ten || <Tag>Chưa gán</Tag>
         },
         {
-            title: "Vai trò",
+            title: "Quyền",
             dataIndex: "role",
-            width: 120,
+            width: 140,
             render: (value) => (
                 <Tag color={value === "admin" ? "blue" : "default"}>
-                    {value || "user"}
+                    {value === "admin" ? "Admin" : "Người dùng"}
                 </Tag>
             )
         },
         {
             title: "Hành động",
-            width: 120,
+            width: 140,
             render: (_, record) => {
                 const items = [
                     {
-                        key: "reset-password",
-                        label: "Đặt lại mật khẩu",
+                        key: "edit",
+                        label: "Chỉnh sửa tài khoản",
                         icon: <EditOutlined />,
                         onClick: () => {
+                            setEditing(record);
+                            setModalOpen(true);
+                        }
+                    },
+                    {
+                        key: "toggle-admin",
+                        label: record.role === "admin" ? "Thu hồi admin" : "Gán thành admin",
+                        icon: <SafetyCertificateOutlined />,
+                        onClick: () => {
+                            void handleToggleAdmin(record);
+                        }
+                    },
+                    {
+                        key: "reset-password",
+                        label: "Đặt lại mật khẩu",
+                        icon: <ReloadOutlined />,
+                        onClick: () => {
                             void handleUpdatePass(record.username);
+                        }
+                    },
+                    {
+                        key: "delete",
+                        label: "Xóa tài khoản",
+                        danger: true,
+                        icon: <DeleteOutlined />,
+                        onClick: () => {
+                            setDeleteTarget(record);
                         }
                     },
                 ];
@@ -145,44 +254,7 @@ export default function NguoiDung() {
 
     return (
         <div className="space-y-5 p-4 md:p-5">
-            <Card className="rounded-[28px] border border-blue-100 bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.18),_transparent_28%),linear-gradient(135deg,_#ffffff,_#f8fbff_56%,_#e0ecff)] shadow-sm">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                    <div className="space-y-2">
-                        <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">
-                            <TeamOutlined />
-                            Tài khoản hệ thống
-                        </div>
-                        <Title level={3} className="!mb-0 !text-slate-900">
-                            Quản trị người dùng
-                        </Title>
-                        <Text className="!text-sm !leading-7 !text-slate-600 md:!text-base">
-                            Tra cứu danh sách tài khoản, rà đơn vị công tác và đặt lại mật khẩu mặc định ngay trong một màn hình quản trị.
-                        </Text>
-                    </div>
-
-                    <div className="grid gap-3 sm:grid-cols-2">
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                                Tổng tài khoản
-                            </div>
-                            <div className="mt-1 text-2xl font-bold text-slate-900">
-                                {pagination.total || 0}
-                            </div>
-                        </div>
-
-                        <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
-                            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                                Tác vụ nhanh
-                            </div>
-                            <div className="mt-2 text-sm text-slate-600">
-                                Đặt lại mật khẩu mặc định cho tài khoản được chọn.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </Card>
-
-            <Card className="rounded-[28px] border border-slate-200 shadow-sm" styles={{body: {padding: 20}}}>
+    
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <Input
                         prefix={<SearchOutlined className="text-slate-400" />}
@@ -193,18 +265,16 @@ export default function NguoiDung() {
                         className="max-w-xl"
                     />
 
-                    <Button
-                        icon={<ReloadOutlined />}
-                        onClick={() =>
-                            void fetchData(
-                                pagination.current,
-                                pagination.pageSize,
-                                debouncedSearch
-                            )
-                        }
-                    >
-                        Tải lại dữ liệu
-                    </Button>
+                     <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            onClick={() => {
+                                setEditing(null);
+                                setModalOpen(true);
+                            }}
+                        >
+                            Thêm tài khoản
+                        </Button>
                 </div>
 
                 <Table
@@ -213,7 +283,7 @@ export default function NguoiDung() {
                     loading={loading}
                     columns={columns}
                     dataSource={data}
-                    scroll={{x: 820}}
+                    scroll={{x: 860}}
                     pagination={pagination}
                     onChange={(p) => {
                         void fetchData(
@@ -223,7 +293,34 @@ export default function NguoiDung() {
                         );
                     }}
                 />
-            </Card>
+
+            <UserModal
+                open={modalOpen}
+                data={editing}
+                onClose={() => {
+                    setModalOpen(false);
+                    setEditing(null);
+                }}
+                onSuccess={() => {
+                    setModalOpen(false);
+                    setEditing(null);
+                    void reloadCurrentPage();
+                }}
+            />
+
+            <Modal
+                title="Xác nhận xóa tài khoản"
+                open={!!deleteTarget}
+                onCancel={() => setDeleteTarget(null)}
+                onOk={confirmDelete}
+                okButtonProps={{danger: true}}
+                okText="Xóa"
+                cancelText="Thoát"
+            >
+                {deleteTarget
+                    ? `Bạn có chắc muốn xóa tài khoản ${deleteTarget.username}?`
+                    : ""}
+            </Modal>
         </div>
     );
 }
