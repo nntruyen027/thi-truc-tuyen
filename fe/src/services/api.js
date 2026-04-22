@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "~/store/auth";
 
 const api = axios.create({
-    baseURL: "https://thitructuyen-demo-api/api",
+    baseURL: "https://thitructuyen-demo-api.tmqcreator.top/api",
     headers: {
         "Content-Type": "application/json",
     },

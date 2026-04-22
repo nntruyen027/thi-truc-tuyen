@@ -1,0 +1,37 @@
+name: Deploy VPS
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Deploy
+        run: |
+          cd /home/dev_01/thi-truc-tuyen
+
+          echo "== Pull code =="
+          git fetch --all
+          git reset --hard origin/main
+
+          echo "== Install BE =="
+          cd be
+          npm ci
+
+          echo "== Restart BE =="
+          pm2 restart be || pm2 start npm --name be -- start
+
+          echo "== Install FE =="
+          cd ../fe
+          npm ci
+
+          echo "== Build FE =="
+          npm run build
+
+          echo "== Restart FE =="
+          pm2 restart fe || pm2 start npm --name fe -- start
+
+          echo "== Done =="
