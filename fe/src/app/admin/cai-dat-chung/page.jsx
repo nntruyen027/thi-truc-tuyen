@@ -7,6 +7,7 @@ import {usePageInfoStore} from "~/store/page-info";
 import CotChanTrang from "~/app/admin/cai-dat-chung/CotChanTrang";
 import BanQuyen from "~/app/admin/cai-dat-chung/VanBanBanQuyen";
 import FaviconEditor from "~/app/admin/cai-dat-chung/FaviconEditor";
+import FooterMetaEditor from "~/app/admin/cai-dat-chung/FooterMetaEditor";
 
 export default function CaiDatChung() {
     const setPageInfo = usePageInfoStore(state => state.setPageInfo);
@@ -40,6 +41,10 @@ export default function CaiDatChung() {
 
             <Col md={24} lg={12}>
                 <FaviconEditor />
+            </Col>
+
+            <Col md={24} lg={12}>
+                <FooterMetaEditor />
             </Col>
 
             <Col md={24} lg={12}>

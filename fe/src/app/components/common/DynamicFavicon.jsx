@@ -34,12 +34,6 @@ function applyFavicon(url) {
             ? `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}v=${Date.now()}`
             : "";
 
-    document.head
-        .querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]')
-        .forEach((node) => {
-            node.parentNode?.removeChild(node);
-        });
-
     const definitions = [
         {rel: "icon", type: "image/png"},
         {rel: "shortcut icon", type: "image/png"},
@@ -47,6 +41,13 @@ function applyFavicon(url) {
     ];
 
     definitions.forEach(({rel, type}) => {
+        document.head
+            .querySelectorAll(`link[rel="${rel}"]:not([data-dynamic-favicon])`)
+            .forEach((node) => {
+                node.setAttribute("href", resolved);
+                node.setAttribute("type", type);
+            });
+
         let link =
             document.head.querySelector(`link[data-dynamic-favicon="${rel}"]`);
 

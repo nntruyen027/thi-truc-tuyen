@@ -28,6 +28,32 @@ body {
 body.devtools-open {
   overflow: hidden;
 }
+
+.footer-rich p,
+.footer-rich ul,
+.footer-rich ol {
+  margin: 0 0 0.85rem;
+}
+
+.footer-rich p:last-child,
+.footer-rich ul:last-child,
+.footer-rich ol:last-child {
+  margin-bottom: 0;
+}
+
+.footer-rich a {
+  color: #1948be;
+  font-weight: 600;
+}
+
+.footer-rich ul,
+.footer-rich ol {
+  padding-left: 1.1rem;
+}
+
+.footer-rich--dark a {
+  color: #bfdbfe;
+}
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
