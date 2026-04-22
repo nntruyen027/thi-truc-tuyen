@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.ant-modal {
+  z-index: 99999;
+}
+
+
+/* =====================================================
+   FONT PICKER – LABEL (đang được chọn trên toolbar)
+   ===================================================== */
+
+.ql-snow .ql-picker.ql-font .ql-picker-label::before {
+  content: "Sans";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="sans"]::before {
+  content: "Sans";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="serif"]::before {
+  content: "Serif";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="times"]::before {
+  content: "Times";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="mono"]::before {
+  content: "Monospace";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="roboto"]::before {
+  content: "Roboto";
+}
+
+/* =====================================================
+   FONT PICKER – DROPDOWN ITEMS
+   ===================================================== */
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="sans"]::before {
+  content: "Sans";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="serif"]::before {
+  content: "Serif";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="times"]::before {
+  content: "Times";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="mono"]::before {
+  content: "Monospace";
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-item[data-value="roboto"]::before {
+  content: "Roboto";
+}
+
+/* =====================================================
+   FONT ÁP DỤNG TRONG NỘI DUNG EDITOR
+   ===================================================== */
+
+/* Sans (mặc định) */
+.ql-editor .ql-font-sans {
+  font-family: Helvetica, Arial, sans-serif !important;
+}
+
+/* Serif */
+.ql-editor .ql-font-serif {
+  font-family: serif !important;
+}
+
+/* Times New Roman */
+.ql-editor .ql-font-times {
+  font-family: "Times New Roman", Times, serif !important;
+}
+
+/* Monospace */
+.ql-editor .ql-font-mono {
+  font-family: Consolas, Monaco, "Courier New", monospace !important;
+}
+
+/* Roboto */
+.ql-editor .ql-font-roboto {
+  font-family: "Roboto", sans-serif !important;
+}
+
+/* =====================================================
+   (OPTIONAL) Toolbar label hiển thị đúng font đang chọn
+   ===================================================== */
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="times"] {
+  font-family: "Times New Roman", Times, serif;
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="mono"] {
+  font-family: Consolas, Monaco, "Courier New", monospace;
+}
+
+.ql-snow .ql-picker.ql-font .ql-picker-label[data-value="roboto"] {
+  font-family: "Roboto", sans-serif;
+}
+
+.stf__parent {
+  margin: auto !important;
+}

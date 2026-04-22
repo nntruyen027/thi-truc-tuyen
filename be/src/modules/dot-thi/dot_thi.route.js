@@ -1,0 +1,211 @@
+const router =
+    require("express").Router({mergeParams: true})
+const query = require("./dot_thi.query")
+const resUtil = require("../../utils/response");
+const auth = require("../../middlewares/auth");
+const role = require("../../middlewares/role");
+
+router.get("/",
+    async (req, res) => {
+        try {
+            const {
+                size = 10,
+                page = 1,
+                search = "",
+                sortField = "id",
+                sortType = "asc"
+            } = req.query
+
+            const {cuocThiId} = req.params
+
+            const data = await query.layDsDotThi(
+                cuocThiId,
+                Number(size),
+                Number(page),
+                search,
+                sortField,
+                sortType,
+            )
+
+            resUtil.ok(res, data)
+
+        } catch (err) {
+
+            resUtil.error(res, err)
+
+        }
+    })
+
+router.get("/hien-tai", async (req, res) => {
+    try {
+        const data = await query.layDotThiHienTai();
+        resUtil.ok(res, data)
+    } catch (err) {
+        resUtil.error(res, err)
+    }
+})
+
+router.get("/:dotThiId", async (req, res) => {
+    try {
+        const dotThiId = req.params.dotThiId;
+
+        const data = await query.layDotThiTheoId(
+            dotThiId
+        )
+
+        resUtil.ok(res, data)
+
+    } catch (err) {
+
+        resUtil.error(res, err)
+
+    }
+})
+
+
+router.post(
+    "/",
+    auth,
+    role(["admin"]),
+    async (req, res) => {
+        try {
+            const cuocThiId = req.params.cuocThiId;
+
+            const {
+                ten,
+                mo_ta,
+                so_lan_tham_gia_toi_da,
+                thoi_gian_thi,
+                ty_le_danh_gia_dat,
+                thoi_gian_bat_dau,
+                thoi_gian_ket_thuc,
+                co_tron_cau_hoi,
+                cho_phep_luu_bai,
+                du_doan,
+                trang_thai
+            } =
+                req.body
+
+            const data =
+                await query.themDotThi(
+                    cuocThiId,
+                    ten,
+                    mo_ta,
+                    so_lan_tham_gia_toi_da,
+                    thoi_gian_thi,
+                    ty_le_danh_gia_dat,
+                    thoi_gian_bat_dau,
+                    thoi_gian_ket_thuc,
+                    co_tron_cau_hoi,
+                    cho_phep_luu_bai,
+                    du_doan,
+                    trang_thai
+                )
+
+            resUtil.ok(
+                res,
+                data
+            )
+
+        } catch (err) {
+
+            resUtil.error(
+                res,
+                err
+            )
+
+        }
+    }
+)
+
+router.put(
+    "/:id",
+    auth,
+    role(["admin"]),
+    async (req, res) => {
+        try {
+            const id = req.params.id;
+
+            const {
+                ten,
+                mo_ta,
+                so_lan_tham_gia_toi_da,
+                thoi_gian_thi,
+                ty_le_danh_gia_dat,
+                thoi_gian_bat_dau,
+                thoi_gian_ket_thuc,
+                co_tron_cau_hoi,
+                cho_phep_luu_bai,
+                du_doan,
+                trang_thai
+            } =
+                req.body
+
+            const data =
+                await query.suaDotThi(
+                    id,
+                    ten,
+                    mo_ta,
+                    so_lan_tham_gia_toi_da,
+                    thoi_gian_thi,
+                    ty_le_danh_gia_dat,
+                    thoi_gian_bat_dau,
+                    thoi_gian_ket_thuc,
+                    co_tron_cau_hoi,
+                    cho_phep_luu_bai,
+                    du_doan,
+                    trang_thai
+                )
+
+            resUtil.ok(
+                res,
+                data
+            )
+
+        } catch (err) {
+
+            resUtil.error(
+                res,
+                err
+            )
+
+        }
+    }
+)
+
+
+router.delete(
+    "/:id",
+    auth,
+    role(["admin"]),
+    async (req, res) => {
+        try {
+
+            const id = req.params.id
+
+
+            const data =
+                await query.xoaDotThi(
+                    id
+                )
+
+            resUtil.ok(
+                res,
+                data
+            )
+
+        } catch (err) {
+
+            resUtil.error(
+                res,
+                err
+            )
+
+        }
+    }
+)
+
+router.use("/:dotThiId/trac-nghiem", require("../trac-nghiem-dot-thi/trac_nghiem_dot_thi.route"))
+router.use("/:dotThiId/tu-luan", require("../tu-luan-dot-thi/tu_luan_dot_thi.route"))
+
+module.exports = router

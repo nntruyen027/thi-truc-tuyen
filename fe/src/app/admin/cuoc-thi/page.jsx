@@ -1,0 +1,329 @@
+'use client'
+
+import {useEffect, useState} from "react";
+import {App, Button, Dropdown, Input, Modal, Table} from "antd";
+
+import {useDebounce} from "~/hook/data";
+import {usePageInfoStore} from "~/store/page-info";
+
+import {layCuocThi, xoaCuocThi} from "~/services/thi/cuoc-thi";
+import {DeleteOutlined, DiffOutlined, EditOutlined, EllipsisOutlined} from "@ant-design/icons";
+import CuocThiModal from "./CuocThiModal";
+import dayjs from "dayjs";
+import {useRouter} from "next/navigation";
+
+
+export default function CuocThi() {
+
+    const setPageInfo = usePageInfoStore(state => state.setPageInfo);
+    const { message } = App.useApp();
+    const router = useRouter();
+
+    const [data, setData] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [modalOpen, setModalOpen] = useState(false)
+    const [editing, setEditing] = useState(null)
+    const [deletingId, setDeletingId] = useState(null);
+    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+
+
+    const [pagination, setPagination] = useState({
+        current: 1,
+        pageSize: 10,
+        total: 0
+    });
+
+    const [searchText, setSearchText] = useState("");
+    const debouncedSearch = useDebounce(searchText, 400);
+
+    const [sorter, setSorter] = useState({
+        sortField: undefined,
+        sortType: undefined,
+    });
+
+
+    // ===== fetch =====
+
+    const fetchData = async (
+        page = 1,
+        size = 10,
+        search = "",
+        sortField,
+        sortType
+    ) => {
+
+        setLoading(true);
+
+        try {
+
+            const res = await layCuocThi({
+                page,
+                size,
+                search,
+                sortField,
+                sortType
+            });
+
+            setData(res.data || []);
+
+            setPagination({
+                current: res.page,
+                pageSize: res.size,
+                total: res.total
+            });
+
+        } catch (e) {
+
+            message.error(e.message);
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
+    };
+
+    const handleDelete = (id) => {
+        setDeletingId(id);
+        setDeleteModalVisible(true);
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await xoaCuocThi(deletingId);
+            message.success("Xóa thành công");
+
+            if (data.length === 1 && pagination.current > 1)
+                fetchData(pagination.current - 1, pagination.pageSize, debouncedSearch,sorter.sortField,
+                    sorter.sortType);
+            else
+                fetchData(
+                    pagination.current,
+                    pagination.pageSize,
+                    debouncedSearch,
+                    sorter.sortField,
+                    sorter.sortType
+                );
+
+        } finally {
+            setDeleteModalVisible(false);
+            setDeletingId(null);
+        }
+    };
+
+
+    // ===== search =====
+
+    useEffect(() => {
+
+        fetchData(
+            1,
+            pagination.pageSize,
+            debouncedSearch,
+            sorter.sortField,
+            sorter.sortType
+        );
+
+    }, [debouncedSearch]);
+
+
+    // ===== first load =====
+
+    useEffect(() => {
+
+        fetchData();
+
+        setPageInfo({
+            title: "Cuộc thi"
+        });
+
+    }, []);
+
+
+
+    // ===== columns =====
+
+    const columns = [
+
+        {
+            title: "#",
+            width: 60,
+            align: "right",
+            render: (_, __, index) =>
+                (pagination.current - 1) *
+                pagination.pageSize +
+                index +
+                1
+        },
+
+        {
+            title: "Tên cuộc thi",
+            dataIndex: "ten",
+            sorter: true,
+            width: 300,
+        },
+
+        {
+            title: "Mô tả",
+            dataIndex: "mo_ta",
+            sorter: true,
+        },
+        {
+            title: "Ngày bắt đầu",
+            dataIndex: "thoi_gian_bat_dau",
+            sorter: true,
+            render: (text) => dayjs(text).format("DD-MM-YYYY HH:mm:ss"),
+        },
+        {
+            title: "Ngày kết thúc",
+            dataIndex: "thoi_gian_ket_thuc",
+            sorter: true,
+            render: (text) => dayjs(text).format("DD-MM-YYYY HH:mm:ss"),
+        },
+        {
+            title: "Trạng thái",
+            dataIndex: "trang_thai",
+            sorter: true,
+            render: (text) => text ? 'Mở' : 'Đóng'
+        },
+        {
+            title: 'Hành động',
+            width: 150,
+            render: (_, record) => {
+
+                const items = [
+                    {
+                        key: 'edit',
+                        label: 'Sửa',
+                        icon: <EditOutlined />,
+                        onClick: () => {
+                            setEditing(record);
+                            setModalOpen(true);
+                        }
+                    },
+                    {
+                        key: 'dot-thi',
+                        label: 'Đợt thi',
+                        icon: <DiffOutlined />,
+                        onClick: () => {
+                           router.push(`/admin/cuoc-thi/${record.id}/dot-thi`);
+                        }
+                    },
+                    {
+                        key: 'delete',
+                        label: 'Xóa',
+                        danger: true,
+                        icon: <DeleteOutlined />,
+                        onClick: () => handleDelete(record.id)
+                    }
+                ]
+
+                return (
+                    <Dropdown menu={{ items }}>
+                        <Button
+                            type="text"
+                            icon={<EllipsisOutlined />}
+                        />
+                    </Dropdown>
+                )
+            }
+        }
+
+    ];
+
+
+    return (
+
+        <div style={{ padding: 16 }}>
+
+            <div className="flex justify-between">
+
+                <Input.Search
+                    placeholder="Tìm cuộc thi..."
+                    allowClear
+                    style={{ width: 300 }}
+                    onChange={e =>
+                        setSearchText(e.target.value)
+                    }
+                />
+
+                <Button
+                    type="primary"
+                    onClick={() => {
+                    setEditing(null)
+                    setModalOpen(true)
+                }}>
+                    Thêm cuộc thi
+                </Button>
+
+            </div>
+
+
+            <Table
+                style={{ marginTop: 16 }}
+                rowKey="id"
+                loading={loading}
+                columns={columns}
+                dataSource={data}
+                pagination={pagination}
+
+                onChange={(p, filters, sorterValue) => {
+
+                    const sortField = sorterValue.field;
+
+                    const sortType =
+                        sorterValue.order === "ascend"
+                            ? "asc"
+                            : sorterValue.order === "descend"
+                                ? "desc"
+                                : undefined;
+
+                    setSorter({
+                        sortField,
+                        sortType
+                    });
+
+                    fetchData(
+                        p.current,
+                        p.pageSize,
+                        debouncedSearch,
+                        sortField,
+                        sortType
+                    );
+
+                }}
+            />
+
+            <CuocThiModal
+                open={modalOpen}
+                data={editing}
+                onClose={() => setModalOpen(false)}
+                onSuccess={() => {
+                    setModalOpen(false)
+                    fetchData(
+                        pagination.current,
+                        pagination.pageSize,
+                        debouncedSearch,
+                        sorter.sortField,
+                        sorter.sortType
+                    )
+                }}
+            />
+            <Modal
+                title="Xác nhận xóa"
+                open={deleteModalVisible}
+                onOk={confirmDelete}
+                onCancel={() => setDeleteModalVisible(false)}
+                okButtonProps={{danger: true}}
+                okText={'Xóa'}
+                cancelText={'Thoát'}
+            >
+                Bạn có chắc muốn xóa cuộc thi này không?
+            </Modal>
+
+        </div>
+
+    );
+
+}
