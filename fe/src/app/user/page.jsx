@@ -210,14 +210,14 @@ export default function Page() {
     return (
 
         <div
-            className={"p-5 max-w-[1200] my-0 mx-auto flex flex-col gap-3"}
+            className="mx-auto flex w-full max-w-7xl flex-col gap-4"
 
         >
             <Profile/>
 
-            <Card>
-                <div className={'flex justify-between'}>
-                    <Title level={3}>
+            <Card className="rounded-3xl shadow-sm">
+                <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <Title level={3} className="!mb-0">
                         Lịch sử thi
                     </Title>
                     <Button
@@ -239,6 +239,7 @@ export default function Page() {
                     columns={columns}
                     dataSource={data}
                     pagination={false}
+                    scroll={{x: 900}}
                 />
 
             </Card>

@@ -1,4 +1,5 @@
 import api from "~/services/api";
+import { ensureUploadableFile } from "~/services/file";
 
 const BASE_PATH = "/trac-nghiem";
 
@@ -65,6 +66,7 @@ export async function taiTemplate() {
 }
 
 export async function importTracNghiem(file) {
+    ensureUploadableFile(file);
 
     const form =
         new FormData()
@@ -79,10 +81,9 @@ export async function importTracNghiem(file) {
             "/trac-nghiem/import",
             form,
             {
-                headers: {
-                    "Content-Type":
-                        "multipart/form-data"
-                }
+                timeout: 10 * 60 * 1000,
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity,
             }
         )
 

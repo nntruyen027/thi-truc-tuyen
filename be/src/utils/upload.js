@@ -1,6 +1,7 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { randomUUID } = require("crypto");
 
 
 // thư mục gốc project
@@ -49,7 +50,7 @@ const storage =
                 );
 
             const name =
-                Date.now() + ext;
+                `${Date.now()}-${randomUUID()}${ext.toLowerCase()}`;
 
             cb(null, name);
 
@@ -59,4 +60,9 @@ const storage =
 
 
 module.exports =
-    multer({storage});
+    multer({
+        storage,
+        limits: {
+            fileSize: 50 * 1024 * 1024,
+        },
+    });

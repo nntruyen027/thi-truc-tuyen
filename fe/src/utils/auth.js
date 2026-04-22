@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useAuthStore } from "~/store/auth";
+import { API_BASE_URL } from "~/config/env";
 
 export function isTokenExpired(token) {
     if (!token) return true;
@@ -21,7 +22,7 @@ export async function isTokenValid() {
 
     try {
         const res = await axios.get(
-            `localhost:3000/api/auth/me`,
+            `${API_BASE_URL}/auth/me`,
             {
                 headers: { Authorization: `Bearer ${access}` }
             }

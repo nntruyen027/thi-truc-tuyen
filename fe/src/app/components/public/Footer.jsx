@@ -1,13 +1,10 @@
 'use client';
 
-import {Col, Layout, Row, theme, Typography} from "antd";
+import {Col, Layout, Row, Typography} from "antd";
 import {layCauHinh} from "~/services/cau-hinh";
 import {useEffect, useState} from "react";
 
 export default function Footer() {
-    const {token} = theme.useToken();
-
-
     const [leftFooter, setLeftFooter] = useState({
         tieuDe: "",
         noiDung: ""
@@ -21,8 +18,10 @@ export default function Footer() {
     const [banQuyen, setBanQuyen] = useState("");
 
 
-        const load = async () => {
+    useEffect(() => {
+        let active = true;
 
+        const load = async () => {
             const resBanQuyen =
                 await layCauHinh('van-ban-ban-quyen')
 
@@ -54,8 +53,9 @@ export default function Footer() {
 
 
             const valBanQuyen =
-                resBanQuyen.data.gia_tri
+                resBanQuyen?.data?.gia_tri || ""
 
+            if (!active) return;
 
             setBanQuyen(valBanQuyen)
 
@@ -69,26 +69,27 @@ export default function Footer() {
                 noiDung: valRightFooter?.noiDung || ''
             })
 
-        }
+        };
 
+        void load()
 
-        useEffect(() => {
-            load()
-        }, [])
+        return () => {
+            active = false;
+        };
+    }, [])
 
     return (
-        <Layout.Footer className={'mt-10'}>
+        <Layout.Footer className="mt-10 border-t border-slate-200 bg-white px-4 py-8 sm:px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-7xl">
+            <Row gutter={[24, 24]} >
+                <Col xs={24} lg={12}>
 
-            <Row gutter={[16, 16]} >
-
-                <Col md={24} lg={12}>
-
-                    <Typography.Title level={4} >
+                    <Typography.Title level={4} className="!mb-3">
                         {leftFooter.tieuDe}
                     </Typography.Title>
 
                     <div
-                        className={'font-semibold'}
+                        className="font-semibold text-slate-600"
                         dangerouslySetInnerHTML={{
                             __html: leftFooter.noiDung
                         }}
@@ -97,14 +98,14 @@ export default function Footer() {
                 </Col>
 
 
-                <Col md={24} lg={12}>
+                <Col xs={24} lg={12}>
 
-                    <Typography.Title level={4}>
+                    <Typography.Title level={4} className="!mb-3">
                         {rightFooter.tieuDe}
                     </Typography.Title>
 
                     <div
-                        className={'font-semibold'}
+                        className="font-semibold text-slate-600"
                         dangerouslySetInnerHTML={{
                             __html: rightFooter.noiDung
                         }}
@@ -120,11 +121,12 @@ export default function Footer() {
                     marginTop: 16,
                     textAlign: "center"
                 }}
-                className={'font-semibold'}
+                className="border-t border-slate-200 pt-4 font-semibold text-slate-500"
                 dangerouslySetInnerHTML={{
                     __html: banQuyen
                 }}
             />
+            </div>
 
         </Layout.Footer>
     )

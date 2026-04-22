@@ -7,6 +7,7 @@ import {useState} from "react";
 import {login} from "~/services/auth";
 import {useRouter} from "next/navigation";
 import Link from "next/link";
+import AuthShell from "~/app/components/common/AuthShell";
 
 export default function DangKy() {
 
@@ -45,35 +46,16 @@ export default function DangKy() {
 
     return (
 
-        <div
-            className="min-h-screen flex items-center justify-center bg-cover bg-center"
-            style={{
-                backgroundImage: "url('/bg_auth.jpg')"
-            }}
+        <AuthShell
+            title="Đăng nhập"
+            subtitle="Đăng nhập để tham gia thi hoặc truy cập khu vực quản trị."
         >
-
-
-            <div
-                className="
-                relative
-                w-full
-                max-w-md
-                bg-white/95
-                backdrop-blur
-                p-6
-                rounded-xl
-                shadow-2xl
-                "
-            >
-
-                <h2 className="text-xl font-bold text-center mb-4 text-[#1948be] uppercase">
-                    Đăng nhập
-                </h2>
 
                 <Form
                     form={form}
                     layout="vertical"
                     onFinish={onDangNhap}
+                    size="large"
                 >
 
 
@@ -124,15 +106,12 @@ export default function DangKy() {
 
                 <Divider />
 
-                <div className="text-center">
+                <div className="text-center text-sm text-slate-600">
                     <Link href="/dang-ky">
                         Chưa có tài khoản? Đăng ký
                     </Link>
                 </div>
-
-            </div>
-
-        </div>
+        </AuthShell>
 
     );
 

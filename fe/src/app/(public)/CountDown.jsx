@@ -87,82 +87,44 @@ export default function CountDown({time}) {
     if (!t) return null;
 
 
-    const pad = (v) =>
-        String(v).padStart(2, "0");
+    const tongNgay =
+        (t.thang || 0) * 30
+        + (t.tuan || 0) * 7
+        + (t.ngay || 0);
+
+    const blocks = [
+        {label: "Ngày", value: tongNgay},
+        {label: "Giờ", value: t.gio},
+        {label: "Phút", value: t.phut},
+        {label: "Giây", value: t.giay},
+    ];
 
 
     return (
-        <div className={'flex flex-col text-center pb-3 m-0 text-lg mt-3 rounded-2xl overflow-hidden'}>
+        <div className="mt-3 overflow-hidden rounded-3xl border border-slate-200 bg-white text-center shadow-sm">
             <h3 style={{
                 background: colorPrimary,
                 margin: '0'
-            }} className={'text-white p-3 uppercase'}>Thời gian còn lại của cuộc thi</h3>
+            }} className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white md:text-base">
+                Thời gian còn lại của cuộc thi
+            </h3>
 
             <div
-                className="
-                p-10
-            w-full
-            text-center
-            font-bold
-            flex
-            justify-center
-            gap-2
-            bg-gray-200
-        "
-
+                className="grid grid-cols-2 gap-3 bg-slate-100 p-4 md:grid-cols-4"
             >
-
-                {t.thang > 0 &&
-                    <Card style={{
-                        width: "6rem",
-                        color: colorPrimary
-                    }}>
-                        <div style={{fontFamily: "Roboto", fontSize: 50}}>{t.thang}</div>
-                        <div className={'uppercase'}>tháng</div>
-                    </Card>}
-
-                {(t.tuan > 0 || t.thang> 0) &&
-                    <Card style={{
-                        width: "6rem",
-                        color: colorPrimary
-                    }}>
-                        <div style={{fontFamily: "Roboto", fontSize: 50}}>{t.tuan}</div>
-                        <div className={'uppercase'}>Tuần</div>
-                    </Card>}
-
-                {(t.ngay > 0 || t.tuan > 0 || t.thang> 0) &&
-                    <Card style={{
-                        width: "6rem",
-                        color: colorPrimary
-                    }}>
-                        <div style={{fontFamily: "Roboto", fontSize: 50}}>{t.ngay}</div>
-                        <div className={'uppercase'}>Ngày</div>
-                    </Card>}
-
-                <Card style={{
-                    width: "6rem",
-                    color: colorPrimary
-                }}>
-                    <div style={{fontFamily: "Roboto", fontSize: 50}}>{t.gio}</div>
-                    <div className={'uppercase'}>Giờ</div>
-                </Card>
-
-                <Card style={{
-                    width: "6rem",
-                    color: colorPrimary
-                }}>
-                    <div style={{fontFamily: "Roboto", fontSize: 50}}>{t.phut}</div>
-                    <div className={'uppercase'}>Phút</div>
-                </Card>
-
-                <Card style={{
-                    width: "6rem",
-                    color: colorPrimary
-                }}>
-                    <div style={{fontFamily: "Roboto", fontSize: 50}}>{t.giay}</div>
-                    <div className={'uppercase'}>Giây</div>
-                </Card>
-
+                {blocks.map((block) => (
+                    <Card
+                        key={block.label}
+                        styles={{body: {padding: 14}}}
+                        className="w-full rounded-2xl border-none text-center shadow-sm"
+                        style={{color: colorPrimary}}
+                    >
+                        <div style={{fontFamily: "Roboto", fontSize: 40, lineHeight: 1}}>{block.value}</div>
+                        <div className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                            {block.label}
+                        </div>
+                    </Card>
+                ))}
             </div>
         </div>
     );

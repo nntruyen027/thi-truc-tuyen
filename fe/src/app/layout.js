@@ -16,7 +16,7 @@ export default function RootLayout({children}) {
 
     return (
         <html lang="en">
-        <body className="h-screen w-screen p-0 m-0 overflow-x-hidden">
+        <body className="min-h-screen bg-slate-50 p-0 m-0 overflow-x-hidden">
         <ClientLayout>
             {children}
         </ClientLayout>

@@ -14,6 +14,7 @@ import { useDonViSelect } from "~/hook/useDonVi";
 import { dangKy } from "~/services/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import AuthShell from "~/app/components/common/AuthShell";
 
 export default function DangKy() {
 
@@ -50,35 +51,16 @@ export default function DangKy() {
 
     return (
 
-        <div
-            className="min-h-screen flex items-center justify-center bg-cover bg-center"
-            style={{
-                backgroundImage: "url('/bg_auth.jpg')"
-            }}
+        <AuthShell
+            title="Đăng ký tài khoản"
+            subtitle="Tạo tài khoản mới để tham gia kỳ thi trực tuyến."
         >
-
-
-            <div
-                className="
-                relative
-                w-full
-                max-w-md
-                bg-white/95
-                backdrop-blur
-                p-6
-                rounded-xl
-                shadow-2xl
-                "
-            >
-
-                <h2 className="text-xl font-bold text-center mb-4 text-[#1948be] uppercase">
-                    Đăng ký tài khoản
-                </h2>
 
                 <Form
                     form={form}
                     layout="vertical"
                     onFinish={onDangKy}
+                    size="large"
                 >
 
 
@@ -150,9 +132,9 @@ export default function DangKy() {
                     </Form.Item>
 
 
-                    <Row gutter={16}>
+                    <Row gutter={[16, 0]}>
 
-                        <Col xs={24} lg={12}>
+                        <Col xs={24} md={12}>
                             <Form.Item
                                 label="Mật khẩu"
                                 name="password"
@@ -165,7 +147,7 @@ export default function DangKy() {
                             </Form.Item>
                         </Col>
 
-                        <Col xs={24} lg={12}>
+                        <Col xs={24} md={12}>
                             <Form.Item
                                 label="Nhập lại mật khẩu"
                                 name="repeatPassword"
@@ -203,21 +185,18 @@ export default function DangKy() {
 
                 </Form>
 
-                <div className="text-red-600 text-sm mt-3 text-center">
+                <div className="mt-3 text-center text-sm text-red-600">
                     (*) Mỗi thí sinh chỉ đăng ký 1 tài khoản
                 </div>
 
                 <Divider />
 
-                <div className="text-center">
+                <div className="text-center text-sm text-slate-600">
                     <Link href="/login">
                         Đã có tài khoản? Đăng nhập
                     </Link>
                 </div>
-
-            </div>
-
-        </div>
+        </AuthShell>
 
     );
 

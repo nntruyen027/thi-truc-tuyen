@@ -37,7 +37,7 @@ const modules = {
                     if (!file) return;
 
                     const res = await uploadFile(file);
-                    const url = res.url;
+                    const url = res.url || res.duong_dan;
 
                     const quill = this.quill;
                     const range = quill.getSelection(true);

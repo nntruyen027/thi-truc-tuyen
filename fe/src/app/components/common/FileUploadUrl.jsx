@@ -3,7 +3,7 @@
 import {Button, Image, message, Popconfirm, Space, Typography, Upload} from "antd";
 import {DeleteOutlined, EyeOutlined, FileOutlined, UploadOutlined} from "@ant-design/icons";
 import {useState} from "react";
-import {uploadFile} from "@/services/file";
+import {getPublicFileUrl, uploadFile} from "~/services/file";
 
 const {Link, Text} = Typography;
 
@@ -18,15 +18,17 @@ export default function FileUploadUrl({
     const [loading, setLoading] = useState(false);
     const [previewOpen, setPreviewOpen] = useState(false);
 
-    const handleUpload = async ({file}) => {
+    const handleUpload = async ({file, onSuccess, onError}) => {
         try {
             setLoading(true);
             const res = await uploadFile(file);
-            const url = (res.url);
+            const url = res.duong_dan;
             onChange?.(url);
+            onSuccess?.(res);
             message.success("Tải file thành công");
-        } catch {
-            message.error("Tải file thất bại");
+        } catch (error) {
+            onError?.(error);
+            message.error(error.message || "Tải file thất bại");
         } finally {
             setLoading(false);
         }
@@ -37,6 +39,7 @@ export default function FileUploadUrl({
         message.success("Đã xoá file");
     };
 
+    const fileUrl = value ? getPublicFileUrl(value) : "";
     const isImage = value && /\.(jpg|jpeg|png|gif|webp)$/i.test(value);
     const isPdf = value && /\.pdf$/i.test(value);
 
@@ -66,7 +69,7 @@ export default function FileUploadUrl({
                             {isImage ? (
                                 <>
                                     <Image
-                                        src={value}
+                                        src={fileUrl}
                                         width={80}
                                         style={{borderRadius: 6}}
                                         preview={{
@@ -81,7 +84,7 @@ export default function FileUploadUrl({
                                     />
                                 </>
                             ) : (
-                                <Link href={value} target="_blank">
+                                <Link href={fileUrl} target="_blank">
                                     <Button
                                         size="small"
                                         icon={isPdf ? <EyeOutlined/> : <FileOutlined/>}

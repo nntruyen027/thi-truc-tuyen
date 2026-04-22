@@ -45,15 +45,15 @@ export default function Profile() {
         }
     }
 
-    return <Card>
+    return <Card className="rounded-3xl shadow-sm">
         <Row gutter={[16, 16]}>
-            <Col md={24} lg={12}>
+            <Col xs={24} xl={12}>
                 <Row gutter={[16, 16]}>
-                    <Col md={24} lg={8}>
+                    <Col xs={24} sm={8}>
                         <span className={'text-lg font-bold'}>Họ tên thí sinh: </span>
                     </Col>
-                    {isEditName ? <Col md={24} lg={16}>
-                        <div className={'flex gap-3'}>
+                    {isEditName ? <Col xs={24} sm={16}>
+                        <div className="flex flex-col gap-3 sm:flex-row">
                             <Input value={hoTen} onChange={e => setHoTen(e.target.value)} size={'small'} placeholder="Nhập họ tên" />
                             <Button type={'default'} onClick={handleLuuTen}><SaveOutlined /></Button>
                             <Button onClick={() => {
@@ -62,7 +62,7 @@ export default function Profile() {
                             }} danger><CloseOutlined/></Button>
                         </div>
 
-                    </Col> : <Col md={24} lg={16}>
+                    </Col> : <Col xs={24} sm={16}>
                         <span onClick={() => setIsEditName(true)} className={'text-lg font-semibold'}>{user?.ho_ten}</span>
                     </Col>}
                 </Row>
@@ -70,14 +70,14 @@ export default function Profile() {
 
 
             </Col>
-            <Col md={24} lg={12}>
+            <Col xs={24} xl={12}>
                 <Row gutter={[16, 16]}>
-                    <Col md={24} lg={8}>
+                    <Col xs={24} sm={8}>
                         <span className={'text-lg font-bold'}>Đơn vị: </span>
                     </Col>
                     {
-                        isEditDonVi ? <Col md={24} lg={16}>
-                            <div className={'flex gap-3'}>
+                        isEditDonVi ? <Col xs={24} sm={16}>
+                            <div className="flex flex-col gap-3 sm:flex-row">
                                 <Select
                                     value={donViId}
                                     onChange={e => setDonViId(e)}
@@ -110,12 +110,12 @@ export default function Profile() {
                                 />
                                 <Button type={'default'} onClick={handleLuuDonVi}><SaveOutlined /></Button>
                                 <Button onClick={() => {
-                                    setIsEditName(false)
-                                    setHoTen(user?.don_vi?.id || '')
+                                    setIsEditDonVi(false)
+                                    setDonViId(user?.don_vi?.id)
                                 }} danger><CloseOutlined/></Button>
                             </div>
 
-                        </Col> : <Col md={24} lg={8}>
+                        </Col> : <Col xs={24} sm={16}>
                             <span onClick={() => setIsEditDonVi(true)} className={'text-lg font-semibold'}>{user?.don_vi?.ten}</span>
                         </Col>
                     }

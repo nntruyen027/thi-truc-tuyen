@@ -13,28 +13,32 @@ export default function TaiLieuKhac() {
         useState([]);
     const {token} = theme.useToken();
 
-
-    const load = async () => {
-
-        const res =
-            await layCauHinh(
-                "document"
-            );
-
-        if (!res.data) return;
-
-        const val =
-            JSON.parse(
-                res.data.gia_tri
-            );
-
-        setDocs(val || []);
-
-    };
-
-
     useEffect(() => {
-        load();
+        let active = true;
+
+        const load = async () => {
+
+            const res =
+                await layCauHinh(
+                    "document"
+                );
+
+            if (!active || !res.data) return;
+
+            const val =
+                JSON.parse(
+                    res.data.gia_tri
+                );
+
+            setDocs(val || []);
+
+        };
+
+        void load();
+
+        return () => {
+            active = false;
+        };
     }, []);
 
 
@@ -43,14 +47,18 @@ export default function TaiLieuKhac() {
 
 
     return (
-        <Card id={'document'}
-              bodyStyle={{padding: 0}}
-              title={<Typography.Title style={{
+        <Card
+            id={'document'}
+            className="overflow-hidden rounded-3xl border border-slate-200 shadow-sm"
+            styles={{body:{padding: 0}}}
+            title={<Typography.Title style={{
                   color: token.colorPrimary,
                   margin: "12px"
-              }} className={'text-center uppercase'}>{'Tài liệu'}</Typography.Title>}>
+              }} className={'text-center text-xl uppercase md:text-2xl'}>{'Tài liệu'}</Typography.Title>}
+        >
         <Collapse
             accordion={false}
+            className="border-0"
         >
 
             {docs.map((d) => (
@@ -70,9 +78,11 @@ export default function TaiLieuKhac() {
                                 "#zoom=100&navpanes=0"
                             }
                             width="100%"
-                            height="800"
+                            height="100%"
                             style={{
-                                border: "none"
+                                border: "none",
+                                height: "min(75vh, 800px)",
+                                minHeight: "420px"
                             }}
                         />
 
@@ -83,7 +93,7 @@ export default function TaiLieuKhac() {
             ))}
 
         </Collapse>
-            </Card>
+        </Card>
 
     );
 

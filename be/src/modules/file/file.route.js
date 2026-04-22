@@ -1,11 +1,15 @@
 const router =
     require("express").Router();
+const fs = require("fs");
+const path = require("path");
+const fsp = require("fs/promises");
+const { randomUUID } = require("crypto");
 
 const upload =
     require("../../utils/upload");
 
-const query =
-    require("./file.query");
+const service =
+    require("./file.service");
 
 const auth =
     require("../../middlewares/auth");
@@ -13,36 +17,137 @@ const auth =
 const resUtil =
     require("../../utils/response");
 
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
+
+const isRawBinaryRequest = (req) => {
+    const contentType = String(req.headers["content-type"] || "").toLowerCase();
+
+    return contentType.includes("application/octet-stream")
+        || contentType.includes("binary/octet-stream");
+};
+
+const runMulterSingle = (req, res) =>
+    new Promise((resolve, reject) => {
+        upload.single("file")(req, res, (err) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+
+            resolve(req.file);
+        });
+    });
+
+const writeRawBinaryToDisk = async (req) => {
+    const rawName =
+        decodeURIComponent(String(req.headers["x-file-name"] || "upload.bin"));
+
+    const originalname =
+        path.basename(rawName) || "upload.bin";
+
+    const ext =
+        path.extname(originalname) || ".bin";
+
+    const year =
+        new Date().getFullYear().toString();
+
+    const uploadDir =
+        path.resolve(process.cwd(), "uploads", year);
+
+    await fsp.mkdir(uploadDir, {recursive: true});
+
+    const filename =
+        `${Date.now()}-${randomUUID()}${ext.toLowerCase()}`;
+
+    const filePath =
+        path.join(uploadDir, filename);
+
+    const writeStream =
+        fs.createWriteStream(filePath);
+
+    let size = 0;
+    let settled = false;
+
+    return await new Promise((resolve, reject) => {
+        const fail = async (error) => {
+            if (settled) return;
+            settled = true;
+
+            writeStream.destroy();
+            await fsp.unlink(filePath).catch(() => null);
+            reject(error);
+        };
+
+        req.on("data", (chunk) => {
+            size += chunk.length;
+
+            if (size > MAX_FILE_SIZE_BYTES) {
+                void fail(new Error("Kích thước file vượt quá giới hạn 50MB"));
+                req.destroy();
+            }
+        });
+
+        req.on("error", (error) => {
+            void fail(error);
+        });
+
+        writeStream.on("error", (error) => {
+            void fail(error);
+        });
+
+        writeStream.on("finish", () => {
+            if (settled) return;
+            settled = true;
+
+            resolve({
+                fieldname: "file",
+                originalname,
+                encoding: "7bit",
+                mimetype: req.headers["content-type"] || "application/octet-stream",
+                destination: uploadDir,
+                filename,
+                path: filePath,
+                size,
+            });
+        });
+
+        req.pipe(writeStream);
+    });
+};
+
 
 router.post(
     "/upload",
     auth,
-    upload.single("file"),
     async (req, res) => {
+        try {
+            const uploadedFile =
+                isRawBinaryRequest(req)
+                    ? await writeRawBinaryToDisk(req)
+                    : await runMulterSingle(req, res);
 
-        const f = req.file;
+            if (!uploadedFile) {
+                throw new Error("Không tìm thấy file tải lên");
+            }
 
-        const fullPath = f.path;
+            const data =
+                await service.createFile({
+                    file: uploadedFile,
+                    userId: req.user.id,
+                });
 
-        const relative =
-            fullPath.split("uploads")[1];
+            resUtil.ok(res, data);
+        } catch (err) {
+            console.error("[file/upload]", {
+                message: err?.message || String(err),
+                contentType: req.headers["content-type"],
+                hasFile: Boolean(req.file),
+                fileKeys: req.file ? Object.keys(req.file) : [],
+                bodyKeys: req.body ? Object.keys(req.body) : [],
+            });
 
-        const duongDan =
-            "uploads" +
-            relative.replace(/\\/g, "/");
-
-        const data =
-            await query.themFile(
-                f.filename,
-                f.originalname,
-                duongDan,
-                f.mimetype,
-                f.size,
-                req.user.id
-            );
-
-        resUtil.ok(res, data);
-
+            resUtil.error(res, err);
+        }
     }
 );
 
@@ -59,11 +164,11 @@ router.get(
             } = req.query;
 
             const data =
-                await query.layFile(
+                await service.listFiles({
                     page,
                     size,
-                    search
-                );
+                    search,
+                });
 
             resUtil.ok(
                 res,
@@ -91,7 +196,7 @@ router.delete(
         try {
 
             const data =
-                await query.xoaFile(
+                await service.deleteFile(
                     req.params.id
                 );
 

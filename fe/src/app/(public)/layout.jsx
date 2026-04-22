@@ -1,10 +1,8 @@
 'use client'
 
-import {Layout, theme, Typography} from "antd";
+import {Layout} from "antd";
 import {Raleway} from 'next/font/google';
 import Footer from "~/app/components/public/Footer";
-
-const {Title} = Typography;
 
 const raleway = Raleway({
     subsets: ['latin', 'vietnamese'],
@@ -14,24 +12,16 @@ const raleway = Raleway({
 });
 
 export default function PublicLayout({children}) {
-    const {token} = theme.useToken();
-
-
-
-
     return (
-
         <Layout
-            className={raleway.className}
+            className={`${raleway.className} bg-slate-50 text-slate-900`}
             style={{
                 minHeight: "100vh"
             }}
         >
-
-            <Layout.Content>
+            <Layout.Content className="flex-1">
                 {children}
             </Layout.Content>
-
 
             <Footer />
         </Layout>

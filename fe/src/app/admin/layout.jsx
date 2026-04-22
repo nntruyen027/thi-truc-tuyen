@@ -1,21 +1,20 @@
 "use client";
 
-import {Avatar, Button, Dropdown, Layout, Menu, theme, Typography,} from "antd";
-
+import {Avatar, Button, Drawer, Dropdown, Grid, Layout, Menu, theme, Typography} from "antd";
 import {
     BankOutlined,
     BarChartOutlined,
     FundOutlined,
     LogoutOutlined,
     MenuFoldOutlined,
+    MenuOutlined,
     MenuUnfoldOutlined,
     SafetyOutlined,
     SettingOutlined,
     TableOutlined,
-    UsergroupAddOutlined,
-    UserOutlined
+    UserOutlined,
+    UsergroupAddOutlined
 } from "@ant-design/icons";
-
 import {useEffect, useMemo, useState} from "react";
 import {usePathname, useRouter} from "next/navigation";
 import {useModal} from "~/store/modal";
@@ -23,8 +22,6 @@ import {useAuthStore} from "~/store/auth";
 import {usePageInfoStore} from "~/store/page-info";
 
 const {Sider, Header, Content} = Layout;
-
-/* ================= MENU CONFIG ================= */
 
 const menuConfig = [
     {
@@ -46,7 +43,7 @@ const menuConfig = [
     {
         key: "cuoc-thi",
         label: "Quản lý cuộc thi",
-        icon: <BankOutlined />,
+        icon: <BankOutlined/>,
         children: [
             {
                 key: "/admin/cuoc-thi",
@@ -61,7 +58,7 @@ const menuConfig = [
     {
         key: "ket-qua",
         label: "Kết quả",
-        icon: <FundOutlined />,
+        icon: <FundOutlined/>,
         children: [
             {
                 key: "/admin/ket-qua-trac-nghiem",
@@ -91,7 +88,7 @@ const menuConfig = [
     {
         key: "cai-dat",
         label: "Cài đặt",
-        icon: <SettingOutlined />,
+        icon: <SettingOutlined/>,
         children: [
             {
                 key: "/admin/cai-dat-chung",
@@ -105,30 +102,27 @@ const menuConfig = [
     },
 ];
 
-/* ================= UTILS ================= */
-
-
-
 const normalizeMenu = (menus) =>
-    menus.map(m => {
-        if (m.children?.length) {
+    menus.map((menu) => {
+        if (menu.children?.length) {
             return {
-                ...m,
-                children: normalizeMenu(m.children),
+                ...menu,
+                children: normalizeMenu(menu.children),
             };
         }
-        return m;
-    });
 
-/* ================= COMPONENT ================= */
+        return menu;
+    });
 
 export default function RootLayout({children}) {
     const [collapsed, setCollapsed] = useState(false);
-    const [checked, setChecked] = useState(false);
-    const title = usePageInfoStore((state) => state.title)
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const title = usePageInfoStore((state) => state.title);
 
     const router = useRouter();
     const pathname = usePathname();
+    const screens = Grid.useBreakpoint();
+    const isMobile = !screens.lg;
 
     const {
         token: {colorBgContainer, borderRadiusLG, colorPrimary},
@@ -137,8 +131,6 @@ export default function RootLayout({children}) {
     const {SetIsUpdatePassOpen, setIsEditOpen} = useModal();
     const {user, clearAuth} = useAuthStore();
 
-    /* ================= MENU SAU KHI CHUẨN HOÁ ================= */
-
     const normalizedMenu = useMemo(
         () => normalizeMenu(menuConfig),
         []
@@ -146,44 +138,23 @@ export default function RootLayout({children}) {
 
     const menuItems = useMemo(() => {
         const filterMenu = (menus) =>
-            menus
-                .map(m => ({
-                    ...m,
-                    children: m.children ? filterMenu(m.children) : undefined,
-                }));
+            menus.map((menu) => ({
+                ...menu,
+                children: menu.children ? filterMenu(menu.children) : undefined,
+            }));
 
         return filterMenu(normalizedMenu);
-    }, [user]);
-
-    /* ================= CHECK URL PERMISSION ================= */
+    }, [normalizedMenu]);
 
     useEffect(() => {
-        if (!user) return
-
-        if (user.role !== "admin") {
-
-            router.replace("/")
-
+        if (user && user.role !== "admin") {
+            router.replace("/");
         }
+    }, [router, user]);
 
-        const allRoutes = [];
-        const collectRoutes = (menus) => {
-            menus.forEach(m => {
-                if (m.key?.startsWith("/")) allRoutes.push(m);
-                if (m.children) collectRoutes(m.children);
-            });
-        };
-
-        collectRoutes(normalizedMenu);
-
-
-        setChecked(true);
-    }, [user, pathname]);
-
-
-    if (!checked) return;
-
-    /* ================= HANDLERS ================= */
+    if (!user || user.role !== "admin") {
+        return null;
+    }
 
     const handleLogout = () => {
         clearAuth();
@@ -211,62 +182,91 @@ export default function RootLayout({children}) {
         },
     ];
 
-    /* ================= RENDER ================= */
+    const selectedKeys = [pathname];
+    const openKeys = normalizedMenu
+        .filter((item) =>
+            item.children?.some((child) => pathname.startsWith(child.key))
+        )
+        .map((item) => item.key);
+
+    const handleMenuClick = ({key}) => {
+        if (key.startsWith("/")) {
+            router.push(key);
+            setMobileMenuOpen(false);
+        }
+    };
+
+    const menuNode = (
+        <Menu
+            mode="inline"
+            items={menuItems}
+            selectedKeys={selectedKeys}
+            defaultOpenKeys={openKeys}
+            onClick={handleMenuClick}
+            style={{borderInlineEnd: 0}}
+        />
+    );
 
     return (
-        <Layout>
-            <Sider
-                width={250}
-                collapsible
-                collapsed={collapsed}
-                trigger={null}
-                style={{
-                    height: "100vh",
-                    background: "white",
-                    overflowY: "auto",
-                }}
-            >
-                {!collapsed && (
-                    <div style={{background: colorPrimary}}
-                         className="font-['Times_New_Roman'] text-lg text-center p-2 text-white ">
-                        Thi trực tuyến
-                    </div>
-                )}
-
-                <Menu
-                    mode="inline"
-                    items={menuItems}
-                    onClick={({key}) =>
-                        key.startsWith("/") && router.push(key)
-                    }
-                />
-            </Sider>
-
-            <Layout>
-                <Header
-                    className="flex justify-between items-center"
-                    style={{background: colorBgContainer, paddingLeft: 10}}
+        <Layout className="min-h-screen bg-slate-100">
+            {!isMobile && (
+                <Sider
+                    width={260}
+                    collapsible
+                    collapsed={collapsed}
+                    trigger={null}
+                    style={{
+                        minHeight: "100vh",
+                        background: "white",
+                        overflowY: "auto",
+                        borderInlineEnd: "1px solid #e5e7eb",
+                    }}
                 >
-                    <div className="flex items-center justify-between">
-                        <Button
-                            type="text"
-                            icon={collapsed ? <MenuUnfoldOutlined/> : <MenuFoldOutlined/>}
-                            onClick={() => setCollapsed(!collapsed)}
-                        />
-                        <h2 style={{margin: 0, fontSize: '20px', color: 'black'}}>{title}</h2>
+                    <div
+                        style={{background: colorPrimary}}
+                        className="px-4 py-4 text-center text-lg font-semibold tracking-[0.08em] text-white"
+                    >
+                        {collapsed ? "TTT" : "Thi trực tuyến"}
                     </div>
 
+                    {menuNode}
+                </Sider>
+            )}
+
+            <Layout className="bg-transparent">
+                <Header
+                    className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 sm:px-6"
+                    style={{background: colorBgContainer}}
+                >
+                    <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+                        {isMobile ? (
+                            <Button
+                                type="text"
+                                icon={<MenuOutlined/>}
+                                onClick={() => setMobileMenuOpen(true)}
+                            />
+                        ) : (
+                            <Button
+                                type="text"
+                                icon={collapsed ? <MenuUnfoldOutlined/> : <MenuFoldOutlined/>}
+                                onClick={() => setCollapsed(!collapsed)}
+                            />
+                        )}
+                        <h2 className="m-0 truncate text-base font-semibold text-slate-900 sm:text-xl">
+                            {title || "Trang quản trị"}
+                        </h2>
+                    </div>
 
                     <Dropdown
                         menu={{items: userMenuItems}}
                         placement="bottomRight"
                     >
-                        <div className="flex items-center gap-2 cursor-pointer">
+                        <div className="flex cursor-pointer items-center gap-2">
                             <Avatar
                                 src={user?.avatar}
                                 icon={<UserOutlined/>}
                             />
-                            <Typography.Text className="font-medium">
+                            <Typography.Text className="hidden font-medium sm:inline">
                                 {user?.hoTen || "Người dùng"}
                             </Typography.Text>
                         </div>
@@ -275,15 +275,26 @@ export default function RootLayout({children}) {
 
                 <Content
                     style={{
-                        margin: "24px 16px",
-                        padding: 24,
+                        margin: isMobile ? "16px" : "24px",
+                        padding: isMobile ? 16 : 24,
                         background: colorBgContainer,
                         borderRadius: borderRadiusLG,
                     }}
+                    className="min-h-[calc(100vh-112px)]"
                 >
                     {children}
                 </Content>
             </Layout>
+
+            <Drawer
+                placement="left"
+                open={isMobile && mobileMenuOpen}
+                onClose={() => setMobileMenuOpen(false)}
+                title="Thi trực tuyến"
+                styles={{body: {padding: 0}}}
+            >
+                {menuNode}
+            </Drawer>
         </Layout>
     );
 }
