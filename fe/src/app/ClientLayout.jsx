@@ -2,6 +2,7 @@
 
 import {App, ConfigProvider} from "antd";
 import InnerLayout from "./InnerLayout";
+import DynamicFavicon from "~/app/components/common/DynamicFavicon";
 
 export default function ClientLayout({children}) {
     return (
@@ -37,6 +38,7 @@ export default function ClientLayout({children}) {
                     top: 70,
                 }}
             >
+                <DynamicFavicon />
                 <InnerLayout>{children}</InnerLayout>
             </App>
         </ConfigProvider>

@@ -6,6 +6,7 @@ import {useEffect} from "react";
 import {usePageInfoStore} from "~/store/page-info";
 import CotChanTrang from "~/app/admin/cai-dat-chung/CotChanTrang";
 import BanQuyen from "~/app/admin/cai-dat-chung/VanBanBanQuyen";
+import FaviconEditor from "~/app/admin/cai-dat-chung/FaviconEditor";
 
 export default function CaiDatChung() {
     const setPageInfo = usePageInfoStore(state => state.setPageInfo);
@@ -35,6 +36,10 @@ export default function CaiDatChung() {
                     title="Banner Mobile (16:9)"
                     khoa="banner_mobile"
                 />
+            </Col>
+
+            <Col md={24} lg={12}>
+                <FaviconEditor />
             </Col>
 
             <Col md={24} lg={12}>

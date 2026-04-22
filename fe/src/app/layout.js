@@ -3,12 +3,7 @@ import "antd/dist/reset.css";
 import ClientLayout from "./ClientLayout";
 
 export const metadata = {
-    title: 'Thi trực tuyến',
-    icons: {
-        icon: "/favicon.png",
-        shortcut: "/favicon.png",
-        apple: "/favicon.png",
-    }
+    title: 'Thi trực tuyến'
 };
 
 export default function RootLayout({children}) {
