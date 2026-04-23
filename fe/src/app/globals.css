@@ -44,6 +44,10 @@ body.copy-guard .ql-editor {
   -webkit-touch-callout: default;
 }
 
+.public-font {
+  font-family: "Raleway", "Segoe UI", Arial, Helvetica, sans-serif;
+}
+
 .footer-rich p,
 .footer-rich ul,
 .footer-rich ol {

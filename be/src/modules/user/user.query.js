@@ -27,7 +27,7 @@ function mapUser(row) {
         ho_ten: row.ho_ten,
         don_vi_id: row.don_vi_id,
         role: row.role,
-        avatar: row.avatar,
+        avatar: null,
         created_at: row.created_at,
         don_vi: mapDonVi(row),
     };
@@ -50,7 +50,6 @@ async function selectUserByCondition(condition) {
             ho_ten: users.hoTen,
             don_vi_id: users.donViId,
             role: users.role,
-            avatar: users.avatar,
             created_at: users.createdAt,
             don_vi_ten: donVi.ten,
             don_vi_mo_ta: donVi.moTa,
@@ -75,7 +74,6 @@ exports.getUsers = async (search, page, size) => {
             ho_ten: users.hoTen,
             don_vi_id: users.donViId,
             role: users.role,
-            avatar: users.avatar,
             created_at: users.createdAt,
             don_vi_ten: donVi.ten,
             don_vi_mo_ta: donVi.moTa,
@@ -191,4 +189,3 @@ exports.usernameExists = async (username, excludeId = null) => {
 
     return Boolean(row);
 };
-

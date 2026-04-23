@@ -27,7 +27,9 @@ function parseFaviconValue(rawValue) {
 
 function applyFavicon(url) {
     const baseUrl =
-        getPublicFileUrl(url || DEFAULT_FAVICON);
+        url
+            ? getPublicFileUrl(url)
+            : DEFAULT_FAVICON;
 
     const resolved =
         baseUrl

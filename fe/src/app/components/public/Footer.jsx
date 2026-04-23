@@ -36,34 +36,38 @@ export default function Footer() {
         let active = true;
 
         const load = async () => {
-            const [resBanQuyen, resLeftFooter, resRightFooter, resFooterMeta] = await Promise.all([
-                layCauHinh("van-ban-ban-quyen"),
-                layCauHinh("left_footer"),
-                layCauHinh("right_footer"),
-                layCauHinh("footer_meta"),
-            ]);
+            try {
+                const [resBanQuyen, resLeftFooter, resRightFooter, resFooterMeta] = await Promise.all([
+                    layCauHinh("van-ban-ban-quyen"),
+                    layCauHinh("left_footer"),
+                    layCauHinh("right_footer"),
+                    layCauHinh("footer_meta"),
+                ]);
 
-            if (!active) {
-                return;
+                if (!active) {
+                    return;
+                }
+
+                const valLeftFooter =
+                    parseJsonValue(resLeftFooter?.data?.gia_tri, null);
+                const valRightFooter =
+                    parseJsonValue(resRightFooter?.data?.gia_tri, null);
+                const valFooterMeta =
+                    parseJsonValue(resFooterMeta?.data?.gia_tri, {});
+
+                setBanQuyen(resBanQuyen?.data?.gia_tri || "");
+                setFooterMeta(valFooterMeta || {});
+                setLeftFooter({
+                    tieuDe: valLeftFooter?.tieuDe || "",
+                    noiDung: valLeftFooter?.noiDung || ""
+                });
+                setRightFooter({
+                    tieuDe: valRightFooter?.tieuDe || "",
+                    noiDung: valRightFooter?.noiDung || ""
+                });
+            } catch (error) {
+                console.error("Không thể tải cấu hình chân trang", error);
             }
-
-            const valLeftFooter =
-                parseJsonValue(resLeftFooter?.data?.gia_tri, null);
-            const valRightFooter =
-                parseJsonValue(resRightFooter?.data?.gia_tri, null);
-            const valFooterMeta =
-                parseJsonValue(resFooterMeta?.data?.gia_tri, {});
-
-            setBanQuyen(resBanQuyen?.data?.gia_tri || "");
-            setFooterMeta(valFooterMeta || {});
-            setLeftFooter({
-                tieuDe: valLeftFooter?.tieuDe || "",
-                noiDung: valLeftFooter?.noiDung || ""
-            });
-            setRightFooter({
-                tieuDe: valRightFooter?.tieuDe || "",
-                noiDung: valRightFooter?.noiDung || ""
-            });
         };
 
         void load();

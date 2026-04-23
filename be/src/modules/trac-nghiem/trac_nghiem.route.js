@@ -34,7 +34,7 @@ router.get(
 
             resUtil.ok(res, data)
         } catch (error) {
-            resUtil.error(res, err)
+            resUtil.error(res, error)
         }
     }
 )
@@ -70,7 +70,7 @@ router.post(
 
             resUtil.ok(res, data)
         } catch (error) {
-            resUtil.error(res, err)
+            resUtil.error(res, error)
         }
     }
 )
@@ -125,7 +125,7 @@ router.delete(
 
             resUtil.ok(res, data)
         } catch (error) {
-            resUtil.error(res, err)
+            resUtil.error(res, error)
         }
     }
 )

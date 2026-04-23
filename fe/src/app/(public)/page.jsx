@@ -141,45 +141,49 @@ export default function Page() {
         let active = true;
 
         const load = async () => {
-            const khoa = getKhoa();
+            try {
+                const khoa = getKhoa();
 
-            const [resBanner, resDotThi, resConLai] = await Promise.all([
-                layCauHinh(khoa),
-                layDotThiHienTai(),
-                layThoiGianConLaiCuaCuocThi()
-            ]);
+                const [resBanner, resDotThi, resConLai] = await Promise.all([
+                    layCauHinh(khoa),
+                    layDotThiHienTai(),
+                    layThoiGianConLaiCuaCuocThi()
+                ]);
 
-            if (!active) return;
+                if (!active) return;
 
-            if (resBanner.data) {
-                const val =
-                    JSON.parse(
-                        resBanner.data.gia_tri
-                    );
-
-                setImage(val.url);
-                setZoom(val.zoom || 1);
-            }
-
-            if (resDotThi.data) {
-                setDotThi(resDotThi.data);
-
-                if (resDotThi.data.cuoc_thi_id) {
-                    const dsDotThi = await layDotThi(resDotThi.data.cuoc_thi_id, {
-                        size: 50,
-                        page: 1,
-                    });
-
-                    if (active) {
-                        setTimelineItems(
-                            buildTimelineItems(dsDotThi?.data || [], resDotThi.data.id)
+                if (resBanner.data) {
+                    const val =
+                        JSON.parse(
+                            resBanner.data.gia_tri
                         );
+
+                    setImage(val.url);
+                    setZoom(val.zoom || 1);
+                }
+
+                if (resDotThi.data) {
+                    setDotThi(resDotThi.data);
+
+                    if (resDotThi.data.cuoc_thi_id) {
+                        const dsDotThi = await layDotThi(resDotThi.data.cuoc_thi_id, {
+                            size: 50,
+                            page: 1,
+                        });
+
+                        if (active) {
+                            setTimelineItems(
+                                buildTimelineItems(dsDotThi?.data || [], resDotThi.data.id)
+                            );
+                        }
                     }
                 }
-            }
 
-            if (resConLai.data) {
-                setThoiGianConLai(resConLai.data);
+                if (resConLai.data) {
+                    setThoiGianConLai(resConLai.data);
+                }
+            } catch (error) {
+                console.error("Không thể tải dữ liệu trang chủ", error);
             }
         };
 

@@ -47,11 +47,11 @@ const tracNghiem = thiSchema.table("trac_nghiem", {
     linhVucId: integer("linh_vuc_id"),
     nhomId: integer("nhom_id"),
     cauHoi: text("cau_hoi").notNull(),
-    cauA: text("cauA"),
-    cauB: text("cauB"),
-    cauC: text("cauC"),
-    cauD: text("cauD"),
-    dapAn: integer("dapAn"),
+    cauA: text("caua"),
+    cauB: text("caub"),
+    cauC: text("cauc"),
+    cauD: text("caud"),
+    dapAn: integer("dapan"),
     diem: integer("diem"),
 });
 

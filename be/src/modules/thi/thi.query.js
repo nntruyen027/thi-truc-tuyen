@@ -28,6 +28,7 @@ function withLegacyKeys(data) {
         ...(data.lanThi !== undefined ? {lan_thi: data.lanThi} : {}),
         ...(data.thoiGianBatDau !== undefined ? {thoi_gian_bat_dau: data.thoiGianBatDau} : {}),
         ...(data.thoiGianNop !== undefined ? {thoi_gian_nop: data.thoiGianNop} : {}),
+        ...(data.trangThai !== undefined ? {trang_thai: data.trangThai} : {}),
         ...(data.tongThoiGianDaLam !== undefined ? {tong_thoi_gian_da_lam: data.tongThoiGianDaLam} : {}),
         ...(data.lanBatDau !== undefined ? {lan_bat_dau: data.lanBatDau} : {}),
         ...(data.dangLam !== undefined ? {dang_lam: data.dangLam} : {}),
@@ -94,7 +95,7 @@ function mapThiSinh(row) {
         username: row.username,
         hoTen: row.hoTen,
         donViId: row.donViId,
-        avatar: row.avatar,
+        avatar: null,
         createdAt: row.createdAt,
         ho_ten: row.hoTen,
         don_vi_id: row.donViId,
@@ -704,7 +705,6 @@ async function layDanhSachBaiThiXepHang(whereClause) {
             username: users.username,
             hoTen: users.hoTen,
             donViId: users.donViId,
-            avatar: users.avatar,
             createdAt: users.createdAt,
         })
         .from(baiThi)
@@ -756,7 +756,6 @@ async function layDanhSachBaiThiXepHang(whereClause) {
                 username: row.username,
                 hoTen: row.hoTen,
                 donViId: row.donViId,
-                avatar: row.avatar,
                 createdAt: row.createdAt,
             }),
         };
