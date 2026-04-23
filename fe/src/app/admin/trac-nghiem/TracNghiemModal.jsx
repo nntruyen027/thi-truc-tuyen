@@ -53,7 +53,7 @@ export default function TracNghiemModal({
 
         }
 
-    }, [open, data]);
+    }, [data, form, open]);
 
 
     // save
@@ -115,6 +115,7 @@ export default function TracNghiemModal({
 
         <Modal
             open={open}
+            forceRender
             destroyOnClose
             title={
                 data

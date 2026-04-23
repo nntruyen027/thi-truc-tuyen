@@ -14,6 +14,13 @@ router.get(
         try {
             const dotThiId = req.params.dotThiId;
 
+            const info =
+                await validation.layTrangThaiTuLuanTheoDotThi(dotThiId);
+
+            if (!info.coTuLuan) {
+                return resUtil.ok(res, []);
+            }
+
             const data = await query.layDsTuLuan(
                 dotThiId
             )

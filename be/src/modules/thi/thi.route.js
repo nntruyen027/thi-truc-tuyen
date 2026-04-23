@@ -219,6 +219,19 @@ router.post(
                 dapAn,
             } = req.body
 
+            const choPhepTraLoiTuLuan =
+                await validation.coChoPhepTraLoiTuLuan(
+                    baiThiId
+                )
+
+            if (!choPhepTraLoiTuLuan) {
+                return resUtil.ok(res, true)
+            }
+
+            await validation.ensureTuLuanAnswerAllowed(
+                baiThiId
+            )
+
             const data =
                 await query.luuCauTraLoiTuLuan(
                     baiThiId,
@@ -322,6 +335,13 @@ router.post(
                     dotThiId,
                     thiSinhId,
                 )
+
+            const tuLuanInfo =
+                await validation.layTrangThaiTuLuanTheoDotThi(dotThiId)
+
+            if (!tuLuanInfo.coTuLuan) {
+                result.tuLuan = []
+            }
 
             resUtil.ok(
                 res,

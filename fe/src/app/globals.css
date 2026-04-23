@@ -241,3 +241,90 @@ body.devtools-open {
     transform: none !important;
   }
 }
+
+.admin-page {
+  padding: 16px;
+}
+
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-toolbar__search {
+  width: min(100%, 320px);
+}
+
+.admin-toolbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-table {
+  margin-top: 16px;
+}
+
+.admin-table .ant-table-wrapper,
+.admin-table .ant-spin-nested-loading,
+.admin-table .ant-spin-container {
+  min-width: 0;
+}
+
+.admin-table .ant-table-pagination {
+  row-gap: 8px;
+}
+
+.admin-table .ant-table-cell {
+  vertical-align: top;
+}
+
+.admin-table .ant-tag {
+  white-space: normal;
+}
+
+.admin-summary-card {
+  width: 100%;
+  padding: 12px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+@media (max-width: 767px) {
+  .admin-page {
+    padding: 0;
+  }
+
+  .admin-toolbar {
+    align-items: stretch;
+  }
+
+  .admin-toolbar__search {
+    width: 100%;
+  }
+
+  .admin-toolbar__actions {
+    width: 100%;
+  }
+
+  .admin-toolbar__actions > * {
+    flex: 1 1 100%;
+  }
+
+  .admin-toolbar__actions .ant-btn,
+  .admin-toolbar__actions .ant-dropdown-trigger {
+    width: 100%;
+  }
+
+  .admin-table .ant-table {
+    font-size: 13px;
+  }
+
+  .admin-table .ant-pagination {
+    justify-content: center;
+  }
+}

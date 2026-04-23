@@ -20,32 +20,33 @@ export default function BannerEditor({
         useState(1)
 
 
-
-    // load
-
-    const load = async () => {
-
-        const res =
-            await layCauHinh(khoa)
-
-        if (!res.data) return
-
-        const val =
-            JSON.parse(
-                res.data.gia_tri
-            )
-
-        setImage(val.url)
-        setZoom(val.zoom || 1)
-
-    }
-
-
     useEffect(() => {
+        let active = true
 
-        load()
+        const timer =
+            setTimeout(async () => {
 
-    }, [])
+                const res =
+                    await layCauHinh(khoa)
+
+                if (!active || !res.data) return
+
+                const val =
+                    JSON.parse(
+                        res.data.gia_tri
+                    )
+
+                setImage(val.url)
+                setZoom(val.zoom || 1)
+
+            }, 0)
+
+        return () => {
+            active = false
+            clearTimeout(timer)
+        }
+
+    }, [khoa])
 
 
 
@@ -144,6 +145,7 @@ export default function BannerEditor({
                                 image
                             )
                         }
+                        alt=""
                         style={{
                             width: `${100 * zoom}%`,
                             height: `${100 * zoom}%`,

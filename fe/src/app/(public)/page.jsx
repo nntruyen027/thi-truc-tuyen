@@ -13,6 +13,7 @@ import TaiLieu from "~/app/(public)/TaiLieu";
 import TaiLieuKhac from "~/app/(public)/TaiLieuKhac";
 import KetQuaCongBo from "~/app/(public)/KetQuaCongBo";
 import Reveal from "~/app/components/common/Reveal";
+import {useAuthStore} from "~/store/auth";
 
 const tabItems = [
     {
@@ -47,6 +48,7 @@ export default function Page() {
     const {token} = theme.useToken();
     const {colorPrimary} = token;
     const route = useRouter();
+    const user = useAuthStore((state) => state.user);
 
     const getKhoa = () => {
         if (window.innerWidth < 768) {
@@ -102,6 +104,31 @@ export default function Page() {
             window.removeEventListener("resize", onResize);
         };
     }, []);
+
+    const handleJoinExam = () => {
+        let currentUser = user;
+
+        if (!currentUser && typeof window !== "undefined") {
+            try {
+                currentUser =
+                    JSON.parse(localStorage.getItem("user") || "null");
+            } catch {
+                currentUser = null;
+            }
+        }
+
+        if (!currentUser) {
+            route.push("/login");
+            return;
+        }
+
+        if (currentUser.role === "admin") {
+            route.push("/admin/dashboard");
+            return;
+        }
+
+        route.push("/user");
+    };
 
     return (
         <div className="w-full">
@@ -235,7 +262,7 @@ export default function Page() {
                                     type="primary"
                                     size="large"
                                     className="!h-14 w-full !text-lg !font-bold sm:!w-auto sm:min-w-[15rem]"
-                                    onClick={() => route.push("/login")}
+                                    onClick={handleJoinExam}
                                 >
                                     Tham gia thi
                                 </Button>

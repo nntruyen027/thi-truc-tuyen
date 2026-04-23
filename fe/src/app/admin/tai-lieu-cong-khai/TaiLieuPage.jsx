@@ -1,6 +1,6 @@
 'use client'
 
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {Button, Card, Upload} from "antd";
 import {UploadOutlined} from "@ant-design/icons";
 
@@ -22,19 +22,7 @@ export default function TaiLieuPage({
     const [url, setUrl] =
         useState(null);
 
-
-    useEffect(() => {
-
-        setPageInfo({
-            title
-        });
-
-        load();
-
-    }, []);
-
-
-    const load = async () => {
+    const load = useCallback(async () => {
 
         const res =
             await layCauHinh(
@@ -50,7 +38,29 @@ export default function TaiLieuPage({
 
         setUrl(val.url);
 
-    };
+    }, [khoa]);
+
+
+    useEffect(() => {
+
+        let active = true;
+
+        setPageInfo({
+            title
+        });
+
+        const timer =
+            setTimeout(async () => {
+                if (!active) return;
+                await load();
+            }, 0);
+
+        return () => {
+            active = false;
+            clearTimeout(timer);
+        };
+
+    }, [load, setPageInfo, title]);
 
 
     const upload =

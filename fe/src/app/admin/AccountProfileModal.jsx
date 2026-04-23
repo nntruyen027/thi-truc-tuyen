@@ -66,6 +66,7 @@ export default function AccountProfileModal() {
             title="Thông tin tài khoản"
             footer={null}
             width={560}
+            forceRender
             destroyOnHidden
         >
             <Space direction="vertical" size={18} className="w-full">

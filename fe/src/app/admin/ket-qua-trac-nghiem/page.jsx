@@ -1,6 +1,6 @@
 'use client'
 
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {App, Col, Row, Select, Table} from "antd";
 import {usePageInfoStore} from "~/store/page-info";
 import {xepHangTracNghiemTheoCuocThi, xepHangTracNghiemTheoDotThi} from "~/services/thi/thi";
@@ -24,9 +24,7 @@ export default function NhomCauHoi() {
 
     // ===== fetch =====
 
-    const fetchData = async (
-
-    ) => {
+    const fetchData = useCallback(async () => {
 
         setLoading(true);
 
@@ -48,11 +46,9 @@ export default function NhomCauHoi() {
 
         }
 
-    };
+    }, [dotThi, message, top]);
 
-    const fetchDataCuocThi = async (
-
-    ) => {
+    const fetchDataCuocThi = useCallback(async () => {
 
         setLoading(true);
 
@@ -74,54 +70,47 @@ export default function NhomCauHoi() {
 
         }
 
-    };
+    }, [cuocThi, message, top]);
 
     useEffect(() => {
-        if(!cuocThi)
-        {
+        if (!cuocThi) {
             setDotThi(null);
         }
     }, [cuocThi]);
 
     useEffect(() => {
-        if(!dotThi) {
+        if (!dotThi) {
             setData([]);
-            if(cuocThi) {
-                fetchDataCuocThi(cuocThi);
+            if (cuocThi) {
+                void fetchDataCuocThi();
             }
         }
-    }, [dotThi]);
+    }, [cuocThi, dotThi, fetchDataCuocThi]);
 
     // ===== search =====
 
     useEffect(() => {
-        if(!dotThi) {
+        if (!dotThi) {
             setData([]);
-            if(cuocThi) {
-                fetchDataCuocThi(cuocThi);
+            if (cuocThi) {
+                void fetchDataCuocThi();
             }
             return;
         }
 
-        fetchData(
-        );
+        void fetchData();
 
-    }, [dotThi, top, cuocThi]);
+    }, [cuocThi, dotThi, fetchData, fetchDataCuocThi, top]);
 
 
     // ===== first load =====
 
     useEffect(() => {
-        if(!dotThi)
-            return;
-
-        fetchData();
-
         setPageInfo({
             title: "Kết quả thi trắc nghiệm"
         });
 
-    }, []);
+    }, [setPageInfo]);
 
 
 
@@ -211,7 +200,7 @@ export default function NhomCauHoi() {
 
     return (
 
-        <div style={{ padding: 16 }}>
+        <div className="admin-page space-y-4">
 
                 <Row gutter={[16,16]}>
                     <Col md={24} lg={10}>
@@ -344,12 +333,19 @@ export default function NhomCauHoi() {
 
 
             <Table
-                style={{ marginTop: 16 }}
-                rowKey="id"
+                className="admin-table"
+                rowKey={(record) =>
+                    record.bai_thi_id
+                    || `${record?.thi_sinh?.username || "thi-sinh"}-${record?.thi_sinh?.id || "na"}`
+                }
                 loading={loading}
                 columns={columns}
                 dataSource={data}
-
+                scroll={{x: 1040}}
+                pagination={{
+                    responsive: true,
+                    showSizeChanger: true,
+                }}
             />
 
 

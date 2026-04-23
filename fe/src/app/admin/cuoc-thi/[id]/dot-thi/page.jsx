@@ -48,6 +48,9 @@ export default function DotThi() {
         sortType: undefined,
     });
 
+    const choPhepTuLuan =
+        !!cuocThi?.co_tu_luan;
+
     const fetchCuocThi = async () => {
         try {
             setLoading(true);
@@ -237,7 +240,11 @@ export default function DotThi() {
                         key: 'tu-luan',
                         label: 'Tự luận',
                         icon: <FileTextOutlined />,
+                        disabled: !choPhepTuLuan,
                         onClick: () => {
+                            if (!choPhepTuLuan) {
+                                return;
+                            }
                             setEditing(record);
                             setModalTuLuanOpen(true);
                         }
@@ -267,49 +274,59 @@ export default function DotThi() {
 
     return (
 
-        <div style={{ padding: 16 }}>
+        <div className="admin-page">
             <Link href={'/admin/cuoc-thi'}>
-                <div className={'flex flex-col text-center w-full p-2'}>
-                <h2 className={'text-xl text-black'}>{cuocThi?.ten}</h2>
-                <div className={'text-gray-600'}>Thời gian bắt đầu: {dayjs(cuocThi?.["thoi_gian_bat_dau"]).format("DD/MM/YYYY hh:mm:ss")}</div>
-                <div className={'text-gray-600'}>Thời gian kết thúc: {dayjs(cuocThi?.["thoi_gian_ket_thuc"]).format("DD/MM/YYYY hh:mm:ss")}</div>
-            </div>
+                <div className="admin-summary-card text-center">
+                    <h2 className="text-lg font-semibold text-slate-900 md:text-xl">{cuocThi?.ten}</h2>
+                    <div className="mt-2 text-sm text-slate-600">Thời gian bắt đầu: {dayjs(cuocThi?.["thoi_gian_bat_dau"]).format("DD/MM/YYYY hh:mm:ss")}</div>
+                    <div className="text-sm text-slate-600">Thời gian kết thúc: {dayjs(cuocThi?.["thoi_gian_ket_thuc"]).format("DD/MM/YYYY hh:mm:ss")}</div>
+                    <div className={`mt-2 text-sm font-semibold ${choPhepTuLuan ? "text-emerald-600" : "text-amber-600"}`}>
+                        {choPhepTuLuan ? "Tự luận đang bật theo cuộc thi" : "Tự luận đang tắt theo cuộc thi"}
+                    </div>
+                </div>
             </Link>
 
 
             <Divider/>
 
 
-            <div className="flex justify-between">
+            <div className="admin-toolbar">
 
                 <Input.Search
+                    className="admin-toolbar__search"
                     placeholder="Tìm đợt thi..."
                     allowClear
-                    style={{ width: 300 }}
                     onChange={e =>
                         setSearchText(e.target.value)
                     }
                 />
 
-                <Button
-                    type="primary"
-                    onClick={() => {
-                        setEditing(null)
-                        setModalOpen(true)
-                    }}>
-                    Thêm đợt thi
-                </Button>
+                <div className="admin-toolbar__actions">
+                    <Button
+                        type="primary"
+                        onClick={() => {
+                            setEditing(null)
+                            setModalOpen(true)
+                        }}>
+                        Thêm đợt thi
+                    </Button>
+                </div>
 
             </div>
 
 
             <Table
-                style={{ marginTop: 16 }}
+                className="admin-table"
                 rowKey="id"
                 loading={loading}
                 columns={columns}
                 dataSource={data}
-                pagination={pagination}
+                scroll={{x: 1080}}
+                pagination={{
+                    ...pagination,
+                    responsive: true,
+                    showSizeChanger: true,
+                }}
 
                 onChange={(p, filters, sorterValue) => {
 

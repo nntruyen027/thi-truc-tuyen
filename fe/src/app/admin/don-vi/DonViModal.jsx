@@ -35,7 +35,7 @@ export default function DonViModal({
 
         }
 
-    }, [open, data]);
+    }, [data, form, open]);
 
 
     // save
@@ -97,6 +97,7 @@ export default function DonViModal({
 
         <Modal
             open={open}
+            forceRender
             destroyOnClose
             title={
                 data

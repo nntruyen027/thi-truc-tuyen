@@ -206,38 +206,45 @@ export default function NhomCauHoi() {
 
     return (
 
-        <div style={{ padding: 16 }}>
+        <div className="admin-page">
 
-            <div className="flex justify-between">
+            <div className="admin-toolbar">
 
                 <Input.Search
+                    className="admin-toolbar__search"
                     placeholder="Tìm nhóm câu hỏi..."
                     allowClear
-                    style={{ width: 300 }}
                     onChange={e =>
                         setSearchText(e.target.value)
                     }
                 />
 
-                <Button
-                    type="primary"
-                    onClick={() => {
-                    setEditing(null)
-                    setModalOpen(true)
-                }}>
-                    Thêm nhóm câu hỏi
-                </Button>
+                <div className="admin-toolbar__actions">
+                    <Button
+                        type="primary"
+                        onClick={() => {
+                        setEditing(null)
+                        setModalOpen(true)
+                    }}>
+                        Thêm nhóm câu hỏi
+                    </Button>
+                </div>
 
             </div>
 
 
             <Table
-                style={{ marginTop: 16 }}
+                className="admin-table"
                 rowKey="id"
                 loading={loading}
                 columns={columns}
                 dataSource={data}
-                pagination={pagination}
+                scroll={{x: 820}}
+                pagination={{
+                    ...pagination,
+                    responsive: true,
+                    showSizeChanger: true,
+                }}
 
                 onChange={(p, filters, sorterValue) => {
 

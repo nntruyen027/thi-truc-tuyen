@@ -177,6 +177,7 @@ export default function DotThiModal({
 
         <Modal
             open={open}
+            forceRender
             destroyOnClose
             title={
                 data

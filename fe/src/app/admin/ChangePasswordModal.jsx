@@ -44,6 +44,7 @@ export default function ChangePasswordModal() {
             title="Đổi mật khẩu"
             footer={null}
             width={520}
+            forceRender
             destroyOnHidden
         >
             <Space direction="vertical" size={18} className="w-full">

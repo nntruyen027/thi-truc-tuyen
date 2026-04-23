@@ -1,6 +1,6 @@
 'use client';
 
-import {App, Button, InputNumber, Modal, Popconfirm, Select, Table} from "antd";
+import {App, Button, Grid, InputNumber, Modal, Popconfirm, Select, Table} from "antd";
 
 import {useEffect, useState} from "react";
 
@@ -23,6 +23,7 @@ export default function TracNghiemDotThiModal({
                                               }) {
 
     const {message} = App.useApp();
+    const screens = Grid.useBreakpoint();
 
     const [data, setData] = useState([]);
 
@@ -242,7 +243,7 @@ export default function TracNghiemDotThiModal({
             open={open}
             onCancel={onClose}
             footer={null}
-            width={800}
+            width={screens.md ? 800 : "calc(100vw - 24px)"}
             title="Quản lý câu trắc nghiệm"
         >
 
@@ -255,10 +256,12 @@ export default function TracNghiemDotThiModal({
             </Button>
 
             <Table
+                className="admin-table"
                 rowKey="id"
                 dataSource={data}
                 columns={columns}
                 pagination={false}
+                scroll={{x: 700}}
             />
 
         </Modal>

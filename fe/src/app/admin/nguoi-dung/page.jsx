@@ -278,13 +278,17 @@ export default function NguoiDung() {
                 </div>
 
                 <Table
-                    className="mt-5"
+                    className="admin-table"
                     rowKey="id"
                     loading={loading}
                     columns={columns}
                     dataSource={data}
-                    scroll={{x: 860}}
-                    pagination={pagination}
+                    scroll={{x: 920}}
+                    pagination={{
+                        ...pagination,
+                        responsive: true,
+                        showSizeChanger: true,
+                    }}
                     onChange={(p) => {
                         void fetchData(
                             p.current,

@@ -55,7 +55,7 @@ export default function CuocThiModal({
 
         }
 
-    }, [open, data]);
+    }, [data, form, open]);
 
 
     // save
@@ -133,6 +133,7 @@ export default function CuocThiModal({
 
         <Modal
             open={open}
+            forceRender
             destroyOnHidden
             title={
                 data

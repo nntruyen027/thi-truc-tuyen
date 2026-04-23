@@ -300,20 +300,20 @@ export default function TracNghiem() {
 
     return (
 
-        <div style={{ padding: 16 }}>
+        <div className="admin-page">
 
-            <div className="flex justify-between">
+            <div className="admin-toolbar">
 
                 <Input.Search
+                    className="admin-toolbar__search"
                     placeholder="Câu hỏi..."
                     allowClear
-                    style={{ width: 300 }}
                     onChange={e =>
                         setSearchText(e.target.value)
                     }
                 />
 
-                <div className="flex gap-2">
+                <div className="admin-toolbar__actions">
 
                     <Dropdown
                         menu={{ items: importMenu }}
@@ -339,12 +339,17 @@ export default function TracNghiem() {
 
 
             <Table
-                style={{ marginTop: 16 }}
+                className="admin-table"
                 rowKey="id"
                 loading={loading}
                 columns={columns}
                 dataSource={data}
-                pagination={pagination}
+                scroll={{x: 1120}}
+                pagination={{
+                    ...pagination,
+                    responsive: true,
+                    showSizeChanger: true,
+                }}
 
                 onChange={(p, filters, sorterValue) => {
 

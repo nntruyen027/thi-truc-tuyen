@@ -24,6 +24,79 @@ exports.ensurePauseAllowed = async (baiThiId) => {
     }
 };
 
+exports.layTrangThaiTuLuanTheoDotThi = async (dotThiId) => {
+    const {rows} = await db.query(
+        `
+            select dt.id,
+                   ct.co_tu_luan
+            from thi.dot_thi dt
+                     join thi.cuoc_thi ct on ct.id = dt.cuoc_thi_id
+            where dt.id = $1
+            limit 1
+        `,
+        [dotThiId]
+    );
+
+    const row = rows[0];
+
+    if (!row) {
+        throw "Không tìm thấy đợt thi.";
+    }
+
+    return {
+        dotThiId: row.id,
+        coTuLuan: !!row.co_tu_luan,
+    };
+};
+
+exports.ensureTuLuanAnswerAllowed = async (baiThiId) => {
+    const {rows} = await db.query(
+        `
+            select ct.co_tu_luan
+            from thi.bai_thi bt
+                     join thi.de_thi dt on dt.id = bt.de_thi_id
+                     join thi.dot_thi dthi on dthi.id = dt.dot_thi_id
+                     join thi.cuoc_thi ct on ct.id = dthi.cuoc_thi_id
+            where bt.id = $1
+            limit 1
+        `,
+        [baiThiId]
+    );
+
+    const row = rows[0];
+
+    if (!row) {
+        throw "Không tìm thấy bài thi.";
+    }
+
+    if (!row.co_tu_luan) {
+        throw "Cuộc thi hiện tại không bật phần tự luận.";
+    }
+};
+
+exports.coChoPhepTraLoiTuLuan = async (baiThiId) => {
+    const {rows} = await db.query(
+        `
+            select ct.co_tu_luan
+            from thi.bai_thi bt
+                     join thi.de_thi dt on dt.id = bt.de_thi_id
+                     join thi.dot_thi dthi on dthi.id = dt.dot_thi_id
+                     join thi.cuoc_thi ct on ct.id = dthi.cuoc_thi_id
+            where bt.id = $1
+            limit 1
+        `,
+        [baiThiId]
+    );
+
+    const row = rows[0];
+
+    if (!row) {
+        throw "Không tìm thấy bài thi.";
+    }
+
+    return !!row.co_tu_luan;
+};
+
 exports.ensureDotThiWithinCuocThi = async ({
     cuocThiId,
     thoiGianBatDau,
@@ -121,24 +194,8 @@ exports.ensureTracNghiemConfigPossible = async ({
 };
 
 exports.ensureDotThiQuestionConfigValid = async (dotThiId) => {
-    const {rows: dotThiRows} = await db.query(
-        `
-            select dt.id,
-                   dt.ten,
-                   ct.co_tu_luan
-            from thi.dot_thi dt
-                     join thi.cuoc_thi ct on ct.id = dt.cuoc_thi_id
-            where dt.id = $1
-            limit 1
-        `,
-        [dotThiId]
-    );
-
-    const dotThi = dotThiRows[0];
-
-    if (!dotThi) {
-        throw "Không tìm thấy đợt thi.";
-    }
+    const dotThi =
+        await exports.layTrangThaiTuLuanTheoDotThi(dotThiId);
 
     const {rows: tracRows} = await db.query(
         `
@@ -174,12 +231,13 @@ exports.ensureDotThiQuestionConfigValid = async (dotThiId) => {
     const totalTuLuan =
         tuLuanRows[0]?.total || 0;
 
-    if (!tracRows.length && totalTuLuan === 0) {
-        throw "Đợt thi chưa có cấu hình câu hỏi.";
-    }
+    const totalTuLuanHieuLuc =
+        dotThi.coTuLuan
+            ? totalTuLuan
+            : 0;
 
-    if (!dotThi.co_tu_luan && totalTuLuan > 0) {
-        throw "Cuộc thi hiện tại không bật phần tự luận nhưng đợt thi đang có câu tự luận.";
+    if (!tracRows.length && totalTuLuanHieuLuc === 0) {
+        throw "Đợt thi chưa có cấu hình câu hỏi.";
     }
 
     for (const row of tracRows) {
@@ -198,24 +256,10 @@ exports.ensureDotThiQuestionConfigValid = async (dotThiId) => {
 };
 
 exports.ensureTuLuanAllowed = async (dotThiId) => {
-    const {rows} = await db.query(
-        `
-            select ct.co_tu_luan
-            from thi.dot_thi dt
-                     join thi.cuoc_thi ct on ct.id = dt.cuoc_thi_id
-            where dt.id = $1
-            limit 1
-        `,
-        [dotThiId]
-    );
+    const info =
+        await exports.layTrangThaiTuLuanTheoDotThi(dotThiId);
 
-    const row = rows[0];
-
-    if (!row) {
-        throw "Không tìm thấy đợt thi.";
-    }
-
-    if (!row.co_tu_luan) {
+    if (!info.coTuLuan) {
         throw "Cuộc thi hiện tại không bật phần tự luận.";
     }
 };

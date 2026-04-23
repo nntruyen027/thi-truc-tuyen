@@ -35,7 +35,7 @@ export default function LinhVucModal({
 
         }
 
-    }, [open, data]);
+    }, [data, form, open]);
 
 
     // save
@@ -97,6 +97,7 @@ export default function LinhVucModal({
 
         <Modal
             open={open}
+            forceRender
             destroyOnClose
             title={
                 data

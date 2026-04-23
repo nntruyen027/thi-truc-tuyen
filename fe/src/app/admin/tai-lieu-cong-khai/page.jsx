@@ -1,7 +1,7 @@
 'use client'
 
 import {usePageInfoStore} from "~/store/page-info";
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import TaiLieuPage from "~/app/admin/tai-lieu-cong-khai/TaiLieuPage";
 
 import {Button, Card, Collapse, Input, message, Upload} from "antd";
@@ -29,19 +29,7 @@ export default function Page() {
     const [loading, setLoading] =
         useState(false);
 
-
-    useEffect(() => {
-
-        setPageInfo({
-            title: "Tài liệu công khai"
-        });
-
-        load();
-
-    }, []);
-
-
-    const load = async () => {
+    const load = useCallback(async () => {
 
         const res =
             await layCauHinh(
@@ -57,7 +45,29 @@ export default function Page() {
 
         setDocs(val || []);
 
-    };
+    }, []);
+
+
+    useEffect(() => {
+
+        let active = true;
+
+        setPageInfo({
+            title: "Tài liệu công khai"
+        });
+
+        const timer =
+            setTimeout(async () => {
+                if (!active) return;
+                await load();
+            }, 0);
+
+        return () => {
+            active = false;
+            clearTimeout(timer);
+        };
+
+    }, [load, setPageInfo]);
 
 
     // chỉ update state

@@ -1,6 +1,6 @@
 "use client";
 
-import {Avatar, Button, ConfigProvider, Drawer, Dropdown, Grid, Layout, Menu, Typography} from "antd";
+import {Avatar, Breadcrumb, Button, ConfigProvider, Drawer, Dropdown, Grid, Layout, Menu, Typography} from "antd";
 import {
     BankOutlined,
     BarChartOutlined,
@@ -17,6 +17,7 @@ import {
 } from "@ant-design/icons";
 import {useEffect, useMemo, useState} from "react";
 import {usePathname, useRouter} from "next/navigation";
+import Link from "next/link";
 import {useModal} from "~/store/modal";
 import {useAuthStore} from "~/store/auth";
 import {usePageInfoStore} from "~/store/page-info";
@@ -24,6 +25,20 @@ import AccountProfileModal from "./AccountProfileModal";
 import ChangePasswordModal from "./ChangePasswordModal";
 
 const {Sider, Header, Content} = Layout;
+
+const breadcrumbNameMap = {
+    dashboard: "Dashboard",
+    "nguoi-dung": "Người dùng",
+    "cuoc-thi": "Cuộc thi",
+    "dot-thi": "Đợt thi",
+    "trac-nghiem": "Trắc nghiệm",
+    "ket-qua-trac-nghiem": "Kết quả trắc nghiệm",
+    "don-vi": "Đơn vị",
+    "linh-vuc": "Lĩnh vực",
+    "nhom-cau-hoi": "Nhóm câu hỏi",
+    "cai-dat-chung": "Cài đặt chung",
+    "tai-lieu-cong-khai": "Tài liệu công khai",
+};
 
 const menuConfig = [
     {
@@ -143,6 +158,45 @@ export default function RootLayout({children}) {
 
         return filterMenu(normalizedMenu);
     }, [normalizedMenu]);
+
+    const breadcrumbItems = useMemo(() => {
+        const parts =
+            pathname
+                .split("/")
+                .filter(Boolean)
+                .slice(1);
+
+        const visibleParts =
+            parts.filter((part) => !/^\d+$/.test(part));
+
+        const items = [
+            {
+                title: <Link href="/admin/dashboard">Trang quản trị</Link>,
+            },
+        ];
+
+        let href = "/admin";
+
+        visibleParts.forEach((part, index) => {
+            href += `/${part}`;
+
+            const isLast =
+                index === visibleParts.length - 1;
+
+            const label =
+                breadcrumbNameMap[part]
+                || (isLast ? title : null)
+                || part;
+
+            items.push({
+                title: isLast
+                    ? <span>{label}</span>
+                    : <Link href={href}>{label}</Link>,
+            });
+        });
+
+        return items;
+    }, [pathname, title]);
 
     useEffect(() => {
         if (user && user.role !== "admin") {
@@ -324,6 +378,9 @@ export default function RootLayout({children}) {
                     }}
                     className="min-h-[calc(100vh-112px)] rounded-[32px] border border-white/70 bg-white/85 shadow-[0_20px_50px_rgba(15,23,42,0.08)] backdrop-blur"
                 >
+                    <div className="mb-5 rounded-2xl border border-slate-200/80 bg-slate-50/85 px-4 py-3">
+                        <Breadcrumb items={breadcrumbItems} />
+                    </div>
                     {children}
                 </Content>
             </Layout>

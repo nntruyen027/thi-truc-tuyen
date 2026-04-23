@@ -1,6 +1,6 @@
 'use client';
 
-import {App, Button, Input, Modal, Popconfirm, Table} from "antd";
+import {App, Button, Grid, Input, Modal, Popconfirm, Table} from "antd";
 
 import {useEffect, useState} from "react";
 
@@ -14,8 +14,9 @@ export default function TuLuanDotThiModal({
                                               dotThiId,
                                               cuocThiId
 
-                                          }) {
+}) {
     const {message} = App.useApp();
+    const screens = Grid.useBreakpoint();
 
     const [data, setData] = useState([]);
 
@@ -244,7 +245,7 @@ export default function TuLuanDotThiModal({
 
             footer={null}
 
-            width={900}
+            width={screens.md ? 900 : "calc(100vw - 24px)"}
 
             title="Quản lý câu tự luận"
 
@@ -268,6 +269,7 @@ export default function TuLuanDotThiModal({
 
 
             <Table
+                className="admin-table"
 
                 rowKey="id"
 
@@ -276,6 +278,8 @@ export default function TuLuanDotThiModal({
                 columns={columns}
 
                 pagination={false}
+
+                scroll={{x: 780}}
 
             />
 

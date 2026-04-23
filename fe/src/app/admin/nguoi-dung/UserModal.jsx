@@ -84,6 +84,7 @@ export default function UserModal({
             okText={data ? "Cập nhật" : "Thêm mới"}
             cancelText="Thoát"
             title={data ? "Chỉnh sửa tài khoản" : "Thêm tài khoản quản trị/người dùng"}
+            forceRender
             destroyOnHidden
         >
             <Form form={form} layout="vertical">

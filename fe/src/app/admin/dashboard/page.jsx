@@ -8,7 +8,6 @@ import {
     Button,
     Card,
     Col,
-    List,
     Progress,
     Row,
     Skeleton,
@@ -337,34 +336,34 @@ export default function Dashboard() {
                                 title="Lối tắt quản trị"
                                 className="h-full rounded-[28px] border-0 shadow-sm"
                             >
-                                <List
-                                    itemLayout="horizontal"
-                                    dataSource={quickActions}
-                                    renderItem={(item) => (
-                                        <List.Item
-                                            className="!px-0"
-                                            actions={[
-                                                <Button
-                                                    key={item.href}
-                                                    type="link"
-                                                    onClick={() => router.push(item.href)}
-                                                >
-                                                    Mở
-                                                </Button>,
-                                            ]}
+                                <div className="space-y-4">
+                                    {quickActions.map((item) => (
+                                        <div
+                                            key={item.href}
+                                            className="flex items-start justify-between gap-3 border-b border-slate-100 pb-4 last:border-b-0 last:pb-0"
                                         >
-                                            <List.Item.Meta
-                                                avatar={
-                                                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-lg text-slate-700">
-                                                        {item.icon}
+                                            <div className="flex min-w-0 items-start gap-3">
+                                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-lg text-slate-700">
+                                                    {item.icon}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="font-semibold text-slate-900">
+                                                        {item.title}
                                                     </div>
-                                                }
-                                                title={<span className="font-semibold text-slate-900">{item.title}</span>}
-                                                description={<span className="text-slate-500">{item.description}</span>}
-                                            />
-                                        </List.Item>
-                                    )}
-                                />
+                                                    <div className="text-sm text-slate-500">
+                                                        {item.description}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                type="link"
+                                                onClick={() => router.push(item.href)}
+                                            >
+                                                Mở
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
                             </Card>
                         </Col>
                     </Row>
