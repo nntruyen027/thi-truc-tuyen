@@ -29,6 +29,21 @@ body.devtools-open {
   overflow: hidden;
 }
 
+body.copy-guard {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+body.copy-guard input,
+body.copy-guard textarea,
+body.copy-guard [contenteditable="true"],
+body.copy-guard .ql-editor {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
 .footer-rich p,
 .footer-rich ul,
 .footer-rich ol {

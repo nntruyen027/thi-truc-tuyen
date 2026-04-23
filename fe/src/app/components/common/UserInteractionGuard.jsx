@@ -1,63 +1,159 @@
-'use client';
+"use client"
 
-import {useEffect, useState} from "react";
+import {useEffect, useState} from "react"
 
-export default function UserInteractionGuard() {
-    const [isDevToolsOpen, setIsDevToolsOpen] = useState(false);
+function isEditableTarget(target) {
+    if (!(target instanceof HTMLElement)) {
+        return false
+    }
+
+    return Boolean(
+        target.closest("input, textarea, [contenteditable='true'], .ql-editor")
+    )
+}
+
+function isLikelyMobileBrowser() {
+    if (typeof window === "undefined") {
+        return false
+    }
+
+    const ua = window.navigator.userAgent || ""
+    const touchPoints = window.navigator.maxTouchPoints || 0
+    const hasCoarsePointer =
+        typeof window.matchMedia === "function"
+            ? window.matchMedia("(pointer: coarse)").matches
+            : false
+
+    return /android|iphone|ipad|ipod|mobile/i.test(ua)
+        || touchPoints > 1
+        || hasCoarsePointer
+}
+
+export default function UserInteractionGuard({
+    blockDevTools = false,
+    disableCopy = false,
+}) {
+    const [isDevToolsOpen, setIsDevToolsOpen] = useState(false)
 
     useEffect(() => {
+        const mobileBrowser =
+            isLikelyMobileBrowser()
+
+        const shouldDetectDevTools =
+            blockDevTools && !mobileBrowser
+
         const handleContextMenu = (event) => {
-            event.preventDefault();
-        };
+            if (!disableCopy && !shouldDetectDevTools) {
+                return
+            }
+
+            if (isEditableTarget(event.target)) {
+                return
+            }
+
+            event.preventDefault()
+        }
+
+        const handleCopyLike = (event) => {
+            if (!disableCopy) {
+                return
+            }
+
+            if (isEditableTarget(event.target)) {
+                return
+            }
+
+            event.preventDefault()
+            event.stopPropagation()
+        }
 
         const handleKeyDown = (event) => {
             const key =
-                String(event.key || "").toLowerCase();
+                String(event.key || "").toLowerCase()
 
-            const blocked =
-                key === "f12"
-                || (event.ctrlKey && event.shiftKey && ["i", "j", "c"].includes(key))
-                || (event.ctrlKey && key === "u");
+            const isInspectShortcut =
+                shouldDetectDevTools && (
+                    key === "f12"
+                    || ((event.ctrlKey || event.metaKey) && event.shiftKey && ["i", "j", "c"].includes(key))
+                    || ((event.ctrlKey || event.metaKey) && key === "u")
+                )
 
-            if (blocked) {
-                event.preventDefault();
-                event.stopPropagation();
+            const isCopyShortcut =
+                disableCopy
+                && (event.ctrlKey || event.metaKey)
+                && ["c", "x", "a", "s"].includes(key)
+                && !isEditableTarget(event.target)
+
+            if (!isInspectShortcut && !isCopyShortcut) {
+                return
             }
-        };
+
+            event.preventDefault()
+            event.stopPropagation()
+        }
 
         const detectDevTools = () => {
+            if (!shouldDetectDevTools) {
+                setIsDevToolsOpen(false)
+                document.body.classList.remove("devtools-open")
+                return
+            }
+
             const widthGap =
-                window.outerWidth - window.innerWidth;
+                window.outerWidth - window.innerWidth
             const heightGap =
-                window.outerHeight - window.innerHeight;
+                window.outerHeight - window.innerHeight
 
             const opened =
-                widthGap > 160 || heightGap > 160;
+                widthGap > 220 || heightGap > 220
 
-            setIsDevToolsOpen(opened);
-            document.body.classList.toggle("devtools-open", opened);
-        };
+            setIsDevToolsOpen(opened)
+            document.body.classList.toggle("devtools-open", opened)
+        }
 
-        window.addEventListener("contextmenu", handleContextMenu);
-        window.addEventListener("keydown", handleKeyDown, true);
-        window.addEventListener("resize", detectDevTools);
+        if (disableCopy) {
+            document.body.classList.add("copy-guard")
+        }
+
+        window.addEventListener("contextmenu", handleContextMenu)
+        window.addEventListener("copy", handleCopyLike, true)
+        window.addEventListener("cut", handleCopyLike, true)
+        window.addEventListener("dragstart", handleCopyLike, true)
+        window.addEventListener("keydown", handleKeyDown, true)
+
+        if (shouldDetectDevTools) {
+            window.addEventListener("resize", detectDevTools)
+        }
 
         const interval =
-            window.setInterval(detectDevTools, 1200);
+            shouldDetectDevTools
+                ? window.setInterval(detectDevTools, 1200)
+                : null
 
-        detectDevTools();
+        detectDevTools()
 
         return () => {
-            window.removeEventListener("contextmenu", handleContextMenu);
-            window.removeEventListener("keydown", handleKeyDown, true);
-            window.removeEventListener("resize", detectDevTools);
-            window.clearInterval(interval);
-            document.body.classList.remove("devtools-open");
-        };
-    }, []);
+            window.removeEventListener("contextmenu", handleContextMenu)
+            window.removeEventListener("copy", handleCopyLike, true)
+            window.removeEventListener("cut", handleCopyLike, true)
+            window.removeEventListener("dragstart", handleCopyLike, true)
+            window.removeEventListener("keydown", handleKeyDown, true)
 
-    if (!isDevToolsOpen) {
-        return null;
+            if (shouldDetectDevTools) {
+                window.removeEventListener("resize", detectDevTools)
+            }
+
+            if (interval) {
+                window.clearInterval(interval)
+            }
+
+            document.body.classList.remove("devtools-open")
+            document.body.classList.remove("copy-guard")
+        }
+    }, [blockDevTools, disableCopy])
+
+    if (!blockDevTools || !isDevToolsOpen) {
+        return null
     }
 
     return (
@@ -74,5 +170,5 @@ export default function UserInteractionGuard() {
                 </div>
             </div>
         </div>
-    );
+    )
 }

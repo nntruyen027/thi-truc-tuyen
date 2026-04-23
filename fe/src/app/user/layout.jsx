@@ -33,7 +33,7 @@ export default function UserLayout({children}) {
     }, []);
 
     return <Layout className="min-h-screen bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_28%,#f8fafc_100%)]">
-            <UserInteractionGuard />
+            <UserInteractionGuard blockDevTools disableCopy />
             <div
                 style={{
                     color:'white',

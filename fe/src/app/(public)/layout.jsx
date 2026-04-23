@@ -20,7 +20,7 @@ export default function PublicLayout({children}) {
                 minHeight: "100vh"
             }}
         >
-            <UserInteractionGuard />
+            <UserInteractionGuard disableCopy />
             <Layout.Content className="flex-1">
                 {children}
             </Layout.Content>
