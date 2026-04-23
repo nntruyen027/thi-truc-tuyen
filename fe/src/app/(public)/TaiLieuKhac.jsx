@@ -4,6 +4,7 @@ import {useEffect, useState} from "react";
 import {Card, Collapse, theme, Typography} from "antd";
 import {layCauHinh} from "~/services/cau-hinh";
 import {getPublicFileUrl} from "~/services/file";
+import PdfViewer from "~/app/components/common/PdfViewer";
 
 const {Panel} = Collapse;
 
@@ -63,22 +64,11 @@ export default function TaiLieuKhac() {
                 key: d.id,
                 label: d.tieuDe,
                 children: d.url && (
-
-                    <iframe
-                        src={
-                            getPublicFileUrl(
-                                d.url
-                            ) +
-                            "#zoom=100&navpanes=0"
-                        }
-                        width="100%"
-                        height="100%"
-                        style={{
-                            border: "none",
-                            height: "min(75vh, 800px)",
-                            minHeight: "420px"
-                        }}
-                    />
+                    <div className="p-1 sm:p-2">
+                        <PdfViewer
+                            url={getPublicFileUrl(d.url)}
+                        />
+                    </div>
 
                 )   
             }))

@@ -4,6 +4,7 @@ import {layCauHinh} from "~/services/cau-hinh";
 import {useEffect, useState} from "react";
 import {getPublicFileUrl} from "~/services/file";
 import {Card, theme, Typography} from "antd";
+import PdfViewer from "~/app/components/common/PdfViewer";
 
 export default function TaiLieu({title, khoa, id =''}) {
     const [url, setUrl] = useState("");
@@ -50,21 +51,11 @@ export default function TaiLieu({title, khoa, id =''}) {
 
 
         {url && (
-            <iframe
-                src={
-                    getPublicFileUrl(
-                        url
-                    )+ "#zoom=100&navpanes=0"
-                }
-                width="100%"
-                height="100%"
-                style={{
-                    margin: 0,
-                    border: 0,
-                    height: "min(75vh, 800px)",
-                    minHeight: "420px"
-                }}
-            />
+            <div className="p-3 sm:p-4">
+                <PdfViewer
+                    url={getPublicFileUrl(url)}
+                />
+            </div>
 
         )}
     </Card>)

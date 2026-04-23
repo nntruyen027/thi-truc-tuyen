@@ -62,6 +62,7 @@ export default function Thi() {
     const finishingRef = useRef(false)
     const debounceRef = useRef(null)
     const pendingTuLuanRef = useRef(null)
+    const questionSectionRef = useRef(null)
 
     useEffect(() => {
         const check = () => {
@@ -151,6 +152,21 @@ export default function Thi() {
             }
         }
     }, [baiThiId, dotThi?.cho_phep_luu_bai])
+
+    useEffect(() => {
+        if (!isMobile || loading) {
+            return
+        }
+
+        const frame = window.requestAnimationFrame(() => {
+            questionSectionRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            })
+        })
+
+        return () => window.cancelAnimationFrame(frame)
+    }, [index, isMobile, loading])
 
     const isDuDoan =
         !!dotThi?.du_doan && index === cauHoi.length
@@ -520,11 +536,6 @@ export default function Thi() {
                                             <span>Câu {Math.min(index + 1, totalSlots)}/{totalSlots}</span>
                                             <span>{answeredCount}/{cauHoi.length} câu đã làm</span>
                                         </div>
-                                        <Paragraph className="!mb-0 !max-w-4xl !text-base !leading-8 !text-slate-700 md:!text-[1.08rem]">
-                                            {isDuDoan
-                                                ? "Nhập số lượng thí sinh bạn dự đoán sẽ đạt đúng 100% số câu."
-                                                : currentQuestion?.cau_hoi}
-                                        </Paragraph>
                                     </div>
 
                                     <div className="space-y-3">
@@ -570,9 +581,21 @@ export default function Thi() {
                             </Card>
                         </div>
 
-                        <Card className="rounded-[32px] border border-slate-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]">
+                        <Card
+                            ref={questionSectionRef}
+                            className="rounded-[32px] border border-slate-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.06)]"
+                        >
                             {isDuDoan && (
                                 <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em] !text-blue-700">
+                                            Nội dung câu hỏi
+                                        </Text>
+                                        <Paragraph className="!mb-0 !max-w-4xl !text-base !leading-8 !text-slate-700 md:!text-[1.08rem]">
+                                            Nhập số lượng thí sinh bạn dự đoán sẽ đạt đúng 100% số câu.
+                                        </Paragraph>
+                                    </div>
+
                                     <Text className="!text-sm !font-semibold !uppercase !tracking-[0.18em] !text-slate-500">
                                         Số dự đoán
                                     </Text>
@@ -587,49 +610,69 @@ export default function Thi() {
                             )}
 
                             {!isDuDoan && currentQuestion?.loai === 1 && (
-                                <Radio.Group
-                                    className="w-full"
-                                    value={currentQuestion.dap_an_chon}
-                                    onChange={(e) =>
-                                        chon(
-                                            currentQuestion.clientKey,
-                                            currentQuestion.questionId,
-                                            e.target.value
-                                        )
-                                    }
-                                >
-                                    <div className="grid gap-4">
-                                        {[
-                                            {value: 1, label: "A", text: currentQuestion.caua},
-                                            {value: 2, label: "B", text: currentQuestion.caub},
-                                            {value: 3, label: "C", text: currentQuestion.cauc},
-                                            {value: 4, label: "D", text: currentQuestion.caud},
-                                        ].map((option) => (
-                                            <label
-                                                key={`${currentQuestion.clientKey}-${option.value}`}
-                                                className={`flex cursor-pointer items-start gap-4 rounded-[24px] border px-4 py-4 transition md:px-6 md:py-5 ${
-                                                    currentQuestion.dap_an_chon === option.value
-                                                        ? "border-blue-500 bg-[linear-gradient(135deg,#eff6ff,_#dbeafe)] shadow-[0_12px_24px_rgba(37,99,235,0.10)]"
-                                                        : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/40"
-                                                }`}
-                                            >
-                                                <Radio value={option.value} className="mt-1" />
-                                                <div className="min-w-0">
-                                                    <div className="text-base font-semibold text-slate-900 md:text-lg">
-                                                        {option.label}.
-                                                    </div>
-                                                    <div className="mt-2 whitespace-pre-wrap text-[15px] leading-7 text-slate-700 md:text-base md:leading-8">
-                                                        {option.text}
-                                                    </div>
-                                                </div>
-                                            </label>
-                                        ))}
+                                <div className="space-y-5">
+                                    <div className="space-y-2">
+                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em] !text-blue-700">
+                                            Nội dung câu hỏi
+                                        </Text>
+                                        <Paragraph className="!mb-0 !max-w-4xl !text-base !leading-8 !text-slate-700 md:!text-[1.08rem]">
+                                            {currentQuestion?.cau_hoi}
+                                        </Paragraph>
                                     </div>
-                                </Radio.Group>
+
+                                    <Radio.Group
+                                        className="w-full"
+                                        value={currentQuestion.dap_an_chon}
+                                        onChange={(e) =>
+                                            chon(
+                                                currentQuestion.clientKey,
+                                                currentQuestion.questionId,
+                                                e.target.value
+                                            )
+                                        }
+                                    >
+                                        <div className="grid gap-4">
+                                            {[
+                                                {value: 1, label: "A", text: currentQuestion.caua},
+                                                {value: 2, label: "B", text: currentQuestion.caub},
+                                                {value: 3, label: "C", text: currentQuestion.cauc},
+                                                {value: 4, label: "D", text: currentQuestion.caud},
+                                            ].map((option) => (
+                                                <label
+                                                    key={`${currentQuestion.clientKey}-${option.value}`}
+                                                    className={`flex cursor-pointer items-start gap-4 rounded-[24px] border px-4 py-4 transition md:px-6 md:py-5 ${
+                                                        currentQuestion.dap_an_chon === option.value
+                                                            ? "border-blue-500 bg-[linear-gradient(135deg,#eff6ff,_#dbeafe)] shadow-[0_12px_24px_rgba(37,99,235,0.10)]"
+                                                            : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/40"
+                                                    }`}
+                                                >
+                                                    <Radio value={option.value} className="mt-1" />
+                                                    <div className="min-w-0">
+                                                        <div className="text-base font-semibold text-slate-900 md:text-lg">
+                                                            {option.label}.
+                                                        </div>
+                                                        <div className="mt-2 whitespace-pre-wrap text-[15px] leading-7 text-slate-700 md:text-base md:leading-8">
+                                                            {option.text}
+                                                        </div>
+                                                    </div>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </Radio.Group>
+                                </div>
                             )}
 
                             {!isDuDoan && currentQuestion?.loai === 2 && (
                                 <div className="space-y-5">
+                                    <div className="space-y-2">
+                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em] !text-blue-700">
+                                            Nội dung câu hỏi
+                                        </Text>
+                                        <Paragraph className="!mb-0 !max-w-4xl !text-base !leading-8 !text-slate-700 md:!text-[1.08rem]">
+                                            {currentQuestion?.cau_hoi}
+                                        </Paragraph>
+                                    </div>
+
                                     {currentQuestion.goi_y && (
                                         <div className="rounded-[24px] border border-amber-200 bg-[linear-gradient(180deg,#fffaf0_0%,#fef3c7_100%)] px-5 py-4 text-sm leading-7 text-amber-900">
                                             <span className="font-semibold">Gợi ý:</span> {currentQuestion.goi_y}
