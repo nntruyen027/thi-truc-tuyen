@@ -1,53 +1,122 @@
-const dbHelper = require("../../utils/dbHelper")
-const db = require("../../config/db")
+const { and, eq, sql } = require("drizzle-orm");
+const db = require("../../db/client");
+const { donVi, refreshTokens, users } = require("../../db/schema");
 
-exports.login = (user, pass) => {
+function mapDonVi(row) {
+    if (!row?.don_vi_id) {
+        return null;
+    }
 
-    return dbHelper.call(
-        "select auth.login_user($1,$2) as data",
-        [user, pass]
-    )
-
+    return {
+        id: row.don_vi_id,
+        ten: row.don_vi_ten,
+        mo_ta: row.don_vi_mo_ta,
+    };
 }
 
-exports.getUserByUsername = (username) => {
-    return dbHelper.call
-    ("select auth.lay_user_by_username($1) as data",
-        [username]
-    )
+function mapUser(row) {
+    if (!row) {
+        return null;
+    }
+
+    return {
+        id: row.id,
+        username: row.username,
+        password: row.password,
+        ho_ten: row.ho_ten,
+        don_vi_id: row.don_vi_id,
+        role: row.role,
+        avatar: row.avatar,
+        created_at: row.created_at,
+        don_vi: mapDonVi(row),
+    };
 }
 
-exports.taoNguoiDung = (user, pass, hoTen, donViId) => {
-    return dbHelper.call
-    ("select auth.tao_nguoi_dung($1,$2,$3,$4) as data",
-        [user, hoTen, pass, donViId]
-    )
+async function selectUserByCondition(condition) {
+    const [row] = await db
+        .select({
+            id: users.id,
+            username: users.username,
+            password: users.password,
+            ho_ten: users.hoTen,
+            don_vi_id: users.donViId,
+            role: users.role,
+            avatar: users.avatar,
+            created_at: users.createdAt,
+            don_vi_ten: donVi.ten,
+            don_vi_mo_ta: donVi.moTa,
+        })
+        .from(users)
+        .leftJoin(donVi, eq(users.donViId, donVi.id))
+        .where(condition)
+        .limit(1);
+
+    return mapUser(row);
 }
 
-exports.saveRefresh = (
-    id,
-    user,
-    token,
-    exp
-) => {
+exports.login = async (user, pass) => {
+    return exports.getUserByUsername(user);
+};
 
-    return dbHelper.call(
-        "select auth.save_refresh($1,$2,$3,$4) as data",
-        [id, user, token, exp]
-    )
+exports.getUserByUsername = async (username) => {
+    return selectUserByCondition(eq(users.username, username));
+};
 
-}
+exports.taoNguoiDung = async (username, pass, hoTen, donViId) => {
+    const existing = await exports.getUserByUsername(username);
 
-exports.updatePassword = (username, password) => {
-    return db.query(
-        "update auth.users set password = $2 where username = $1",
-        [username, password]
-    )
-}
+    if (existing) {
+        throw `Tài khoản ${username} đã tồn tại`;
+    }
 
-exports.capNhatThongTinNguoiDung = (username, hoTen, donViId) => {
-    return dbHelper.call(
-        "select auth.cap_nhat_thong_tin_nguoi_dung($1,$2,$3) as data",
-        [username, hoTen, donViId]
-    )
-}
+    const [created] = await db
+        .insert(users)
+        .values({
+            username,
+            password: pass,
+            hoTen,
+            donViId,
+            role: "user",
+        })
+        .returning({id: users.id});
+
+    return selectUserByCondition(eq(users.id, created.id));
+};
+
+exports.saveRefresh = async (id, user, token, exp) => {
+    await db
+        .insert(refreshTokens)
+        .values({
+            id,
+            userId: user,
+            token,
+            expireAt: exp,
+        });
+
+    return null;
+};
+
+exports.updatePassword = async (username, password) => {
+    const updated = await db
+        .update(users)
+        .set({
+            password,
+        })
+        .where(eq(users.username, username))
+        .returning({id: users.id});
+
+    return updated.length > 0;
+};
+
+exports.capNhatThongTinNguoiDung = async (username, hoTen, donViId) => {
+    await db
+        .update(users)
+        .set({
+            hoTen,
+            donViId,
+        })
+        .where(eq(users.username, username));
+
+    return exports.getUserByUsername(username);
+};
+

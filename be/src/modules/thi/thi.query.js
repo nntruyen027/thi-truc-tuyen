@@ -1,201 +1,809 @@
-const dbHelper = require("../../utils/dbHelper")
+const { and, asc, eq, inArray, sql } = require("drizzle-orm");
+const db = require("../../db/client");
+const {
+    baiThi,
+    baiThiChiTiet,
+    baiThiChiTietTuLuan,
+    deThi,
+    deThiCauHoi,
+    dotThi,
+    tracNghiem,
+    tuLuanDotThi,
+    users,
+} = require("../../db/schema");
 
-exports.conDuocThi = (
-    dotThiId,
-    thiSinhId,
-) => {
-
-    return dbHelper.call(
-        "select thi.fn_con_duoc_thi($1,$2) as data",
-        [
-            dotThiId,
-            thiSinhId,
-        ]
-    )
-
-}
-
-exports.layDeDangLam = (
-    dotThiId,
-    thiSinhId,
-) => {
-
-    return dbHelper.call(
-        "select thi.fn_de_dang_lam($1,$2) as data",
-        [
-            dotThiId,
-            thiSinhId,
-        ]
-    )
-
-}
-
-exports.taoDeThi = (
-    dotThiId,
-    thiSinhId,
-) => {
-
-    return dbHelper.call(
-        "select thi.fn_tao_de_thi($1,$2) as data",
-        [
-            dotThiId,
-            thiSinhId,
-        ]
-    )
-
-}
-
-exports.batDauThi = (
-    deThiId,
-    thiSinhId,
-) => {
-
-    return dbHelper.call(
-        "select thi.fn_bat_dau_thi($1,$2) as data",
-        [
-            deThiId,
-            thiSinhId,
-        ]
-    )
-
-}
-
-exports.luuCauTraLoi = (
-    baiThiId,
-    cauHoiId,
-    dapAn
-) => {
-
-    return dbHelper.call(
-        "select thi.fn_luu_cau_tra_loi($1,$2,$3)",
-        [
-            baiThiId,
-            cauHoiId,
-            dapAn,
-        ]
-    )
-
-}
-
-exports.luuCauTraLoiTuLuan = (
-    baiThiId,
-    cauHoiId,
-    dapAn
-) => {
-
-    return dbHelper.call(
-        "select thi.fn_luu_cau_tra_loi_tu_luan($1,$2,$3)",
-        [
-            baiThiId,
-            cauHoiId,
-            dapAn,
-        ]
-    )
-
-}
-
-exports.nopBai = (
-    baiThiId,
-) => {
-
-    return dbHelper.call(
-        "select thi.fn_nop_bai($1) as data",
-        [
-            baiThiId,
-        ]
-    )
-
-}
-
-exports.lichSuThi = (
-    thiSinhId,
-    dotThiId,
-) => {
-
-    return dbHelper.call(
-        'select thi.lay_lich_su_thi($1,$2) as data',
-        [
-            thiSinhId,
-            dotThiId,
-        ]
-    )
-
-}
-
-exports.layCauHoiDeThi = (
-    deThiId,
-    baiThiId
-) => {
-
-    return dbHelper.call(
-        'select thi.lay_cau_hoi_de_thi($1) as data',
-        [
-            deThiId,
-            baiThiId,
-        ]
-    )
-
-}
-
-exports.layBaiDangLam = (
-    thiSinhId,
-    dotThiId,
-) => {
-
-    return dbHelper.call(
-        "select thi.lay_bai_dang_lam($1,$2) as data",
-        [
-            thiSinhId,
-            dotThiId,
-        ]
-    )
-
-}
-
-exports.startThi = (
-    dotThiId,
-    thiSinhId,
-) => {
-
-    return dbHelper.call(
-        "select thi.fn_start_thi($1,$2) as data",
-        [
-            dotThiId,
-            thiSinhId,
-        ]
-    )
-
-}
-
-exports.pauseThi = (
-    baiThiId
-) => {
-    return dbHelper.call(
-        "select thi.fn_dung_thi($1) as data",
-        [baiThiId]
-    )
-}
-
-exports.nopDuDoanKetQuan =
-    (
-        baiThiId, soDuDoan
-    ) => {
-        return dbHelper.call(
-            "select thi.fn_nop_du_doan_ket_qua($1,$2) as data",
-            [baiThiId, soDuDoan]
-        )
+function withLegacyKeys(data) {
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+        return data;
     }
 
-exports.xepHangTracNghiemTheoDotThi = (dotThiId, topGiai) => {
-    return dbHelper.call(
-        "select thi.lay_giai_trac_nghiem_theo_dot_thi($1,$2) as data",
-        [dotThiId, topGiai]
-    );
+    return {
+        ...data,
+        ...(data.deThiId !== undefined ? {de_thi_id: data.deThiId} : {}),
+        ...(data.baiThiId !== undefined ? {bai_thi_id: data.baiThiId} : {}),
+        ...(data.timeLeft !== undefined ? {time_left: data.timeLeft} : {}),
+        ...(data.cauHoi !== undefined ? {cau_hoi: data.cauHoi} : {}),
+        ...(data.tuLuan !== undefined ? {tu_luan: data.tuLuan} : {}),
+        ...(data.thiSinhId !== undefined ? {thi_sinh_id: data.thiSinhId} : {}),
+        ...(data.lanThi !== undefined ? {lan_thi: data.lanThi} : {}),
+        ...(data.thoiGianBatDau !== undefined ? {thoi_gian_bat_dau: data.thoiGianBatDau} : {}),
+        ...(data.thoiGianNop !== undefined ? {thoi_gian_nop: data.thoiGianNop} : {}),
+        ...(data.tongThoiGianDaLam !== undefined ? {tong_thoi_gian_da_lam: data.tongThoiGianDaLam} : {}),
+        ...(data.lanBatDau !== undefined ? {lan_bat_dau: data.lanBatDau} : {}),
+        ...(data.dangLam !== undefined ? {dang_lam: data.dangLam} : {}),
+        ...(data.soDuDoan !== undefined ? {so_du_doan: data.soDuDoan} : {}),
+        ...(data.dapAnChon !== undefined ? {dap_an_chon: data.dapAnChon} : {}),
+        ...(data.cauHoiId !== undefined ? {cau_hoi_id: data.cauHoiId} : {}),
+        ...(data.dotThiId !== undefined ? {dot_thi_id: data.dotThiId} : {}),
+        ...(data.cauHoiText !== undefined ? {cau_hoi: data.cauHoiText} : {}),
+        ...(data.goiY !== undefined ? {goi_y: data.goiY} : {}),
+    };
 }
 
-exports.xepHangTracNghiemTheoCuocThi = (cuocThiId, topGiai) => {
-    return dbHelper.call(
-        "select thi.lay_giai_trac_nghiem_theo_cuoc_thi($1,$2) as data",
-        [cuocThiId, topGiai]
-    );
+function mapBaiThi(row) {
+    if (!row) {
+        return {};
+    }
+
+    return withLegacyKeys({
+        id: row.id,
+        deThiId: row.deThiId,
+        thiSinhId: row.thiSinhId,
+        lanThi: row.lanThi,
+        thoiGianBatDau: row.thoiGianBatDau,
+        thoiGianNop: row.thoiGianNop,
+        trangThai: row.trangThai,
+        diem: row.diem,
+        tongThoiGianDaLam: row.tongThoiGianDaLam,
+        lanBatDau: row.lanBatDau,
+        dangLam: row.dangLam,
+        soDuDoan: row.soDuDoan,
+    });
 }
+
+function mapDotThiInfo(row) {
+    if (!row) {
+        return null;
+    }
+
+    return {
+        id: row.id,
+        cuocThiId: row.cuocThiId,
+        ten: row.ten,
+        moTa: row.moTa,
+        soLanThamGiaToiDa: row.soLanThamGiaToiDa,
+        thoiGianThi: row.thoiGianThi,
+        tyLeDanhGiaDat: row.tyLeDanhGiaDat,
+        thoiGianBatDau: row.thoiGianBatDau,
+        thoiGianKetThuc: row.thoiGianKetThuc,
+        coTronCauHoi: row.coTronCauHoi,
+        choPhepLuuBai: row.choPhepLuuBai,
+        duDoan: row.duDoan,
+        trangThai: row.trangThai,
+        createdAt: row.createdAt,
+    };
+}
+
+function mapThiSinh(row) {
+    if (!row) {
+        return null;
+    }
+
+    return {
+        id: row.id,
+        username: row.username,
+        hoTen: row.hoTen,
+        donViId: row.donViId,
+        avatar: row.avatar,
+        createdAt: row.createdAt,
+        ho_ten: row.hoTen,
+        don_vi_id: row.donViId,
+        created_at: row.createdAt,
+    };
+}
+
+function mapTracNghiemQuestion(row) {
+    return withLegacyKeys({
+        id: row.id,
+        cauHoiText: row.cauHoi,
+        caua: row.cauA,
+        caub: row.cauB,
+        cauc: row.cauC,
+        caud: row.cauD,
+        diem: row.diem,
+        thuTu: row.thuTu,
+        dapAnChon: row.dapAnChon,
+    });
+}
+
+function mapTuLuanQuestion(row) {
+    return withLegacyKeys({
+        id: row.id,
+        cauHoiText: row.cauHoi,
+        dotThiId: row.dotThiId,
+        goiY: row.goiY,
+        dapAn: row.dapAn,
+        diem: row.diem,
+    });
+}
+
+function compareNullableDesc(left, right) {
+    if (left == null && right == null) {
+        return 0;
+    }
+
+    if (left == null) {
+        return 1;
+    }
+
+    if (right == null) {
+        return -1;
+    }
+
+    return Number(right) - Number(left);
+}
+
+function compareNullableAsc(left, right) {
+    if (left == null && right == null) {
+        return 0;
+    }
+
+    if (left == null) {
+        return 1;
+    }
+
+    if (right == null) {
+        return -1;
+    }
+
+    return Number(left) - Number(right);
+}
+
+function compareRankingRow(left, right) {
+    const byDiem = compareNullableDesc(left.diem, right.diem);
+
+    if (byDiem !== 0) {
+        return byDiem;
+    }
+
+    const byThoiGian = compareNullableAsc(left.thoiGian, right.thoiGian);
+
+    if (byThoiGian !== 0) {
+        return byThoiGian;
+    }
+
+    const bySaiSo = compareNullableAsc(left.saiSo, right.saiSo);
+
+    if (bySaiSo !== 0) {
+        return bySaiSo;
+    }
+
+    return Number(left.baiThiId) - Number(right.baiThiId);
+}
+
+function mapRankingRow(row) {
+    return {
+        baiThiId: row.baiThiId,
+        bai_thi_id: row.baiThiId,
+        thiSinh: row.thiSinh,
+        thi_sinh: row.thiSinh,
+        diem: row.diem,
+        thoiGian: row.thoiGian,
+        thoi_gian: row.thoiGian,
+        soDuDoan: row.soDuDoan,
+        so_du_doan: row.soDuDoan,
+        soNguoi100: row.soNguoi100,
+        so_nguoi_100: row.soNguoi100,
+        saiSo: row.saiSo,
+        sai_so: row.saiSo,
+    };
+}
+
+async function layThoiGianThiTheoDeThi(tx, deThiId) {
+    const [row] = await tx
+        .select({
+            thoiGianThi: dotThi.thoiGianThi,
+        })
+        .from(deThi)
+        .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
+        .where(eq(deThi.id, Number(deThiId)))
+        .limit(1);
+
+    return row?.thoiGianThi || 0;
+}
+
+async function layCauHoiDeThiInternal(tx, deThiId, baiThiId) {
+    const rows = await tx
+        .select({
+            id: tracNghiem.id,
+            cauHoi: tracNghiem.cauHoi,
+            cauA: tracNghiem.cauA,
+            cauB: tracNghiem.cauB,
+            cauC: tracNghiem.cauC,
+            cauD: tracNghiem.cauD,
+            diem: tracNghiem.diem,
+            thuTu: deThiCauHoi.thuTu,
+            dapAnChon: baiThiChiTiet.dapAnChon,
+        })
+        .from(deThiCauHoi)
+        .innerJoin(tracNghiem, eq(tracNghiem.id, deThiCauHoi.cauHoiId))
+        .leftJoin(
+            baiThiChiTiet,
+            and(
+                eq(baiThiChiTiet.cauHoiId, tracNghiem.id),
+                eq(baiThiChiTiet.baiThiId, Number(baiThiId))
+            )
+        )
+        .where(eq(deThiCauHoi.deThiId, Number(deThiId)))
+        .orderBy(asc(deThiCauHoi.thuTu));
+
+    return rows.map(mapTracNghiemQuestion);
+}
+
+async function layCauHoiTuLuanInternal(tx, baiThiId) {
+    const [info] = await tx
+        .select({
+            dotThiId: deThi.dotThiId,
+        })
+        .from(baiThi)
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .where(eq(baiThi.id, Number(baiThiId)))
+        .limit(1);
+
+    if (!info?.dotThiId) {
+        return [];
+    }
+
+    const rows = await tx
+        .select({
+            id: tuLuanDotThi.id,
+            cauHoi: tuLuanDotThi.cauHoi,
+            dotThiId: tuLuanDotThi.dotThiId,
+            goiY: tuLuanDotThi.goiY,
+            dapAn: baiThiChiTietTuLuan.dapAn,
+            diem: baiThiChiTietTuLuan.diem,
+        })
+        .from(tuLuanDotThi)
+        .leftJoin(
+            baiThiChiTietTuLuan,
+            and(
+                eq(baiThiChiTietTuLuan.cauHoiId, tuLuanDotThi.id),
+                eq(baiThiChiTietTuLuan.baiThiId, Number(baiThiId))
+            )
+        )
+        .where(eq(tuLuanDotThi.dotThiId, Number(info.dotThiId)))
+        .orderBy(asc(tuLuanDotThi.id));
+
+    return rows.map(mapTuLuanQuestion);
+}
+
+exports.conDuocThi = async (dotThiId, thiSinhId) => {
+    const [dotThiInfo, completedRows] = await Promise.all([
+        db
+            .select({
+                soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
+            })
+            .from(dotThi)
+            .where(eq(dotThi.id, Number(dotThiId)))
+            .limit(1),
+        db
+            .select({
+                total: sql`count(*)::int`,
+            })
+            .from(baiThi)
+            .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+            .where(and(
+                eq(baiThi.thiSinhId, Number(thiSinhId)),
+                eq(deThi.dotThiId, Number(dotThiId)),
+                eq(baiThi.trangThai, 1)
+            )),
+    ]);
+
+    const max = dotThiInfo[0]?.soLanThamGiaToiDa ?? 0;
+    const daThi = Number(completedRows[0]?.total || 0);
+
+    return daThi < max;
+};
+
+exports.layDeDangLam = async (dotThiId, thiSinhId) => {
+    const [row] = await db
+        .select({
+            id: deThi.id,
+        })
+        .from(deThi)
+        .innerJoin(baiThi, eq(baiThi.deThiId, deThi.id))
+        .where(and(
+            eq(deThi.dotThiId, Number(dotThiId)),
+            eq(baiThi.thiSinhId, Number(thiSinhId)),
+            eq(baiThi.trangThai, 0)
+        ))
+        .limit(1);
+
+    return row?.id || null;
+};
+
+exports.taoDeThi = async (dotThiId, thiSinhId) => {
+    return db.transaction(async (tx) => {
+        const [lanThiRow] = await tx
+            .select({
+                lanThi: sql`coalesce(max(${deThi.lanThi}), 0) + 1`,
+            })
+            .from(deThi)
+            .where(and(
+                eq(deThi.dotThiId, Number(dotThiId)),
+                eq(deThi.thiSinhId, Number(thiSinhId))
+            ));
+
+        const [createdDeThi] = await tx
+            .insert(deThi)
+            .values({
+                dotThiId: Number(dotThiId),
+                thiSinhId: Number(thiSinhId),
+                lanThi: Number(lanThiRow?.lanThi || 1),
+            })
+            .returning({id: deThi.id});
+
+        const cauHinhRows = await tx
+            .select()
+            .from(require("../../db/schema").tracNghiemDotThi)
+            .where(eq(require("../../db/schema").tracNghiemDotThi.dotThiId, Number(dotThiId)));
+
+        let thuTu = 0;
+
+        for (const config of cauHinhRows) {
+            const randomRows = await tx
+                .select({id: tracNghiem.id})
+                .from(tracNghiem)
+                .where(and(
+                    eq(tracNghiem.linhVucId, config.linhVucId),
+                    eq(tracNghiem.nhomId, config.nhomId)
+                ))
+                .orderBy(sql`random()`)
+                .limit(config.soLuong);
+
+            for (const question of randomRows) {
+                thuTu += 1;
+
+                await tx
+                    .insert(deThiCauHoi)
+                    .values({
+                        deThiId: createdDeThi.id,
+                        cauHoiId: question.id,
+                        thuTu,
+                    });
+            }
+        }
+
+        return createdDeThi.id;
+    });
+};
+
+exports.batDauThi = async (deThiId, thiSinhId) => {
+    const [deRow] = await db
+        .select({
+            lanThi: deThi.lanThi,
+        })
+        .from(deThi)
+        .where(eq(deThi.id, Number(deThiId)))
+        .limit(1);
+
+    const [created] = await db
+        .insert(baiThi)
+        .values({
+            deThiId: Number(deThiId),
+            thiSinhId: Number(thiSinhId),
+            lanThi: deRow?.lanThi || 1,
+        })
+        .returning({id: baiThi.id});
+
+    return created?.id || null;
+};
+
+exports.luuCauTraLoi = async (baiThiId, cauHoiId, dapAn) => {
+    await db
+        .insert(baiThiChiTiet)
+        .values({
+            baiThiId: Number(baiThiId),
+            cauHoiId: Number(cauHoiId),
+            dapAnChon: dapAn,
+        })
+        .onConflictDoUpdate({
+            target: [baiThiChiTiet.baiThiId, baiThiChiTiet.cauHoiId],
+            set: {
+                dapAnChon: dapAn,
+            },
+        });
+
+    return null;
+};
+
+exports.luuCauTraLoiTuLuan = async (baiThiId, cauHoiId, dapAn) => {
+    await db
+        .insert(baiThiChiTietTuLuan)
+        .values({
+            baiThiId: Number(baiThiId),
+            cauHoiId: Number(cauHoiId),
+            dapAn,
+        })
+        .onConflictDoUpdate({
+            target: [baiThiChiTietTuLuan.baiThiId, baiThiChiTietTuLuan.cauHoiId],
+            set: {
+                dapAn,
+            },
+        });
+
+    return null;
+};
+
+exports.nopBai = async (baiThiIdValue) => {
+    return db.transaction(async (tx) => {
+        const chiTietRows = await tx
+            .select({
+                id: baiThiChiTiet.id,
+                dapAnChon: baiThiChiTiet.dapAnChon,
+                dapAn: tracNghiem.dapAn,
+                diemCauHoi: tracNghiem.diem,
+            })
+            .from(baiThiChiTiet)
+            .innerJoin(tracNghiem, eq(tracNghiem.id, baiThiChiTiet.cauHoiId))
+            .where(eq(baiThiChiTiet.baiThiId, Number(baiThiIdValue)));
+
+        let tongDiem = 0;
+
+        await Promise.all(chiTietRows.map(async (item) => {
+            const dung = item.dapAnChon === item.dapAn;
+            const diem = dung ? Number(item.diemCauHoi || 0) : 0;
+            tongDiem += diem;
+
+            await tx
+                .update(baiThiChiTiet)
+                .set({
+                    dung,
+                    diem,
+                })
+                .where(eq(baiThiChiTiet.id, item.id));
+        }));
+
+        await tx
+            .update(baiThi)
+            .set({
+                trangThai: 1,
+                thoiGianNop: new Date(),
+                diem: tongDiem,
+            })
+            .where(eq(baiThi.id, Number(baiThiIdValue)));
+
+        return tongDiem;
+    });
+};
+
+exports.lichSuThi = async (thiSinhId, dotThiId) => {
+    const rows = await db
+        .select({
+            id: baiThi.id,
+            deThiId: baiThi.deThiId,
+            thiSinhId: baiThi.thiSinhId,
+            lanThi: baiThi.lanThi,
+            thoiGianBatDau: baiThi.thoiGianBatDau,
+            thoiGianNop: baiThi.thoiGianNop,
+            trangThai: baiThi.trangThai,
+            diem: baiThi.diem,
+            tongThoiGianDaLam: baiThi.tongThoiGianDaLam,
+            lanBatDau: baiThi.lanBatDau,
+            dangLam: baiThi.dangLam,
+            soDuDoan: baiThi.soDuDoan,
+            dotThiId: dotThi.id,
+            ten: dotThi.ten,
+            moTa: dotThi.moTa,
+            soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
+            thoiGianThi: dotThi.thoiGianThi,
+            tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
+            thoiGianBatDauDot: dotThi.thoiGianBatDau,
+            thoiGianKetThucDot: dotThi.thoiGianKetThuc,
+            coTronCauHoi: dotThi.coTronCauHoi,
+            choPhepLuuBai: dotThi.choPhepLuuBai,
+            duDoan: dotThi.duDoan,
+            trangThaiDot: dotThi.trangThai,
+            createdAtDot: dotThi.createdAt,
+        })
+        .from(baiThi)
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
+        .where(and(
+            eq(baiThi.thiSinhId, Number(thiSinhId)),
+            eq(deThi.dotThiId, Number(dotThiId))
+        ))
+        .orderBy(asc(baiThi.lanThi));
+
+    return rows.map((row) => ({
+        ...mapBaiThi(row),
+        dot_thi: withLegacyKeys(mapDotThiInfo({
+            id: row.dotThiId,
+            cuocThiId: null,
+            ten: row.ten,
+            moTa: row.moTa,
+            soLanThamGiaToiDa: row.soLanThamGiaToiDa,
+            thoiGianThi: row.thoiGianThi,
+            tyLeDanhGiaDat: row.tyLeDanhGiaDat,
+            thoiGianBatDau: row.thoiGianBatDauDot,
+            thoiGianKetThuc: row.thoiGianKetThucDot,
+            coTronCauHoi: row.coTronCauHoi,
+            choPhepLuuBai: row.choPhepLuuBai,
+            duDoan: row.duDoan,
+            trangThai: row.trangThaiDot,
+            createdAt: row.createdAtDot,
+        })),
+    }));
+};
+
+exports.layCauHoiDeThi = async (deThiId, baiThiId) => {
+    return layCauHoiDeThiInternal(db, deThiId, baiThiId);
+};
+
+exports.layBaiDangLam = async (thiSinhId, dotThiId) => {
+    const [row] = await db
+        .select({
+            id: baiThi.id,
+            deThiId: baiThi.deThiId,
+            thiSinhId: baiThi.thiSinhId,
+            lanThi: baiThi.lanThi,
+            thoiGianBatDau: baiThi.thoiGianBatDau,
+            thoiGianNop: baiThi.thoiGianNop,
+            trangThai: baiThi.trangThai,
+            diem: baiThi.diem,
+            tongThoiGianDaLam: baiThi.tongThoiGianDaLam,
+            lanBatDau: baiThi.lanBatDau,
+            dangLam: baiThi.dangLam,
+            soDuDoan: baiThi.soDuDoan,
+        })
+        .from(baiThi)
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .where(and(
+            eq(baiThi.thiSinhId, Number(thiSinhId)),
+            eq(deThi.dotThiId, Number(dotThiId)),
+            eq(baiThi.trangThai, 0)
+        ))
+        .limit(1);
+
+    return row ? mapBaiThi(row) : {};
+};
+
+exports.startThi = async (dotThiId, thiSinhId) => {
+    return db.transaction(async (tx) => {
+        const conDuoc = await exports.conDuocThi(dotThiId, thiSinhId);
+
+        if (!conDuoc) {
+            return {error: "het_lan_thi"};
+        }
+
+        const [existing] = await tx
+            .select({
+                baiThiId: baiThi.id,
+                deThiId: baiThi.deThiId,
+                thoiGianThi: dotThi.thoiGianThi,
+                tongThoiGianDaLam: baiThi.tongThoiGianDaLam,
+                lanBatDau: baiThi.lanBatDau,
+                dangLam: baiThi.dangLam,
+            })
+            .from(baiThi)
+            .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+            .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
+            .where(and(
+                eq(baiThi.thiSinhId, Number(thiSinhId)),
+                eq(deThi.dotThiId, Number(dotThiId)),
+                eq(baiThi.trangThai, 0)
+            ))
+            .limit(1);
+
+        let baiThiIdValue = existing?.baiThiId || null;
+        let deThiIdValue = existing?.deThiId || null;
+        let thoiGianThi = existing?.thoiGianThi || 0;
+        let tongDaLam = Number(existing?.tongThoiGianDaLam || 0);
+        let lanBatDau = existing?.lanBatDau || null;
+
+        if (!baiThiIdValue) {
+            deThiIdValue = await exports.taoDeThi(dotThiId, thiSinhId);
+            baiThiIdValue = await exports.batDauThi(deThiIdValue, thiSinhId);
+            thoiGianThi = await layThoiGianThiTheoDeThi(tx, deThiIdValue);
+            tongDaLam = 0;
+            lanBatDau = null;
+        }
+
+        if (!lanBatDau) {
+            const now = new Date();
+
+            await tx
+                .update(baiThi)
+                .set({
+                    lanBatDau: now,
+                    dangLam: true,
+                })
+                .where(eq(baiThi.id, Number(baiThiIdValue)));
+
+            lanBatDau = now;
+        }
+
+        const diff = Math.floor((Date.now() - new Date(lanBatDau).getTime()) / 1000);
+        let timeLeft = (Number(thoiGianThi || 0) * 60) - (tongDaLam + diff);
+
+        if (timeLeft < 0) {
+            timeLeft = 0;
+        }
+
+        const [cauHoi, tuLuan] = await Promise.all([
+            layCauHoiDeThiInternal(tx, deThiIdValue, baiThiIdValue),
+            layCauHoiTuLuanInternal(tx, baiThiIdValue),
+        ]);
+
+        return {
+            deThiId: deThiIdValue,
+            baiThiId: baiThiIdValue,
+            timeLeft,
+            cauHoi,
+            tuLuan,
+            de_thi_id: deThiIdValue,
+            bai_thi_id: baiThiIdValue,
+            time_left: timeLeft,
+        };
+    });
+};
+
+exports.pauseThi = async (baiThiIdValue) => {
+    const [row] = await db
+        .select({
+            lanBatDau: baiThi.lanBatDau,
+            tongThoiGianDaLam: baiThi.tongThoiGianDaLam,
+        })
+        .from(baiThi)
+        .where(eq(baiThi.id, Number(baiThiIdValue)))
+        .limit(1);
+
+    if (!row?.lanBatDau) {
+        return false;
+    }
+
+    const diff = Math.floor((Date.now() - new Date(row.lanBatDau).getTime()) / 1000);
+
+    await db
+        .update(baiThi)
+        .set({
+            tongThoiGianDaLam: Number(row.tongThoiGianDaLam || 0) + diff,
+            dangLam: false,
+            lanBatDau: null,
+        })
+        .where(eq(baiThi.id, Number(baiThiIdValue)));
+
+    return true;
+};
+
+exports.nopDuDoanKetQuan = async (baiThiIdValue, soDuDoan) => {
+    const updated = await db
+        .update(baiThi)
+        .set({
+            soDuDoan,
+        })
+        .where(eq(baiThi.id, Number(baiThiIdValue)))
+        .returning({id: baiThi.id});
+
+    if (!updated.length) {
+        throw "Bài thi không tồn tại";
+    }
+
+    return true;
+};
+
+async function layDanhSachBaiThiXepHang(whereClause) {
+    const examRows = await db
+        .select({
+            baiThiId: baiThi.id,
+            thiSinhId: baiThi.thiSinhId,
+            diem: baiThi.diem,
+            thoiGian: baiThi.tongThoiGianDaLam,
+            soDuDoan: baiThi.soDuDoan,
+            userId: users.id,
+            username: users.username,
+            hoTen: users.hoTen,
+            donViId: users.donViId,
+            avatar: users.avatar,
+            createdAt: users.createdAt,
+        })
+        .from(baiThi)
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .innerJoin(users, eq(users.id, baiThi.thiSinhId))
+        .where(whereClause);
+
+    if (!examRows.length) {
+        return [];
+    }
+
+    const examIds = examRows.map((row) => row.baiThiId);
+    const detailRows = await db
+        .select({
+            baiThiId: baiThiChiTiet.baiThiId,
+            tong: sql`count(*)::int`,
+            dung: sql`coalesce(sum(case when ${baiThiChiTiet.dung} then 1 else 0 end), 0)::int`,
+        })
+        .from(baiThiChiTiet)
+        .where(inArray(baiThiChiTiet.baiThiId, examIds))
+        .groupBy(baiThiChiTiet.baiThiId);
+
+    const detailStats = new Map(
+        detailRows.map((row) => [
+            Number(row.baiThiId),
+            {
+                tong: Number(row.tong || 0),
+                dung: Number(row.dung || 0),
+            },
+        ])
+    );
+
+    const soNguoi100 = examRows.reduce((total, row) => {
+        const stats = detailStats.get(Number(row.baiThiId)) || { tong: 0, dung: 0 };
+        return stats.dung === stats.tong ? total + 1 : total;
+    }, 0);
+
+    const bestByThiSinh = new Map();
+
+    for (const row of examRows) {
+        const current = {
+            baiThiId: row.baiThiId,
+            thiSinhId: row.thiSinhId,
+            diem: row.diem,
+            thoiGian: row.thoiGian,
+            soDuDoan: row.soDuDoan,
+            thiSinh: mapThiSinh({
+                id: row.userId,
+                username: row.username,
+                hoTen: row.hoTen,
+                donViId: row.donViId,
+                avatar: row.avatar,
+                createdAt: row.createdAt,
+            }),
+        };
+
+        const previous = bestByThiSinh.get(Number(row.thiSinhId));
+
+        if (!previous || compareRankingRow(current, previous) < 0) {
+            bestByThiSinh.set(Number(row.thiSinhId), current);
+        }
+    }
+
+    return Array.from(bestByThiSinh.values())
+        .map((row) => ({
+            ...row,
+            soNguoi100,
+            saiSo: Math.abs(Number(row.soDuDoan || 0) - soNguoi100),
+        }))
+        .sort(compareRankingRow);
+}
+
+exports.xepHangTracNghiemTheoDotThi = async (dotThiId, topGiai) => {
+    const rows = await layDanhSachBaiThiXepHang(
+        eq(deThi.dotThiId, Number(dotThiId))
+    );
+
+    return rows
+        .slice(0, Number(topGiai) || 10)
+        .map(mapRankingRow);
+};
+
+exports.xepHangTracNghiemTheoCuocThi = async (cuocThiId, topGiai) => {
+    const rows = await db
+        .select({ id: dotThi.id })
+        .from(dotThi)
+        .where(eq(dotThi.cuocThiId, Number(cuocThiId)));
+
+    const dotThiIds = rows.map((row) => row.id);
+
+    if (!dotThiIds.length) {
+        return [];
+    }
+
+    const data = await layDanhSachBaiThiXepHang(
+        inArray(deThi.dotThiId, dotThiIds)
+    );
+
+    return data
+        .slice(0, Number(topGiai) || 10)
+        .map(mapRankingRow);
+};

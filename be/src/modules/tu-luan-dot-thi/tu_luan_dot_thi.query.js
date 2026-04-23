@@ -1,45 +1,56 @@
-const dbHelper = require("../../utils/dbHelper")
+const { eq } = require("drizzle-orm");
+const db = require("../../db/client");
+const { tuLuanDotThi } = require("../../db/schema");
 
-exports.layDsTuLuan = (
-    dotThiId
-) => {
-
-    return dbHelper.call(
-        "select thi.lay_tu_luan_dot_thi($1) as data",
-        [
-            dotThiId
-        ]
-    )
+function mapRow(row) {
+    return {
+        id: row.id,
+        dot_thi_id: row.dotThiId,
+        cau_hoi: row.cauHoi,
+        goi_y: row.goiY,
+    };
 }
 
-exports.themTuLuan = (dotThiId, cau_hoi, goi_y) => {
+exports.layDsTuLuan = async (dotThiId) => {
+    const rows = await db
+        .select()
+        .from(tuLuanDotThi)
+        .where(eq(tuLuanDotThi.dotThiId, Number(dotThiId)));
 
+    return rows.map(mapRow);
+};
 
-    const sql =
-        `select thi.them_tu_luan_dot_thi($1,$2,$3) as data`
+exports.themTuLuan = async (dotThiId, cau_hoi, goi_y) => {
+    const [created] = await db
+        .insert(tuLuanDotThi)
+        .values({
+            dotThiId: Number(dotThiId),
+            cauHoi: cau_hoi,
+            goiY: goi_y,
+        })
+        .returning();
 
-    return dbHelper.call(
-        sql,
-        [dotThiId, cau_hoi, goi_y]
-    )
+    return mapRow(created);
+};
 
-}
+exports.suaTuLuan = async (id, cau_hoi, goi_y) => {
+    const [updated] = await db
+        .update(tuLuanDotThi)
+        .set({
+            cauHoi: cau_hoi,
+            goiY: goi_y,
+        })
+        .where(eq(tuLuanDotThi.id, Number(id)))
+        .returning();
 
-exports.suaTuLuan = (id, cau_hoi, goi_y) => {
+    return mapRow(updated);
+};
 
+exports.xoaTuLuan = async (id) => {
+    await db
+        .delete(tuLuanDotThi)
+        .where(eq(tuLuanDotThi.id, Number(id)));
 
-    const sql =
-        `select thi.sua_tu_luan_dot_thi($1,$2,$3) as data`
+    return true;
+};
 
-    return dbHelper.call(
-        sql,
-        [id, cau_hoi, goi_y]
-    )
-}
-
-exports.xoaTuLuan = (id) => {
-    return dbHelper.call(
-        `select thi.xoa_tu_luan_dot_thi($1) as data`,
-        [id],
-    )
-}

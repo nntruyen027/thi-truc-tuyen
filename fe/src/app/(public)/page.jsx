@@ -1,30 +1,35 @@
 'use client';
 
 import {layCauHinh} from "~/services/cau-hinh";
-import {useEffect, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {getPublicFileUrl} from "~/services/file";
-import {layDotThiHienTai} from "~/services/thi/dot-thi";
-import {Button, Col, Row, theme} from "antd";
+import {layDotThiHienTai, layDotThi} from "~/services/thi/dot-thi";
+import {Button, Card, Col, Flex, Row, Tag, Timeline, Typography, theme} from "antd";
+import {LaptopOutlined, ProfileOutlined, TeamOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
 import {layThoiGianConLaiCuaCuocThi} from "~/services/thi/cuoc-thi";
 import CountDown from "~/app/(public)/CountDown";
 import {useRouter} from "next/navigation";
-import TaiLieu from "~/app/(public)/TaiLieu";
-import TaiLieuKhac from "~/app/(public)/TaiLieuKhac";
 import KetQuaCongBo from "~/app/(public)/KetQuaCongBo";
 import Reveal from "~/app/components/common/Reveal";
 import {useAuthStore} from "~/store/auth";
+import {parseCuocThiMeta} from "~/utils/cuocThiMeta";
+import BaiVietCuocThi from "~/app/(public)/BaiVietCuocThi";
+import TaiLieuTongHop from "~/app/(public)/TaiLieuTongHop";
+import GiaiThuongCuocThi from "~/app/(public)/GiaiThuongCuocThi";
+
+const {Text, Paragraph} = Typography;
 
 const tabItems = [
     {
-        key: "ke-hoach",
-        label: "Kế hoạch",
+        key: "bai-viet",
+        label: "Bài viết",
         image: "/schedule.png",
     },
     {
-        key: "the-le",
-        label: "Thể lệ",
-        image: "/law.png",
+        key: "giai-thuong",
+        label: "Giải thưởng",
+        image: "/medal.png",
     },
     {
         key: "document",
@@ -38,17 +43,91 @@ const tabItems = [
     },
 ];
 
+function buildTimelineItems(dsDotThi = [], currentDotThiId) {
+    const now = dayjs();
+
+    return [...dsDotThi]
+        .sort((a, b) => dayjs(a.thoi_gian_bat_dau).valueOf() - dayjs(b.thoi_gian_bat_dau).valueOf())
+        .map((item) => {
+            const isCurrent = item.id === currentDotThiId;
+            const isFinished = dayjs(item.thoi_gian_ket_thuc).isBefore(now);
+            const isUpcoming = dayjs(item.thoi_gian_bat_dau).isAfter(now);
+
+            let color = "blue";
+            let status = "Đang diễn ra";
+
+            if (isFinished) {
+                color = "gray";
+                status = "Đã kết thúc";
+            } else if (isUpcoming) {
+                color = "green";
+                status = "Sắp diễn ra";
+            } else if (isCurrent) {
+                color = "red";
+                status = "Đang diễn ra";
+            }
+
+            return {
+                color,
+                children: (
+                    <div className="space-y-2 pb-3">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Text className="!text-base !font-semibold !text-slate-900">
+                                {item.ten}
+                            </Text>
+                            <Tag color={isCurrent ? "red" : isFinished ? "default" : isUpcoming ? "green" : "blue"}>
+                                {status}
+                            </Tag>
+                        </div>
+                        {item.mo_ta && (
+                            <Paragraph className="!mb-0 !text-sm !leading-7 !text-slate-500">
+                                {item.mo_ta}
+                            </Paragraph>
+                        )}
+                        <Text className="!text-sm !text-slate-500">
+                            {dayjs(item.thoi_gian_bat_dau).format("DD/MM/YYYY HH:mm")} - {dayjs(item.thoi_gian_ket_thuc).format("DD/MM/YYYY HH:mm")}
+                        </Text>
+                    </div>
+                )
+            };
+        });
+}
+
 export default function Page() {
     const [image, setImage] = useState(null);
     const [zoom, setZoom] = useState(1);
     const [dotThi, setDotThi] = useState(null);
     const [thoiGianConLai, setThoiGianConLai] = useState(null);
-    const [tab, setTab] = useState("ke-hoach");
+    const [tab, setTab] = useState("bai-viet");
+    const [timelineItems, setTimelineItems] = useState([]);
 
     const {token} = theme.useToken();
     const {colorPrimary} = token;
     const route = useRouter();
     const user = useAuthStore((state) => state.user);
+
+    const contestMeta = useMemo(
+        () => parseCuocThiMeta(dotThi?.cuoc_thi?.mo_ta),
+        [dotThi?.cuoc_thi?.mo_ta]
+    );
+
+    const infoCards = [
+        {
+            title: "Đối tượng tham gia",
+            value: contestMeta.doi_tuong_tham_gia || "Thông tin sẽ được cập nhật trong cuộc thi.",
+            icon: <TeamOutlined />,
+        },
+        {
+            title: "Nội dung cuộc thi",
+            value: contestMeta.noi_dung_cuoc_thi || "Thông tin sẽ được cập nhật trong cuộc thi.",
+            icon: <ProfileOutlined />,
+        },
+        {
+            title: "Hình thức dự thi",
+            value: contestMeta.hinh_thuc_du_thi || "Thông tin sẽ được cập nhật trong cuộc thi.",
+            icon: <LaptopOutlined />,
+        },
+    ];
 
     const getKhoa = () => {
         if (window.innerWidth < 768) {
@@ -84,6 +163,19 @@ export default function Page() {
 
             if (resDotThi.data) {
                 setDotThi(resDotThi.data);
+
+                if (resDotThi.data.cuoc_thi_id) {
+                    const dsDotThi = await layDotThi(resDotThi.data.cuoc_thi_id, {
+                        size: 50,
+                        page: 1,
+                    });
+
+                    if (active) {
+                        setTimelineItems(
+                            buildTimelineItems(dsDotThi?.data || [], resDotThi.data.id)
+                        );
+                    }
+                }
             }
 
             if (resConLai.data) {
@@ -133,183 +225,168 @@ export default function Page() {
     return (
         <div className="w-full">
             <Reveal animation="soft">
-            <Row>
-                <Col span={24}>
-                    <div
-                        className="relative w-full overflow-hidden bg-slate-200"
-                        style={{
-                            aspectRatio: "16/7"
-                        }}
-                    >
-                        {image && (
-                            <img
-                                src={
-                                    getPublicFileUrl(
-                                        image
-                                    )
-                                }
-                                alt=""
-                                style={{
-                                    width: `${100 * zoom}%`,
-                                    height: `${100 * zoom}%`,
-                                    objectFit: "cover",
-                                    objectPosition: "center",
-                                    position: "absolute",
-                                    left: "50%",
-                                    top: "50%",
-                                    transform:
-                                        "translate(-50%, -50%)"
-                                }}
-                            />
-                        )}
-
-                        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.08)_0%,rgba(15,23,42,0.22)_100%)]" />
-                    </div>
-                </Col>
-
-                <Col span={24}>
-                    {dotThi && (
+                <div className="pt-4 lg:pt-6">
+                    <div className="w-full">
                         <div
+                            className="relative w-full overflow-hidden bg-slate-200 shadow-sm"
                             style={{
-                                background: colorPrimary,
-                                fontFamily: "Arial"
+                                aspectRatio: "16/3"
                             }}
-                            className="px-4 py-4 text-center text-white"
                         >
-                            <div className="text-sm font-semibold uppercase tracking-[0.18em] text-white/80">
-                                Đang diễn ra
-                            </div>
+                            {image && (
+                                <img
+                                    src={
+                                        getPublicFileUrl(
+                                            image
+                                        )
+                                    }
+                                    alt=""
+                                    style={{
+                                        width: `${100 * zoom}%`,
+                                        height: `${100 * zoom}%`,
+                                        objectFit: "cover",
+                                        objectPosition: "center",
+                                        position: "absolute",
+                                        left: "50%",
+                                        top: "50%",
+                                        transform:
+                                            "translate(-50%, -50%)"
+                                    }}
+                                />
+                            )}
 
-                            <div className="mt-1 text-base font-semibold md:text-lg">
-                                {dotThi?.ten}
-                            </div>
-
-                            <div className="mt-1 text-sm md:text-base">
-                                Từ {dayjs(dotThi.thoi_gian_bat_dau).format("DD/MM/YYYY HH:mm:ss")}
-                                {" đến "}
-                                {dayjs(dotThi.thoi_gian_ket_thuc).format("DD/MM/YYYY HH:mm:ss")}
-                            </div>
+                            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.08)_0%,rgba(15,23,42,0.22)_100%)]" />
                         </div>
-                    )}
-                </Col>
-            </Row>
+                    </div>
+                </div>
+
             </Reveal>
 
-            <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                <Row gutter={[20, 20]}>
-                    <Col xs={24} xl={12}>
-                        <div className="flex h-full flex-col gap-5">
-                        {thoiGianConLai && (
-                            <Reveal delay={70}>
-                                <CountDown time={thoiGianConLai}/>
-                            </Reveal>
-                        )}
-
-                        <Reveal delay={150} className="flex-1">
-                            <div className="flex h-full flex-col justify-between rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-5 shadow-sm md:p-6">
-                                <div className="space-y-3">
-                                    <div className="inline-flex w-fit rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-blue-700">
-                                        Điều hành cuộc thi
-                                    </div>
-                                    <h3 className="text-xl font-bold text-slate-900 md:text-2xl">
-                                        Theo dõi mốc thời gian và công bố kết quả
+            <div className="mx-auto w-full px-4 py-6 sm:px-20 lg:px-60">
+                <Row gutter={[20, 20]} align="stretch">
+                    <Col xs={24} xl={11} className="flex">
+                        <Reveal delay={90} className="h-full w-full">
+                            <Card
+                                className="h-full overflow-hidden rounded-[32px] border-0 shadow-[0_22px_50px_rgba(15,23,42,0.10)]"
+                                styles={{body: {padding: 0, height: "100%"}}}
+                            >
+                                <Flex vertical className="h-full bg-slate-100">
+                                    <h3 style={{
+                                        background: colorPrimary,
+                                        margin: '0'
+                                    }} className="px-4 text-center py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white md:text-base">
+                                        Thông tin cuộc thi
                                     </h3>
-                            
-                                </div>
 
-                                <div className="mt-5 grid gap-3 md:grid-cols-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setTab("ket-qua")}
-                                        className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-blue-300 hover:bg-blue-50"
-                                    >
-                                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                            Công bố
-                                        </div>
-                                        <div className="mt-1 text-base font-semibold text-slate-900">
-                                            Xem bảng xếp hạng
-                                        </div>
-                                    </button>
-
-                                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-left">
-                                        <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                                            Trạng thái
-                                        </div>
-                                        <div className="mt-1 text-base font-semibold text-slate-900">
-                                            {dotThi?.cuoc_thi?.cho_phep_xem_lich_su ? "Đã mở công bố kết quả" : "Chưa công bố kết quả"}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                    <Flex vertical gap={18} className="flex-1 !px-5 !py-5 !md:px-6 !md:py-6">
+                                    
+                                        {infoCards.map((item) => (
+                                            <div key={item.title} className="space-y-3">
+                                                <Text style={{
+                                                    color: colorPrimary
+                                                }} className="!block !text-xl !font-bold !uppercase !tracking-[0.04em] md:!text-xl">
+                                                    {item.title}
+                                                </Text>
+                                                <div className="flex items-start gap-3 md:gap-4">
+                                                    <div className="flex h-16 w-16 shrink-0 items-center 
+                                                    justify-center rounded-full border-[3px] 
+                                                    border-white bg-white text-[1.7rem] text-[#1948be] md:h-18 md:w-18">
+                                                        {item.icon}
+                                                    </div>
+                                                    <div className="flex-1 rounded-[24px] bg-white px-5 py-4">
+                                                        <Paragraph className="!mb-0 !text-sm !leading-7 !text-slate-700 md:!text-base">
+                                                            {item.value}
+                                                        </Paragraph>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </Flex>
+                                </Flex>
+                            </Card>
                         </Reveal>
-                        </div>
                     </Col>
 
-                    <Col xs={24} xl={12}>
-                        <Reveal delay={110} className="h-full">
-                        <div className="mt-3 flex h-full min-h-full flex-col justify-between gap-6 rounded-3xl border border-slate-200 bg-white p-5 text-center shadow-sm md:p-8">
-                            <div className="space-y-2">
-                                <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">
-                                    Cổng thi trực tuyến
-                                </h2>
-                                <p className="mx-auto max-w-2xl text-sm leading-7 text-slate-500 md:text-base">
-                                    Theo dõi thông tin cuộc thi, đọc tài liệu và truy cập nhanh vào khu vực làm bài trong cùng một màn hình.
-                                </p>
-                            </div>
+                    <Col xs={24} xl={13} className="flex">
+                        <Reveal delay={110} className="h-full w-full">
+                            <Flex vertical gap={16} className="h-full w-full">
+                                {thoiGianConLai && (
+                                    <Reveal delay={70}>
+                                        <CountDown time={thoiGianConLai}/>
+                                    </Reveal>
+                                )}
 
-                            <div>
-                                <Button
-                                    type="primary"
-                                    size="large"
-                                    className="!h-14 w-full !text-lg !font-bold sm:!w-auto sm:min-w-[15rem]"
-                                    onClick={handleJoinExam}
+                                <Card
+                                    className="flex-1 rounded-[32px] border border-slate-200 shadow-sm"
+                                    styles={{body: {padding: 24, height: "100%"}}}
                                 >
-                                    Tham gia thi
-                                </Button>
-                            </div>
+                                    <Flex vertical justify="space-around" gap={24} className="h-full text-center">
+                                        <div>
+                                            <Button
+                                                type="primary"
+                                                size="large"
+                                                className="!h-14 w-full !rounded-2xl !text-lg !font-bold sm:!w-auto sm:min-w-[15rem]"
+                                                onClick={handleJoinExam}
+                                            >
+                                                Tham gia thi
+                                            </Button>
+                                            
+                                        </div>
+                                        <Text className="!mb-0 !text-sm !text-slate-500">
+                                            Bạn cần đăng nhập để tham gia cuộc thi!
+                                        </Text>
+                                        
 
-                            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                                {tabItems.map((item) => (
-                                    <button
-                                        key={item.key}
-                                        type="button"
-                                        onClick={() => setTab(item.key)}
-                                        className={`flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border px-3 py-4 text-center transition duration-300 ${
-                                            tab === item.key
-                                                ? "border-blue-600 bg-blue-50 text-blue-700 shadow-sm"
-                                                : "border-slate-200 bg-slate-50 text-slate-700 hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700"
-                                        }`}
-                                    >
-                                        <img src={item.image} width={40} alt="" />
-                                        <span className="text-sm font-semibold md:text-base">{item.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+            
+                                    </Flex>
+                                </Card>
+
+                                <Card
+                                    className="flex-1 rounded-[32px] border border-slate-200 shadow-sm"
+                                    styles={{body: {padding: 24, height: "100%"}}}
+                                >
+                                     <Timeline
+                                items={timelineItems}
+                                orientation="horizontal"
+                            />
+                                </Card>
+
+                               
+                            </Flex>
                         </Reveal>
+                    </Col>
+
+                
+                    <Col span={24}>
+                    <Reveal delay={110} className="h-full w-full">
+                        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                                            {tabItems.map((item) => (
+                                                <button
+                                                    key={item.key}
+                                                    type="button"
+                                                    onClick={() => setTab(item.key)}
+                                                    className={`flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border px-3 py-4 text-center transition duration-300 ${
+                                                        tab === item.key
+                                                            ? "border-blue-600 bg-blue-50 text-blue-700 shadow-sm"
+                                                            : "border-slate-200 bg-slate-50 text-slate-700 hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700"
+                                                    }`}
+                                                >
+                                                    <img src={item.image} width={40} alt="" />
+                                                    <span className="text-sm font-semibold md:text-base">{item.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                    </Reveal>
                     </Col>
 
                     <Col span={24}>
                         <Reveal key={tab} delay={140}>
-                            {tab === "ke-hoach" && (
-                                <TaiLieu
-                                    title="Kế hoạch"
-                                    khoa="ke_hoach"
-                                />
+                            {tab === "bai-viet" && (
+                                <BaiVietCuocThi/>
                             )}
 
-                            {tab === "the-le" && (
-                                <TaiLieu
-                                    title="Thể lệ"
-                                    khoa="the_le"
-                                />
-                            )}
-
-                            {tab === "tai-lieu" && (
-                                <TaiLieu
-                                    title="Tài liệu"
-                                    khoa="tai_lieu"
-                                />
+                            {tab === "giai-thuong" && (
+                                <GiaiThuongCuocThi/>
                             )}
 
                             {tab === "ket-qua" && (
@@ -317,7 +394,7 @@ export default function Page() {
                             )}
 
                             {tab === "document" && (
-                                <TaiLieuKhac/>
+                                <TaiLieuTongHop/>
                             )}
                         </Reveal>
                     </Col>

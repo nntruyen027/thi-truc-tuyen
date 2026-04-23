@@ -101,7 +101,7 @@ export default function CountDown({time}) {
 
 
     return (
-        <div className="mt-3 overflow-hidden rounded-3xl border border-slate-200 bg-white text-center shadow-sm">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white text-center shadow-sm">
             <h3 style={{
                 background: colorPrimary,
                 margin: '0'

@@ -5,6 +5,7 @@ import {useEffect} from "react";
 import dayjs from "dayjs";
 
 import {suaCuocThi, themCuocThi} from "~/services/thi/cuoc-thi";
+import {parseCuocThiMeta, stringifyCuocThiMeta} from "~/utils/cuocThiMeta";
 
 
 const DATE_FORMAT = "DD/MM/YYYY HH:mm:ss";
@@ -28,9 +29,12 @@ export default function CuocThiModal({
         if (open) {
 
             if (data) {
+                const meta =
+                    parseCuocThiMeta(data.mo_ta);
 
                 form.setFieldsValue({
                     ...data,
+                    ...meta,
 
                     thoi_gian_bat_dau:
                         data.thoi_gian_bat_dau
@@ -71,6 +75,7 @@ export default function CuocThiModal({
             const payload = {
 
                 ...values,
+                mo_ta: stringifyCuocThiMeta(values),
 
                 thoi_gian_bat_dau:
                     values.thoi_gian_bat_dau
@@ -178,16 +183,38 @@ export default function CuocThiModal({
 
 
                 <Row gutter={16}>
-
                     <Col span={24}>
                         <Form.Item
-                            name="mo_ta"
-                            label="Mô tả"
+                            name="mo_ta_tom_tat"
+                            label="Tóm tắt ngắn"
                         >
-                            <Input.TextArea rows={3} />
+                            <Input.TextArea rows={2} placeholder="Giới thiệu ngắn về cuộc thi" />
                         </Form.Item>
                     </Col>
-
+                    <Col span={24}>
+                        <Form.Item
+                            name="doi_tuong_tham_gia"
+                            label="Đối tượng tham gia"
+                        >
+                            <Input.TextArea rows={3} placeholder="Ví dụ: cán bộ, công chức, viên chức..." />
+                        </Form.Item>
+                    </Col>
+                    <Col span={24}>
+                        <Form.Item
+                            name="noi_dung_cuoc_thi"
+                            label="Nội dung cuộc thi"
+                        >
+                            <Input.TextArea rows={4} placeholder="Nêu các chủ đề, nội dung chính của cuộc thi" />
+                        </Form.Item>
+                    </Col>
+                    <Col span={24}>
+                        <Form.Item
+                            name="hinh_thuc_du_thi"
+                            label="Hình thức dự thi"
+                        >
+                            <Input.TextArea rows={3} placeholder="Ví dụ: thi trắc nghiệm trực tuyến, tự luận..." />
+                        </Form.Item>
+                    </Col>
                 </Row>
 
 

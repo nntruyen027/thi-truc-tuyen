@@ -11,6 +11,18 @@ import {
 
 const {Text, Title} = Typography;
 
+function getThiSinh(record) {
+    return record?.thiSinh || record?.thi_sinh || null;
+}
+
+function getBaiThiId(record) {
+    return record?.baiThiId || record?.bai_thi_id || null;
+}
+
+function getThoiGian(record) {
+    return record?.thoiGian ?? record?.thoi_gian ?? null;
+}
+
 function formatDuration(seconds, maxMinutes) {
     if (seconds == null) {
         return "-";
@@ -88,8 +100,7 @@ export default function KetQuaCongBo({dotThi}) {
         },
         {
             title: "Thí sinh",
-            dataIndex: "thi_sinh",
-            render: (value) => value?.ho_ten || "-"
+            render: (_, record) => getThiSinh(record)?.hoTen || getThiSinh(record)?.ho_ten || "-"
         },
         {
             title: "Điểm",
@@ -98,9 +109,8 @@ export default function KetQuaCongBo({dotThi}) {
         },
         {
             title: "Thời gian",
-            dataIndex: "thoi_gian",
             align: "center",
-            render: (value) => formatDuration(value, dotThi?.thoi_gian_thi)
+            render: (_, record) => formatDuration(getThoiGian(record), dotThi?.thoi_gian_thi)
         }
     ];
 
@@ -152,7 +162,7 @@ export default function KetQuaCongBo({dotThi}) {
                     <div className="grid gap-4 lg:grid-cols-3">
                         {topThree.map((item, index) => (
                             <div
-                                key={item.bai_thi_id}
+                                key={getBaiThiId(item)}
                                 className="rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] p-5 shadow-sm"
                             >
                                 <div className="mb-4 flex items-center justify-between">
@@ -162,10 +172,10 @@ export default function KetQuaCongBo({dotThi}) {
                                     <TrophyOutlined className="text-lg text-amber-500" />
                                 </div>
                                 <Title level={4} className="!mb-1 !text-slate-900">
-                                    {item?.thi_sinh?.ho_ten || "-"}
+                                    {getThiSinh(item)?.hoTen || getThiSinh(item)?.ho_ten || "-"}
                                 </Title>
                                 <Text className="!block !text-slate-500">
-                                    {item?.thi_sinh?.username || ""}
+                                    {getThiSinh(item)?.username || ""}
                                 </Text>
                                 <div className="mt-4 flex items-end justify-between">
                                     <div>
@@ -180,8 +190,8 @@ export default function KetQuaCongBo({dotThi}) {
                                         <Text className="!block !text-xs !uppercase !tracking-[0.18em] !text-slate-400">
                                             Thời gian
                                         </Text>
-                                        <div className="text-base font-semibold text-slate-700">
-                                            {formatDuration(item.thoi_gian, dotThi?.thoi_gian_thi)}
+                                    <div className="text-base font-semibold text-slate-700">
+                                            {formatDuration(getThoiGian(item), dotThi?.thoi_gian_thi)}
                                         </div>
                                     </div>
                                 </div>
@@ -190,7 +200,7 @@ export default function KetQuaCongBo({dotThi}) {
                     </div>
 
                     <Table
-                        rowKey="bai_thi_id"
+                        rowKey={(record) => getBaiThiId(record) || getThiSinh(record)?.id || "ranking-row"}
                         columns={columns}
                         dataSource={data}
                         pagination={false}

@@ -7,6 +7,26 @@ import {xepHangTracNghiemTheoCuocThi, xepHangTracNghiemTheoDotThi} from "~/servi
 import {useCuocThiSelect} from "~/hook/useCuocThi";
 import {useDotThiSelect} from "~/hook/useDotThi";
 
+function getThiSinh(record) {
+    return record?.thiSinh || record?.thi_sinh || null;
+}
+
+function getBaiThiId(record) {
+    return record?.baiThiId || record?.bai_thi_id || null;
+}
+
+function getThoiGian(record) {
+    return record?.thoiGian ?? record?.thoi_gian ?? null;
+}
+
+function getSoDuDoan(record) {
+    return record?.soDuDoan ?? record?.so_du_doan ?? 0;
+}
+
+function getSaiSo(record) {
+    return record?.saiSo ?? record?.sai_so ?? 0;
+}
+
 
 export default function NhomCauHoi() {
 
@@ -144,15 +164,13 @@ export default function NhomCauHoi() {
 
         {
             title: "Thí sinh",
-            dataIndex: "thi_sinh",
             width: 300,
-            render: (text) => text.ho_ten
+            render: (_, record) => getThiSinh(record)?.hoTen || getThiSinh(record)?.ho_ten || "-"
         },
         {
             title: "Số điện thoại",
-            dataIndex: "thi_sinh",
             width: 300,
-            render: (text) => text?.username
+            render: (_, record) => getThiSinh(record)?.username || "-"
         },
         {
             title: "Điểm",
@@ -163,11 +181,12 @@ export default function NhomCauHoi() {
             dataIndex: "thoi-gian-lam-bai",
             align: "center",
             render: (_, record) => {
+                const thoiGian = getThoiGian(record);
 
-                if (!record.thoi_gian || !dotThi)
+                if (!thoiGian || !dotThi)
                     return "-"
 
-                const diff = Math.min(dsDotThi.filter(t => t.id === dotThi)[0]?.thoi_gian_thi*60, record.thoi_gian)
+                const diff = Math.min(dsDotThi.filter(t => t.id === dotThi)[0]?.thoi_gian_thi*60, thoiGian)
 
 
 
@@ -186,13 +205,11 @@ export default function NhomCauHoi() {
         },
         {
             title: "Số dự đoán",
-            dataIndex: "so_du_doan",
-            render: (text) => text ? text : 0
+            render: (_, record) => getSoDuDoan(record)
         },
         {
             title: "Sai số dự đoán",
-            dataIndex: "sai_so",
-            render: (text) => text ? text : 0
+            render: (_, record) => getSaiSo(record)
         }
 
     ];
@@ -335,8 +352,8 @@ export default function NhomCauHoi() {
             <Table
                 className="admin-table"
                 rowKey={(record) =>
-                    record.bai_thi_id
-                    || `${record?.thi_sinh?.username || "thi-sinh"}-${record?.thi_sinh?.id || "na"}`
+                    getBaiThiId(record)
+                    || `${getThiSinh(record)?.username || "thi-sinh"}-${getThiSinh(record)?.id || "na"}`
                 }
                 loading={loading}
                 columns={columns}

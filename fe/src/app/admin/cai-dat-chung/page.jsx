@@ -26,9 +26,9 @@ export default function CaiDatChung() {
         <Row gutter={[16,16]}>
             <Col md={24} lg={12}>
                 <BannerEditor
-                    title="Banner Desktop (8:3)"
+                    title="Banner Desktop (16:3)"
                     khoa="banner_desktop"
-                    aspectRatio={"8/3"}
+                    aspectRatio={"16/3"}
                 />
             </Col>
 
@@ -38,7 +38,6 @@ export default function CaiDatChung() {
                     khoa="banner_mobile"
                 />
             </Col>
-
             <Col md={24} lg={12}>
                 <FaviconEditor />
             </Col>

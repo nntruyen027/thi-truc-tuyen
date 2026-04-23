@@ -1,65 +1,125 @@
-const dbHelper = require("../../utils/dbHelper")
+const { count, eq, ilike } = require("drizzle-orm");
+const db = require("../../db/client");
+const { donVi, linhVuc, nhomCauHoi } = require("../../db/schema");
+const {
+    buildPagedResult,
+    normalizePagination,
+    resolveSort,
+} = require("../../utils/drizzle");
 
-exports.layDsDanhMuc = (tenDm,
-                        size,
-                        page,
-                        search,
-                        sortField,
-                        sortType,
+const danhMucMap = {
+    don_vi: donVi,
+    linh_vuc: linhVuc,
+    nhom_cau_hoi: nhomCauHoi,
+};
+
+function mapDanhMuc(row) {
+    if (!row) {
+        return null;
+    }
+
+    return {
+        id: row.id,
+        ten: row.ten,
+        mo_ta: row.moTa,
+    };
+}
+
+function getTable(tenDm) {
+    const table = danhMucMap[tenDm];
+
+    if (!table) {
+        throw new Error("Danh mục không hợp lệ");
+    }
+
+    return table;
+}
+
+exports.layDsDanhMuc = async (
+    tenDm,
+    size,
+    page,
+    search,
+    sortField,
+    sortType,
 ) => {
+    const table = getTable(tenDm);
+    const paging = normalizePagination({page, size});
+    const where = search?.trim()
+        ? ilike(table.ten, `%${search.trim()}%`)
+        : undefined;
 
-    return dbHelper.call(
-        "select dm_chung.lay_" + tenDm + "($1,$2,$3,$4,$5) as data",
-        [
-            size,
-            page,
-            search,
-            sortField,
-            sortType,
-        ]
-    )
-}
+    const sort = resolveSort({
+        sortField,
+        sortType,
+        columnMap: {
+            id: table.id,
+            ten: table.ten,
+            mo_ta: table.moTa,
+        },
+        defaultField: "id",
+    });
 
-exports.themDanhMuc = (tenDm, value) => {
-    const keys = Object.keys(value)
+    const rowsQuery = db
+        .select()
+        .from(table)
+        .orderBy(sort.orderBy)
+        .limit(paging.size)
+        .offset(paging.offset);
 
-    const params = keys.map(
-        (_, i) => `$${i + 1}`
-    )
+    const totalQuery = db
+        .select({total: count()})
+        .from(table);
 
-    const values = Object.values(value)
+    const [rows, totalRows] = await Promise.all([
+        where ? rowsQuery.where(where) : rowsQuery,
+        where ? totalQuery.where(where) : totalQuery,
+    ]);
 
-    const sql =
-        `select dm_chung.them_${tenDm}(${params.join(",")}) as data`
+    return buildPagedResult({
+        data: rows.map(mapDanhMuc),
+        total: totalRows[0]?.total || 0,
+        page: paging.page,
+        size: paging.size,
+    });
+};
 
-    return dbHelper.call(
-        sql,
-        values
-    )
+exports.themDanhMuc = async (tenDm, value) => {
+    const table = getTable(tenDm);
 
-}
+    const [created] = await db
+        .insert(table)
+        .values({
+            ten: value.ten,
+            moTa: value.mo_ta,
+        })
+        .returning();
 
-exports.suaDanhMuc = (tenDm, id, value) => {
-    const keys = Object.keys(value)
+    return mapDanhMuc(created);
+};
 
-    const params = keys.map(
-        (_, i) => `$${i + 2}`
-    )
+exports.suaDanhMuc = async (tenDm, id, value) => {
+    const table = getTable(tenDm);
 
-    const values = Object.values(value)
+    const [updated] = await db
+        .update(table)
+        .set({
+            ten: value.ten,
+            moTa: value.mo_ta,
+        })
+        .where(eq(table.id, Number(id)))
+        .returning();
 
-    const sql =
-        `select dm_chung.sua_${tenDm}($1,${params.join(",")}) as data`
+    return mapDanhMuc(updated);
+};
 
-    return dbHelper.call(
-        sql,
-        [id, ...values]
-    )
-}
+exports.xoaDanhMuc = async (tenDm, id) => {
+    const table = getTable(tenDm);
 
-exports.xoaDanhMuc = (tenDm, id) => {
-    return dbHelper.call(
-        `select dm_chung.xoa_${tenDm}($1) as data`,
-        [id],
-    )
-}
+    await db
+        .delete(table)
+        .where(eq(table.id, Number(id)));
+
+    return true;
+};
+

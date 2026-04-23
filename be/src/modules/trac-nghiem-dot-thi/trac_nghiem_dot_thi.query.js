@@ -1,56 +1,59 @@
-const dbHelper = require("../../utils/dbHelper")
+const { eq } = require("drizzle-orm");
+const db = require("../../db/client");
+const { tracNghiemDotThi } = require("../../db/schema");
 
-exports.layDsTracNghiem = (
-    dotThiId
-) => {
-
-    return dbHelper.call(
-        "select thi.lay_trac_nghiem_dot_thi($1) as data",
-        [
-            dotThiId
-        ]
-    )
+function mapRow(row) {
+    return {
+        id: row.id,
+        dot_thi_id: row.dotThiId,
+        linh_vuc_id: row.linhVucId,
+        nhom_id: row.nhomId,
+        so_luong: row.soLuong,
+    };
 }
 
-exports.themTracNghiem = (dotThiId,
-                          linh_vuc_id,
-                          nhom_id,
-                          so_luong) => {
+exports.layDsTracNghiem = async (dotThiId) => {
+    const rows = await db
+        .select()
+        .from(tracNghiemDotThi)
+        .where(eq(tracNghiemDotThi.dotThiId, Number(dotThiId)));
 
+    return rows.map(mapRow);
+};
 
-    const sql =
-        `select thi.them_trac_nghiem_dot_thi($1,$2,$3,$4) as data`
+exports.themTracNghiem = async (dotThiId, linh_vuc_id, nhom_id, so_luong) => {
+    const [created] = await db
+        .insert(tracNghiemDotThi)
+        .values({
+            dotThiId: Number(dotThiId),
+            linhVucId: linh_vuc_id,
+            nhomId: nhom_id,
+            soLuong: so_luong,
+        })
+        .returning();
 
-    return dbHelper.call(
-        sql,
-        [dotThiId,
-            linh_vuc_id,
-            nhom_id,
-            so_luong]
-    )
+    return mapRow(created);
+};
 
-}
+exports.suaTracNghiem = async (id, linh_vuc_id, nhom_id, so_luong) => {
+    const [updated] = await db
+        .update(tracNghiemDotThi)
+        .set({
+            linhVucId: linh_vuc_id,
+            nhomId: nhom_id,
+            soLuong: so_luong,
+        })
+        .where(eq(tracNghiemDotThi.id, Number(id)))
+        .returning();
 
-exports.suaTracNghiem = (id,
-                         linh_vuc_id,
-                         nhom_id,
-                         so_luong) => {
+    return mapRow(updated);
+};
 
+exports.xoaTracNghiem = async (id) => {
+    await db
+        .delete(tracNghiemDotThi)
+        .where(eq(tracNghiemDotThi.id, Number(id)));
 
-    const sql =
-        `select thi.sua_trac_nghiem_dot_thi($1,$2,$3,$4) as data`
+    return true;
+};
 
-    return dbHelper.call(
-        sql,
-        [id, linh_vuc_id,
-            nhom_id,
-            so_luong]
-    )
-}
-
-exports.xoaTracNghiem = (id) => {
-    return dbHelper.call(
-        `select thi.xoa_trac_nghiem_dot_thi($1) as data`,
-        [id],
-    )
-}

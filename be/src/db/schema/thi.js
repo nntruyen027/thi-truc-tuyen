@@ -15,7 +15,7 @@ const thiSchema = pgSchema("thi");
 const cuocThi = thiSchema.table("cuoc_thi", {
     id: serial("id").primaryKey(),
     ten: varchar("ten", { length: 500 }),
-    moTa: varchar("mo_ta", { length: 500 }),
+    moTa: varchar("mo_ta", { length: 1000 }),
     thoiGianBatDau: timestamp("thoi_gian_bat_dau"),
     thoiGianKetThuc: timestamp("thoi_gian_ket_thuc"),
     trangThai: boolean("trang_thai"),

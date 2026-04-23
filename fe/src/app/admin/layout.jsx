@@ -38,6 +38,8 @@ const breadcrumbNameMap = {
     "nhom-cau-hoi": "Nhóm câu hỏi",
     "cai-dat-chung": "Cài đặt chung",
     "tai-lieu-cong-khai": "Tài liệu công khai",
+    "bai-viet": "Bài viết cuộc thi",
+    "giai-thuong": "Giải thưởng cuộc thi",
 };
 
 const menuConfig = [
@@ -114,6 +116,14 @@ const menuConfig = [
             {
                 key: "/admin/tai-lieu-cong-khai",
                 label: "Tài liệu công khai",
+            },
+            {
+                key: "/admin/bai-viet",
+                label: "Bài viết cuộc thi",
+            },
+            {
+                key: "/admin/giai-thuong",
+                label: "Giải thưởng cuộc thi",
             },
         ],
     },

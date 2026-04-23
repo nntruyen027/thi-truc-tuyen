@@ -1,4 +1,4 @@
-import {App, Button, Card, Slider, Upload} from "antd";
+import {App, Button, Card, Slider, Typography, Upload} from "antd";
 import {useEffect, useState} from "react";
 import {layCauHinh, suaCauHinh} from "~/services/cau-hinh";
 import {getPublicFileUrl, uploadFile} from "~/services/file";
@@ -109,6 +109,9 @@ export default function BannerEditor({
     return (
 
         <Card title={title}>
+            <Typography.Text type="secondary">
+                Tỷ lệ khuyến nghị: {aspectRatio}
+            </Typography.Text>
 
             <Upload
                 showUploadList={false}

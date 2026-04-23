@@ -11,6 +11,7 @@ import {DeleteOutlined, DiffOutlined, EditOutlined, EllipsisOutlined} from "@ant
 import CuocThiModal from "./CuocThiModal";
 import dayjs from "dayjs";
 import {useRouter} from "next/navigation";
+import {parseCuocThiMeta} from "~/utils/cuocThiMeta";
 
 
 export default function CuocThi() {
@@ -193,6 +194,10 @@ export default function CuocThi() {
             title: "Mô tả",
             dataIndex: "mo_ta",
             sorter: true,
+            render: (value) => {
+                const meta = parseCuocThiMeta(value);
+                return meta.mo_ta_tom_tat || value || "-";
+            }
         },
         {
             title: "Ngày bắt đầu",
