@@ -5,7 +5,7 @@ import {Alert, Empty, Spin} from "antd"
 import {Document, Page, pdfjs} from "react-pdf"
 
 pdfjs.GlobalWorkerOptions.workerSrc =
-    `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
+    "/pdf.worker.min.mjs"
 
 export default function PdfViewer({url}) {
     if (!url) {
