@@ -18,7 +18,6 @@ const users = authSchema.table("users", {
     hoTen: varchar("ho_ten", { length: 500 }),
     donViId: integer("don_vi_id"),
     role: varchar("role", { length: 50 }).default("user"),
-    avatar: text("avatar"),
     createdAt: timestamp("created_at").defaultNow(),
 });
 

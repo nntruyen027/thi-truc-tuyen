@@ -220,7 +220,7 @@ export default function RootLayout({children}) {
 
     const handleLogout = () => {
         clearAuth();
-        router.replace("/login");
+        router.replace("/");
     };
 
     const userMenuItems = [

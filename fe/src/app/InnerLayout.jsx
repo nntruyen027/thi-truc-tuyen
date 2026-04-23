@@ -4,6 +4,7 @@ import {useEffect, useState} from "react";
 import {usePathname, useRouter} from "next/navigation";
 import {useAuthStore} from "~/store/auth";
 import {getMe} from "~/services/auth";
+import {isPublicPath, isTokenExpired} from "~/utils/auth";
 
 export default function InnerLayout({ children }) {
     const router = useRouter();
@@ -14,26 +15,17 @@ export default function InnerLayout({ children }) {
 
     useEffect(() => {
         const initAuth = async () => {
-
-            // ✅ các trang public
-            const publicRoutes = [
-                "/",
-                "/login",
-                "/dang-ky",
-                "/quen-mat-khau",
-            ];
-
-            const isPublic = publicRoutes.includes(pathname);
+            const isPublic = isPublicPath(pathname);
 
             const access = localStorage.getItem("access");
             const refresh = localStorage.getItem("refresh");
             const userLocal = localStorage.getItem("user");
 
-            if (!access || !userLocal) {
+            if (!access || !userLocal || isTokenExpired(access)) {
                 clearAuth();
 
                 if (!isPublic) {
-                    router.replace("/login");
+                    router.replace("/");
                 }
 
                 setLoading(false);
@@ -55,7 +47,7 @@ export default function InnerLayout({ children }) {
                     clearAuth();
 
                     if (!isPublic) {
-                        router.replace("/login");
+                        router.replace("/");
                     }
                 }
             }
@@ -63,8 +55,8 @@ export default function InnerLayout({ children }) {
             setLoading(false);
         };
 
-        initAuth();
-    }, []);
+        void initAuth();
+    }, [clearAuth, pathname, router, setAuth, user]);
 
     if (loading) return null;
 

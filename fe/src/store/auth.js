@@ -22,7 +22,16 @@ export const useAuthStore = create(
             },
 
 
-            clearAuth: () => set({ user: null, access: null, refresh: null }),
+            clearAuth: () => {
+                set({ user: null, access: null, refresh: null });
+
+                if (typeof window !== "undefined") {
+                    localStorage.removeItem("user");
+                    localStorage.removeItem("refresh");
+                    localStorage.removeItem("access");
+                    localStorage.removeItem("auth-storage");
+                }
+            },
 
             isLoggedIn: () => !!get().access,
         }),

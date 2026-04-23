@@ -2,6 +2,17 @@ import axios from "axios";
 import { useAuthStore } from "~/store/auth";
 import { API_BASE_URL } from "~/config/env";
 
+export const PUBLIC_ROUTES = [
+    "/",
+    "/login",
+    "/dang-ky",
+    "/quen-mat-khau",
+];
+
+export function isPublicPath(pathname) {
+    return PUBLIC_ROUTES.includes(pathname);
+}
+
 export function isTokenExpired(token) {
     if (!token) return true;
     try {
@@ -20,6 +31,11 @@ export async function isTokenValid() {
         return false;
     }
 
+    if (isTokenExpired(access)) {
+        clearAuth();
+        return false;
+    }
+
     try {
         const res = await axios.get(
             `${API_BASE_URL}/auth/me`,
@@ -28,7 +44,11 @@ export async function isTokenValid() {
             }
         );
 
-        setAuth(res.data, access, refresh);
+        setAuth({
+            user: res.data.data,
+            access,
+            refresh
+        });
         return true;
 
     } catch {
