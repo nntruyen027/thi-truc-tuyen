@@ -272,7 +272,7 @@ export default function Page() {
     return (
         <div className="w-full">
             <Reveal animation="soft">
-                <div className="pt-4 lg:pt-6">
+                <div className="">
                     <div className="w-full">
                         <div
                             className="relative w-full overflow-hidden bg-slate-200 shadow-sm"
