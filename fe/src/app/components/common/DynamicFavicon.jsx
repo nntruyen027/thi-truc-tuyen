@@ -4,26 +4,9 @@ import {useEffect} from "react";
 
 import {layCauHinh} from "~/services/cau-hinh";
 import {getPublicFileUrl} from "~/services/file";
+import {parseMediaConfig} from "~/utils/workspaceTheme";
 
 const DEFAULT_FAVICON = "/favicon.png";
-
-function parseFaviconValue(rawValue) {
-    if (!rawValue) {
-        return "";
-    }
-
-    try {
-        const parsed = JSON.parse(rawValue);
-
-        if (typeof parsed === "string") {
-            return parsed;
-        }
-
-        return parsed?.url || "";
-    } catch {
-        return rawValue;
-    }
-}
 
 function applyFavicon(url) {
     const baseUrl =
@@ -79,7 +62,7 @@ export default function DynamicFavicon() {
                 }
 
                 const faviconUrl =
-                    parseFaviconValue(res?.data?.gia_tri);
+                    parseMediaConfig(res?.data?.gia_tri).duongDan;
 
                 applyFavicon(faviconUrl);
             } catch {

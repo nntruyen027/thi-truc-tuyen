@@ -1,13 +1,13 @@
 'use client';
 
 import {useEffect, useMemo, useState} from "react";
-import {Card, Col, Empty, Row, Tag, Typography} from "antd";
+import {Card, Col, Empty, Row, Tag, Typography, theme} from "antd";
 import {GiftOutlined, TeamOutlined, TrophyOutlined, UserOutlined} from "@ant-design/icons";
 import {layCauHinhGiaiThuong} from "~/services/giai-thuong";
 
 const {Paragraph, Text, Title} = Typography;
 
-function GiaiSection({title, icon, items, accentClass}) {
+function GiaiSection({title, icon, items, accentStyle, primaryColor}) {
     if (!items.length) {
         return null;
     }
@@ -15,7 +15,7 @@ function GiaiSection({title, icon, items, accentClass}) {
     return (
         <div className="space-y-4">
             <div className="flex items-center gap-3">
-                <div className={`flex h-12 w-12 items-center justify-center rounded-2xl text-xl ${accentClass}`}>
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl text-xl" style={accentStyle}>
                     {icon}
                 </div>
                 <div>
@@ -45,11 +45,17 @@ function GiaiSection({title, icon, items, accentClass}) {
                                     </Title>
                                 </div>
 
-                                <div className="rounded-[22px] border border-blue-100 bg-blue-50/60 px-4 py-4">
+                                <div
+                                    className="rounded-[22px] px-4 py-4"
+                                    style={{
+                                        border: `1px solid ${primaryColor}22`,
+                                        background: `${primaryColor}12`,
+                                    }}
+                                >
                                     <Text className="!block !text-xs !font-semibold !uppercase !tracking-[0.16em] !text-slate-400">
                                         Trị giá
                                     </Text>
-                                    <div className="mt-2 text-2xl font-bold text-[#1948be]">
+                                    <div className="mt-2 text-2xl font-bold" style={{color: primaryColor}}>
                                         {item.triGia}
                                     </div>
                                 </div>
@@ -71,6 +77,7 @@ function GiaiSection({title, icon, items, accentClass}) {
 export default function GiaiThuongCuocThi() {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState(null);
+    const {token} = theme.useToken();
 
     useEffect(() => {
         let active = true;
@@ -128,7 +135,7 @@ export default function GiaiThuongCuocThi() {
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="space-y-2">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl text-[#1948be] shadow-sm">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-xl shadow-sm" style={{color: token.colorPrimary}}>
                                 <GiftOutlined/>
                             </div>
                             <Title level={3} className="!mb-0 !text-xl !font-bold !text-slate-900 md:!text-2xl">
@@ -154,14 +161,22 @@ export default function GiaiThuongCuocThi() {
                     title="Giải cá nhân"
                     icon={<UserOutlined/>}
                     items={data?.giaiCaNhan || []}
-                    accentClass="bg-blue-50 text-[#1948be]"
+                    primaryColor={token.colorPrimary}
+                    accentStyle={{
+                        background: `${token.colorPrimary}12`,
+                        color: token.colorPrimary,
+                    }}
                 />
 
                 <GiaiSection
                     title="Giải tập thể"
                     icon={<TeamOutlined/>}
                     items={data?.giaiTapThe || []}
-                    accentClass="bg-amber-50 text-amber-600"
+                    primaryColor={token.colorPrimary}
+                    accentStyle={{
+                        background: "#fff7ed",
+                        color: "#d97706",
+                    }}
                 />
 
                 {!hasPrize && (
@@ -173,4 +188,3 @@ export default function GiaiThuongCuocThi() {
         </Card>
     );
 }
-

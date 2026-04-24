@@ -6,6 +6,10 @@ module.exports = (roles = []) => {
             return res.status(401).json()
         }
 
+        if (req.user.role === "super_admin") {
+            return next()
+        }
+
         if (!roles.includes(req.user.role)) {
             return res.status(403).json()
         }

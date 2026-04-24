@@ -3,6 +3,10 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --workspace-primary-color: #1948be;
+  --workspace-primary-rgb: 25, 72, 190;
+  --workspace-primary-soft: rgba(25, 72, 190, 0.08);
+  --workspace-primary-soft-strong: rgba(25, 72, 190, 0.14);
 }
 
 @theme inline {
@@ -61,7 +65,7 @@ body.copy-guard .ql-editor {
 }
 
 .footer-rich a {
-  color: #1948be;
+  color: var(--workspace-primary-color);
   font-weight: 600;
 }
 

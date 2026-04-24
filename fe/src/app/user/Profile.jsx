@@ -47,7 +47,7 @@ export default function Profile() {
 
     return <Card className="rounded-3xl border border-slate-200 shadow-sm" styles={{body: {padding: 24}}}>
         <div className="mb-5">
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Thông tin tài khoản</div>
+            <div className="text-xs font-semibold uppercase tracking-[0.2em]" style={{color: token.colorPrimary}}>Thông tin tài khoản</div>
             <div className="mt-1 text-2xl font-bold text-slate-900">Hồ sơ thí sinh</div>
             <div className="mt-2 text-sm text-slate-500">Bạn có thể chỉnh sửa nhanh họ tên và đơn vị ngay trên trang này.</div>
         </div>
@@ -68,7 +68,7 @@ export default function Profile() {
                         </div>
 
                     </Col> : <Col xs={24} sm={16}>
-                        <button type="button" onClick={() => setIsEditName(true)} className={'text-left text-base font-semibold text-slate-900 transition hover:text-blue-700 sm:text-lg'}>{user?.ho_ten || "Chưa cập nhật"}</button>
+                        <button type="button" onClick={() => setIsEditName(true)} className={'text-left text-base font-semibold text-slate-900 transition sm:text-lg'} style={{textDecorationColor: token.colorPrimary}}>{user?.ho_ten || "Chưa cập nhật"}</button>
                     </Col>}
                 </Row>
 
@@ -121,7 +121,7 @@ export default function Profile() {
                             </div>
 
                         </Col> : <Col xs={24} sm={16}>
-                            <button type="button" onClick={() => setIsEditDonVi(true)} className={'text-left text-base font-semibold text-slate-900 transition hover:text-blue-700 sm:text-lg'}>{user?.don_vi?.ten || "Chưa cập nhật"}</button>
+                            <button type="button" onClick={() => setIsEditDonVi(true)} className={'text-left text-base font-semibold text-slate-900 transition sm:text-lg'} style={{textDecorationColor: token.colorPrimary}}>{user?.don_vi?.ten || "Chưa cập nhật"}</button>
                         </Col>
                     }
                 </Row>

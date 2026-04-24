@@ -53,9 +53,11 @@ export default function CountDown({seconds, onEnd, className = ""}) {
 
     return (
         <div
-            className={`grid h-full min-h-[8.75rem] grid-cols-3 gap-3 rounded-[28px] border border-blue-100 bg-[linear-gradient(180deg,#ffffff_0%,#f5faff_100%)] p-3 sm:min-w-[18rem] ${className}`.trim()}
+            className={`grid h-full min-h-[8.75rem] grid-cols-3 gap-3 rounded-[28px] border p-3 sm:min-w-[18rem] ${className}`.trim()}
             style={{
-                boxShadow: "0 18px 40px rgba(37, 99, 235, 0.12)",
+                borderColor: "rgba(var(--workspace-primary-rgb), 0.18)",
+                background: "#ffffff",
+                boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
             }}
         >
             {items.map((item) => (

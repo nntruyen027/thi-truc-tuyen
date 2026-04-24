@@ -1,53 +1,78 @@
-const router =
-    require("express").Router()
-const query = require("./cau-hinh.query")
+const router = require("express").Router();
+const query = require("./cau-hinh.query");
 const resUtil = require("../../utils/response");
 const auth = require("../../middlewares/auth");
 const role = require("../../middlewares/role");
+const jwtUtil = require("../../utils/jwt");
 
-router.get("/:khoa",
-    async (req, res) => {
-        try {
-            const {
-                khoa
-            } = req.params
+function attachOptionalUser(req) {
+    const header = req.headers.authorization;
 
-            const data = await query.layCauHinh(
-                khoa
-            )
+    if (!header) {
+        return null;
+    }
 
-            resUtil.ok(res, data)
+    const token = String(header).replace("Bearer ", "");
 
-        } catch (err) {
+    try {
+        return jwtUtil.verifyAccess(token);
+    } catch {
+        return null;
+    }
+}
 
-            resUtil.error(res, err)
+function resolveConfigWorkspaceId(req) {
+    const requestedWorkspaceId =
+        req.query?.workspaceId
+        || req.body?.workspaceId
+        || null;
 
-        }
-    })
+    if (req.user?.role === "super_admin" && requestedWorkspaceId) {
+        return Number(requestedWorkspaceId);
+    }
 
-router.post("/:khoa",
-    async (req, res) => {
-        try {
-            const {
-                khoa
-            } = req.params
+    if (req.user?.workspace_id) {
+        return Number(req.user.workspace_id);
+    }
 
-            const {
-                giaTri
-            } = req.body
+    if (req.workspace?.id) {
+        return Number(req.workspace.id);
+    }
 
-            const data = await query.suaCauHinh(
-                khoa,
-                giaTri
-            )
+    return null;
+}
 
-            resUtil.ok(res, data)
+router.get("/:khoa", async (req, res) => {
+    try {
+        const { khoa } = req.params;
+        req.user = attachOptionalUser(req);
 
-        } catch (err) {
+        const data = await query.layCauHinh(
+            khoa,
+            resolveConfigWorkspaceId(req)
+        );
 
-            resUtil.error(res, err)
+        resUtil.ok(res, data);
+    } catch (err) {
+        resUtil.error(res, err);
+    }
+});
 
-        }
-    })
+router.post("/:khoa", auth, role(["admin"]), async (req, res) => {
+    try {
+        const { khoa } = req.params;
+        const { giaTri } = req.body;
+
+        const data = await query.suaCauHinh(
+            khoa,
+            giaTri,
+            resolveConfigWorkspaceId(req)
+        );
+
+        resUtil.ok(res, data);
+    } catch (err) {
+        resUtil.error(res, err);
+    }
+});
 
 module.exports = router;

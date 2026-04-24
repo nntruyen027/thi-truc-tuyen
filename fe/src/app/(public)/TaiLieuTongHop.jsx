@@ -1,7 +1,7 @@
 'use client';
 
 import {useEffect, useMemo, useState} from "react";
-import {Button, Card, Col, Empty, Row, Space, Tag, Typography} from "antd";
+import {Button, Card, Col, Empty, Row, Space, Tag, Typography, theme} from "antd";
 import {
     DownloadOutlined,
     EyeOutlined,
@@ -39,6 +39,7 @@ function normalizeTaiLieu(item = {}, fallback = {}) {
 export default function TaiLieuTongHop() {
     const [loading, setLoading] = useState(true);
     const [taiLieu, setTaiLieu] = useState([]);
+    const {token} = theme.useToken();
 
     useEffect(() => {
         let active = true;
@@ -150,7 +151,10 @@ export default function TaiLieuTongHop() {
                 {Object.entries(groupedTaiLieu).map(([nhom, items]) => (
                     <div key={nhom} className="space-y-4">
                         <div className="flex items-center gap-3">
-                            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-lg text-[#1948be]">
+                            <div
+                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-lg"
+                                style={{color: token.colorPrimary}}
+                            >
                                 <FolderOpenOutlined/>
                             </div>
                             <div>

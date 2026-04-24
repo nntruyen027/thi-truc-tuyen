@@ -6,26 +6,10 @@ import {layCauHinh, suaCauHinh} from "~/services/cau-hinh";
 import {useEffect, useState} from "react";
 import useApp from "antd/es/app/useApp";
 
-export default function CotChanTrang({tieuDe, khoa}) {
+export default function CotChanTrang({tieuDe, khoa, workspaceId = null}) {
     const [form] = Form.useForm();
     const {message} = useApp()
     const [loading, setLoading] = useState(true);
-
-    const load = async () => {
-
-        const res =
-            await layCauHinh(khoa)
-
-        if (!res.data) return
-
-        const val =
-            JSON.parse(
-                res.data.gia_tri
-            )
-
-        form.setFieldsValue({tieuDe: val.tieuDe, noiDung: val.noiDung})
-    }
-
 
     const save = async () => {
 
@@ -38,7 +22,8 @@ export default function CotChanTrang({tieuDe, khoa}) {
 
             await suaCauHinh(
                 khoa,
-                JSON.stringify(values)
+                JSON.stringify(values),
+                {workspaceId}
             );
 
         }
@@ -52,8 +37,22 @@ export default function CotChanTrang({tieuDe, khoa}) {
     };
 
     useEffect(() => {
-        load()
-    }, [])
+        const load = async () => {
+            const res =
+                await layCauHinh(khoa, {workspaceId})
+
+            if (!res.data) return
+
+            const val =
+                JSON.parse(
+                    res.data.gia_tri
+                )
+
+            form.setFieldsValue({tieuDe: val.tieuDe, noiDung: val.noiDung})
+        }
+
+        void load()
+    }, [form, khoa, workspaceId])
 
     return <Card title={tieuDe}>
         <Form form={form} layout="vertical">

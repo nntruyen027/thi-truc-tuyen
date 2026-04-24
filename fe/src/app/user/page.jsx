@@ -11,7 +11,8 @@ import {
     Statistic,
     Table,
     Tag,
-    Typography
+    Typography,
+    theme,
 } from "antd";
 
 import {useRouter} from "next/navigation";
@@ -20,6 +21,7 @@ import dayjs from "dayjs";
 import {lichSuThi} from "~/services/thi/thi";
 import {layDotThiHienTai} from "~/services/thi/dot-thi";
 import Profile from "~/app/user/Profile";
+import {useModal} from "~/store/modal";
 
 
 const {Title, Text} = Typography;
@@ -28,6 +30,7 @@ const {Title, Text} = Typography;
 export default function Page() {
 
     const router = useRouter();
+    const {SetIsUpdatePassOpen} = useModal();
 
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -36,6 +39,7 @@ export default function Page() {
         current: 1,
         pageSize: 6,
     });
+    const {token} = theme.useToken();
 
 
     useEffect(() => {
@@ -233,10 +237,22 @@ export default function Page() {
     return (
 
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-            <section className="overflow-hidden rounded-[32px] border border-blue-100 bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.24),_transparent_30%),linear-gradient(135deg,_#ffffff,_#eff6ff_58%,_#dbeafe)] p-5 shadow-sm sm:p-6 lg:p-8">
+            <section
+                className="overflow-hidden rounded-[32px] border p-5 shadow-sm sm:p-6 lg:p-8"
+                style={{
+                    borderColor: "rgba(var(--workspace-primary-rgb), 0.18)",
+                    background: "#ffffff",
+                }}
+            >
                 <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)]">
                     <div className="space-y-4">
-                        <div className="inline-flex w-fit items-center rounded-full border border-blue-200 bg-white/85 px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-blue-700 shadow-sm">
+                        <div
+                            className="inline-flex w-fit items-center rounded-full border bg-white px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] shadow-sm"
+                            style={{
+                                borderColor: "rgba(var(--workspace-primary-rgb), 0.18)",
+                                color: token.colorPrimary,
+                            }}
+                        >
                             Khu vực thí sinh
                         </div>
 
@@ -273,6 +289,13 @@ export default function Page() {
                             >
                                 Xem lịch sử thi
                             </Button>
+                            <Button
+                                size="large"
+                                className="!h-12 !rounded-2xl !border-slate-200 !bg-white !px-6 !font-semibold !text-slate-700"
+                                onClick={() => SetIsUpdatePassOpen()}
+                            >
+                                Đổi mật khẩu
+                            </Button>
                         </div>
                     </div>
 
@@ -281,7 +304,7 @@ export default function Page() {
                         styles={{body: {padding: 24}}}
                     >
                         <div className="space-y-3">
-                            <Text className="!text-xs !font-semibold !uppercase !tracking-[0.24em] !text-blue-700">
+                            <Text className="!text-xs !font-semibold !uppercase !tracking-[0.24em]" style={{color: token.colorPrimary}}>
                                 Đợt thi hiện tại
                             </Text>
                             <Title level={3} className="!mb-0 !text-slate-900">
@@ -321,7 +344,7 @@ export default function Page() {
             >
                 <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.2em] !text-blue-700">
+                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.2em]" style={{color: token.colorPrimary}}>
                             Lịch sử làm bài
                         </Text>
                         <Title level={3} className="!mb-0 !mt-1">

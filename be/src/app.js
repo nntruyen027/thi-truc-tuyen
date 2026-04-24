@@ -5,6 +5,7 @@ const path = require("path")
 const multer = require("multer")
 
 const routes = require("./routes")
+const workspaceMiddleware = require("./middlewares/workspace");
 
 const app = express()
 
@@ -45,6 +46,7 @@ app.use(
     express.static(UPLOAD_PATH)
 );
 
+app.use(workspaceMiddleware);
 app.use("/api", routes)
 
 app.use((err, req, res, next) => {

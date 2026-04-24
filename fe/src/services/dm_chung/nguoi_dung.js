@@ -6,6 +6,7 @@ const BASE_PATH = "/users";
 export async function layDsNguoiDung({ size = 10,
                                    page = 1,
                                    search = "",
+                                   workspaceId,
                                    }){
     try {
         const res = await api.get(BASE_PATH, {
@@ -13,6 +14,7 @@ export async function layDsNguoiDung({ size = 10,
                 size,
                 page,
                 search,
+                ...(workspaceId ? {workspaceId} : {}),
             }
         });
         return res.data.data;
@@ -22,9 +24,11 @@ export async function layDsNguoiDung({ size = 10,
     }
 }
 
-export async function capNhatMatKhau(username) {
+export async function capNhatMatKhau(username, workspaceId) {
     try {
-        const res = await api.post(BASE_PATH + "/" + username + "/password")
+        const res = await api.post(BASE_PATH + "/" + username + "/password", {
+            ...(workspaceId ? {workspaceId} : {}),
+        })
         return res.data.data;
     }
     catch (e) {
@@ -62,9 +66,12 @@ export async function xoaNguoiDung(id) {
     }
 }
 
-export async function capNhatQuyenNguoiDung(id, role) {
+export async function capNhatQuyenNguoiDung(id, role, workspaceId) {
     try {
-        const res = await api.patch(BASE_PATH + "/" + id + "/role", {role});
+        const res = await api.patch(BASE_PATH + "/" + id + "/role", {
+            role,
+            ...(workspaceId ? {workspaceId} : {}),
+        });
         return res.data.data;
     }
     catch (e) {

@@ -1,153 +1,122 @@
 import {App, Button, Card, Slider, Typography, Upload} from "antd";
 import {useEffect, useState} from "react";
+import {UploadOutlined} from "@ant-design/icons";
 import {layCauHinh, suaCauHinh} from "~/services/cau-hinh";
 import {getPublicFileUrl, uploadFile} from "~/services/file";
-import {UploadOutlined} from "@ant-design/icons";
+import {parseMediaConfig} from "~/utils/workspaceTheme";
 
 export default function BannerEditor({
-
-                          title,
-                          khoa,
-                                         aspectRatio="16/9"
-                      }) {
-
-    const {message} = App.useApp()
-
-    const [image, setImage] =
-        useState(null)
-
-    const [zoom, setZoom] =
-        useState(1)
-
+    title,
+    khoa,
+    aspectRatio = "16/9",
+    workspaceId = null,
+}) {
+    const {message} = App.useApp();
+    const [image, setImage] = useState("");
+    const [zoom, setZoom] = useState(1);
 
     useEffect(() => {
-        let active = true
+        let active = true;
 
-        const timer =
-            setTimeout(async () => {
+        const load = async () => {
+            try {
+                const res = await layCauHinh(khoa, {workspaceId});
 
-                const res =
-                    await layCauHinh(khoa)
+                if (!active || !res?.data?.gia_tri) {
+                    return;
+                }
 
-                if (!active || !res.data) return
+                const value = parseMediaConfig(res.data.gia_tri);
 
-                const val =
-                    JSON.parse(
-                        res.data.gia_tri
-                    )
+                setImage(value.duongDan || value.url || "");
+                setZoom(value.zoom || 1);
+            } catch (error) {
+                if (active) {
+                    message.error(error?.message || "Không thể tải banner.");
+                }
+            }
+        };
 
-                setImage(val.url)
-                setZoom(val.zoom || 1)
-
-            }, 0)
+        void load();
 
         return () => {
-            active = false
-            clearTimeout(timer)
-        }
+            active = false;
+        };
+    }, [khoa, message, workspaceId]);
 
-    }, [khoa])
-
-
-
-    // save
-
-    const save = async (url, z) => {
-
+    const save = async (duongDan, nextZoom) => {
         await suaCauHinh(
             khoa,
             JSON.stringify({
-                url,
-                zoom: z
-            })
-        )
+                duongDan,
+                zoom: nextZoom,
+            }),
+            {workspaceId}
+        );
+    };
 
-    }
+    const handleUpload = async (file) => {
+        try {
+            const res = await uploadFile(file);
+            const duongDan = res?.duongDan || res?.duong_dan || res?.url || "";
 
-
-
-    // upload
-
-    const upload =
-        async (file) => {
-
-            const res =
-                await uploadFile(file)
-
-
-            setImage(res.url)
-
-            await save(res.url, zoom)
-
-            message.success(
-                "Đã cập nhật"
-            )
-
-            return false
-
+            setImage(duongDan);
+            await save(duongDan, zoom);
+            message.success("Đã cập nhật banner");
+        } catch (error) {
+            message.error(error?.message || "Không thể tải banner.");
         }
 
+        return false;
+    };
 
+    const changeZoom = async (nextZoom) => {
+        setZoom(nextZoom);
 
-    // zoom change
-
-    const changeZoom =
-        async (z) => {
-
-            setZoom(z)
-
-            if (image)
-                await save(
-                    image,
-                    z
-                )
-
+        if (!image) {
+            return;
         }
 
-
+        try {
+            await save(image, nextZoom);
+        } catch (error) {
+            message.error(error?.message || "Không thể cập nhật zoom banner.");
+        }
+    };
 
     return (
-
-        <Card title={title}>
+        <Card title={title} className="rounded-[28px] border border-slate-200 shadow-sm">
             <Typography.Text type="secondary">
                 Tỷ lệ khuyến nghị: {aspectRatio}
             </Typography.Text>
 
-            <Upload
-                showUploadList={false}
-                beforeUpload={upload}
-            >
-
-                <Button
-                    icon={<UploadOutlined/>}
+            <div className="mt-4 flex flex-wrap gap-3">
+                <Upload
+                    showUploadList={false}
+                    beforeUpload={handleUpload}
+                    accept=".png,.jpg,.jpeg,.webp"
                 >
-                    Tải ảnh
-                </Button>
-
-            </Upload>
-
-
-            {/* preview 16:9 */}
+                    <Button icon={<UploadOutlined/>}>
+                        Tải ảnh
+                    </Button>
+                </Upload>
+            </div>
 
             <div
                 style={{
                     marginTop: 12,
                     width: "100%",
-                    aspectRatio: aspectRatio,
-                    border: "1px solid #ddd",
+                    aspectRatio,
+                    border: "1px solid rgba(148,163,184,0.35)",
                     overflow: "hidden",
-                    position: "relative"
+                    position: "relative",
+                    borderRadius: 24,
+                    background: "#f8fafc",
                 }}
             >
-
-                {image && (
-
+                {image ? (
                     <img
-                        src={
-                            getPublicFileUrl(
-                                image
-                            )
-                        }
+                        src={getPublicFileUrl(image)}
                         alt=""
                         style={{
                             width: `${100 * zoom}%`,
@@ -157,24 +126,18 @@ export default function BannerEditor({
                             position: "absolute",
                             left: "50%",
                             top: "50%",
-                            transform:
-                                "translate(-50%, -50%)"
+                            transform: "translate(-50%, -50%)",
                         }}
                     />
-
+                ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-slate-400">
+                        Chưa có banner
+                    </div>
                 )}
-
             </div>
 
-
-            <div
-                style={{
-                    marginTop: 10
-                }}
-            >
-
+            <div className="mt-4">
                 Zoom
-
                 <Slider
                     min={1}
                     max={2}
@@ -182,11 +145,7 @@ export default function BannerEditor({
                     value={zoom}
                     onChange={changeZoom}
                 />
-
             </div>
-
         </Card>
-
-    )
-
+    );
 }

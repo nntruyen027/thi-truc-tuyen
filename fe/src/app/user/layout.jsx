@@ -6,14 +6,17 @@ import {layDotThiHienTai} from "~/services/thi/dot-thi";
 import dayjs from "dayjs";
 import Footer from "~/app/components/public/Footer";
 import UserInteractionGuard from "~/app/components/common/UserInteractionGuard";
-import {LogoutOutlined, UserOutlined} from "@ant-design/icons";
+import {LockOutlined, LogoutOutlined, SettingOutlined, UserOutlined} from "@ant-design/icons";
 import {useAuthStore} from "~/store/auth";
 import {useRouter} from "next/navigation";
+import {useModal} from "~/store/modal";
+import ChangePasswordModal from "~/app/admin/ChangePasswordModal";
 
 export default function UserLayout({children}) {
     const [dotThi, setDotThi] = useState(null);
     const router = useRouter();
     const {user, clearAuth} = useAuthStore();
+    const {SetIsUpdatePassOpen} = useModal();
 
     const {token} = theme.useToken()
     const {colorPrimary} = token
@@ -43,6 +46,20 @@ export default function UserLayout({children}) {
     };
 
     const userMenuItems = [
+        ...(user?.role === "admin" || user?.role === "super_admin"
+            ? [{
+                key: "admin",
+                label: "Khu vực quản trị",
+                icon: <SettingOutlined/>,
+                onClick: () => router.push("/admin/dashboard"),
+            }]
+            : []),
+        {
+            key: "password",
+            label: "Đổi mật khẩu",
+            icon: <LockOutlined/>,
+            onClick: () => SetIsUpdatePassOpen(),
+        },
         {
             key: "logout",
             label: "Đăng xuất",
@@ -51,15 +68,14 @@ export default function UserLayout({children}) {
         },
     ];
 
-    return <Layout className="min-h-screen bg-[linear-gradient(180deg,#eff6ff_0%,#f8fafc_28%,#f8fafc_100%)]">
+    return <Layout className="min-h-screen bg-slate-50">
             <UserInteractionGuard blockDevTools disableCopy />
             <div
                 style={{
                     color:'white',
-                    background: `linear-gradient(135deg, ${colorPrimary} 0%, #2563eb 55%, #60a5fa 100%)`
+                    background: colorPrimary,
                 }}
                 className="relative overflow-hidden px-4 py-5 shadow-sm sm:px-6 lg:px-8">
-                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.22),_transparent_22%),radial-gradient(circle_at_bottom_right,_rgba(255,255,255,0.16),_transparent_26%)]" />
                     <div className="relative mx-auto flex max-w-7xl flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div className="text-center md:text-left">
                         <div className="text-sm font-semibold uppercase tracking-[0.18em] text-white/80">
@@ -100,5 +116,6 @@ export default function UserLayout({children}) {
                 </div>
         <Layout.Content className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</Layout.Content>
         <Footer/>
+        <ChangePasswordModal />
         </Layout>
 }

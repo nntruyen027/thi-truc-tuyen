@@ -1,0 +1,1478 @@
+{
+  "id": "b32384d7-9c67-4f96-af47-8151d49de2a8",
+  "prevId": "1e9df7fe-8d1e-450d-9620-59d4f115a0f6",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.cau_hinh": {
+      "name": "cau_hinh",
+      "schema": "",
+      "columns": {
+        "khoa": {
+          "name": "khoa",
+          "type": "varchar(200)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "gia_tri": {
+          "name": "gia_tri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.users": {
+      "name": "users",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "username": {
+          "name": "username",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ho_ten": {
+          "name": "ho_ten",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "don_vi_id": {
+          "name": "don_vi_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'user'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "auth_users_workspace_id_idx": {
+          "name": "auth_users_workspace_id_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_auth_users_workspace_username": {
+          "name": "uq_auth_users_workspace_username",
+          "nullsNotDistinct": false,
+          "columns": [
+            "workspace_id",
+            "username"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.refresh_tokens": {
+      "name": "refresh_tokens",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expire_at": {
+          "name": "expire_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked": {
+          "name": "revoked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "auth_refresh_tokens_workspace_id_idx": {
+          "name": "auth_refresh_tokens_workspace_id_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "auth_refresh_tokens_user_id_idx": {
+          "name": "auth_refresh_tokens_user_id_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.bai_viet": {
+      "name": "bai_viet",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tieu_de": {
+          "name": "tieu_de",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tom_tat": {
+          "name": "tom_tat",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "noi_dung": {
+          "name": "noi_dung",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "anh_dai_dien": {
+          "name": "anh_dai_dien",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ngay_dang": {
+          "name": "ngay_dang",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "trang_thai": {
+          "name": "trang_thai",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "nguoi_tao": {
+          "name": "nguoi_tao",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "dm_chung.don_vi": {
+      "name": "don_vi",
+      "schema": "dm_chung",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ten": {
+          "name": "ten",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mo_ta": {
+          "name": "mo_ta",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "dm_chung.linh_vuc": {
+      "name": "linh_vuc",
+      "schema": "dm_chung",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ten": {
+          "name": "ten",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mo_ta": {
+          "name": "mo_ta",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "dm_chung.nhom_cau_hoi": {
+      "name": "nhom_cau_hoi",
+      "schema": "dm_chung",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ten": {
+          "name": "ten",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mo_ta": {
+          "name": "mo_ta",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "file.file": {
+      "name": "file",
+      "schema": "file",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ten": {
+          "name": "ten",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ten_goc": {
+          "name": "ten_goc",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "duong_dan": {
+          "name": "duong_dan",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "loai": {
+          "name": "loai",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kich_thuoc": {
+          "name": "kich_thuoc",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nguoi_tao": {
+          "name": "nguoi_tao",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thoi_gian_tao": {
+          "name": "thoi_gian_tao",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "platform.workspaces": {
+      "name": "workspaces",
+      "schema": "platform",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ten": {
+          "name": "ten",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "is_default": {
+          "name": "is_default",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_platform_workspace_code": {
+          "name": "uq_platform_workspace_code",
+          "nullsNotDistinct": false,
+          "columns": [
+            "code"
+          ]
+        },
+        "uq_platform_workspace_slug": {
+          "name": "uq_platform_workspace_slug",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "platform.workspace_domains": {
+      "name": "workspace_domains",
+      "schema": "platform",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "domain": {
+          "name": "domain",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_primary": {
+          "name": "is_primary",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "workspace_domains_workspace_id_idx": {
+          "name": "workspace_domains_workspace_id_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_platform_workspace_domain": {
+          "name": "uq_platform_workspace_domain",
+          "nullsNotDistinct": false,
+          "columns": [
+            "domain"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "platform.workspace_settings": {
+      "name": "workspace_settings",
+      "schema": "platform",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "khoa": {
+          "name": "khoa",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gia_tri": {
+          "name": "gia_tri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "workspace_settings_workspace_id_idx": {
+          "name": "workspace_settings_workspace_id_idx",
+          "columns": [
+            {
+              "expression": "workspace_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_platform_workspace_setting": {
+          "name": "uq_platform_workspace_setting",
+          "nullsNotDistinct": false,
+          "columns": [
+            "workspace_id",
+            "khoa"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "thi.cuoc_thi": {
+      "name": "cuoc_thi",
+      "schema": "thi",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "ten": {
+          "name": "ten",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mo_ta": {
+          "name": "mo_ta",
+          "type": "varchar(1000)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thoi_gian_bat_dau": {
+          "name": "thoi_gian_bat_dau",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thoi_gian_ket_thuc": {
+          "name": "thoi_gian_ket_thuc",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trang_thai": {
+          "name": "trang_thai",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cho_phep_xem_lich_su": {
+          "name": "cho_phep_xem_lich_su",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cho_phep_xem_lai_dap_an": {
+          "name": "cho_phep_xem_lai_dap_an",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "co_tu_luan": {
+          "name": "co_tu_luan",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "cuoc_thi_thoi_gian_range_idx": {
+          "name": "cuoc_thi_thoi_gian_range_idx",
+          "columns": [
+            {
+              "expression": "thoi_gian_bat_dau",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "thoi_gian_ket_thuc",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "thi.dot_thi": {
+      "name": "dot_thi",
+      "schema": "thi",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "cuoc_thi_id": {
+          "name": "cuoc_thi_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ten": {
+          "name": "ten",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mo_ta": {
+          "name": "mo_ta",
+          "type": "varchar(500)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "so_lan_tham_gia_toi_da": {
+          "name": "so_lan_tham_gia_toi_da",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thoi_gian_thi": {
+          "name": "thoi_gian_thi",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ty_le_danh_gia_dat": {
+          "name": "ty_le_danh_gia_dat",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thoi_gian_bat_dau": {
+          "name": "thoi_gian_bat_dau",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thoi_gian_ket_thuc": {
+          "name": "thoi_gian_ket_thuc",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "co_tron_cau_hoi": {
+          "name": "co_tron_cau_hoi",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "cho_phep_luu_bai": {
+          "name": "cho_phep_luu_bai",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "du_doan": {
+          "name": "du_doan",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "trang_thai": {
+          "name": "trang_thai",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "dot_thi_cuoc_thi_id_idx": {
+          "name": "dot_thi_cuoc_thi_id_idx",
+          "columns": [
+            {
+              "expression": "cuoc_thi_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "dot_thi_thoi_gian_range_idx": {
+          "name": "dot_thi_thoi_gian_range_idx",
+          "columns": [
+            {
+              "expression": "thoi_gian_bat_dau",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "thoi_gian_ket_thuc",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "thi.trac_nghiem": {
+      "name": "trac_nghiem",
+      "schema": "thi",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "linh_vuc_id": {
+          "name": "linh_vuc_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nhom_id": {
+          "name": "nhom_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cau_hoi": {
+          "name": "cau_hoi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "caua": {
+          "name": "caua",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "caub": {
+          "name": "caub",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cauc": {
+          "name": "cauc",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "caud": {
+          "name": "caud",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dapan": {
+          "name": "dapan",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "diem": {
+          "name": "diem",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "trac_nghiem_linh_vuc_nhom_idx": {
+          "name": "trac_nghiem_linh_vuc_nhom_idx",
+          "columns": [
+            {
+              "expression": "linh_vuc_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "nhom_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "thi.trac_nghiem_dot_thi": {
+      "name": "trac_nghiem_dot_thi",
+      "schema": "thi",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "dot_thi_id": {
+          "name": "dot_thi_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "linh_vuc_id": {
+          "name": "linh_vuc_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "nhom_id": {
+          "name": "nhom_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "so_luong": {
+          "name": "so_luong",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "trac_nghiem_dot_thi_dot_thi_id_idx": {
+          "name": "trac_nghiem_dot_thi_dot_thi_id_idx",
+          "columns": [
+            {
+              "expression": "dot_thi_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "thi.tu_luan_dot_thi": {
+      "name": "tu_luan_dot_thi",
+      "schema": "thi",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "dot_thi_id": {
+          "name": "dot_thi_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cau_hoi": {
+          "name": "cau_hoi",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "goi_y": {
+          "name": "goi_y",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "''"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "thi.de_thi": {
+      "name": "de_thi",
+      "schema": "thi",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "dot_thi_id": {
+          "name": "dot_thi_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thi_sinh_id": {
+          "name": "thi_sinh_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lan_thi": {
+          "name": "lan_thi",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thoi_gian_tao": {
+          "name": "thoi_gian_tao",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "trang_thai": {
+          "name": "trang_thai",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "de_thi_dot_thi_thi_sinh_idx": {
+          "name": "de_thi_dot_thi_thi_sinh_idx",
+          "columns": [
+            {
+              "expression": "dot_thi_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "thi_sinh_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "thi.de_thi_cau_hoi": {
+      "name": "de_thi_cau_hoi",
+      "schema": "thi",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "de_thi_id": {
+          "name": "de_thi_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cau_hoi_id": {
+          "name": "cau_hoi_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thu_tu": {
+          "name": "thu_tu",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "de_thi_cau_hoi_de_thi_thu_tu_idx": {
+          "name": "de_thi_cau_hoi_de_thi_thu_tu_idx",
+          "columns": [
+            {
+              "expression": "de_thi_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "thu_tu",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "thi.bai_thi": {
+      "name": "bai_thi",
+      "schema": "thi",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "de_thi_id": {
+          "name": "de_thi_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thi_sinh_id": {
+          "name": "thi_sinh_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lan_thi": {
+          "name": "lan_thi",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "thoi_gian_bat_dau": {
+          "name": "thoi_gian_bat_dau",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "thoi_gian_nop": {
+          "name": "thoi_gian_nop",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "trang_thai": {
+          "name": "trang_thai",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "diem": {
+          "name": "diem",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "tong_thoi_gian_da_lam": {
+          "name": "tong_thoi_gian_da_lam",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "lan_bat_dau": {
+          "name": "lan_bat_dau",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dang_lam": {
+          "name": "dang_lam",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "so_du_doan": {
+          "name": "so_du_doan",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "bai_thi_thi_sinh_trang_thai_idx": {
+          "name": "bai_thi_thi_sinh_trang_thai_idx",
+          "columns": [
+            {
+              "expression": "thi_sinh_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "trang_thai",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "bai_thi_de_thi_id_idx": {
+          "name": "bai_thi_de_thi_id_idx",
+          "columns": [
+            {
+              "expression": "de_thi_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "thi.bai_thi_chi_tiet": {
+      "name": "bai_thi_chi_tiet",
+      "schema": "thi",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "bai_thi_id": {
+          "name": "bai_thi_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cau_hoi_id": {
+          "name": "cau_hoi_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dap_an_chon": {
+          "name": "dap_an_chon",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dung": {
+          "name": "dung",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "diem": {
+          "name": "diem",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_bai_cau": {
+          "name": "uq_bai_cau",
+          "nullsNotDistinct": false,
+          "columns": [
+            "bai_thi_id",
+            "cau_hoi_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "thi.bai_thi_chi_tiet_tu_luan": {
+      "name": "bai_thi_chi_tiet_tu_luan",
+      "schema": "thi",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "bai_thi_id": {
+          "name": "bai_thi_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cau_hoi_id": {
+          "name": "cau_hoi_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dap_an": {
+          "name": "dap_an",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "diem": {
+          "name": "diem",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_bai_cau_tu_luan": {
+          "name": "uq_bai_cau_tu_luan",
+          "nullsNotDistinct": false,
+          "columns": [
+            "bai_thi_id",
+            "cau_hoi_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {
+    "auth": "auth",
+    "dm_chung": "dm_chung",
+    "file": "file",
+    "platform": "platform",
+    "thi": "thi"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

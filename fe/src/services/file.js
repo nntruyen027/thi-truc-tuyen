@@ -56,6 +56,10 @@ export async function uploadFile(file, options = {}) {
         xhr.open("POST", `${API_BASE_URL}${BASE_PATH}/upload`);
         xhr.timeout = 10 * 60 * 1000;
 
+        if (typeof window !== "undefined") {
+            xhr.setRequestHeader("X-Workspace-Host", window.location.host);
+        }
+
         if (access) {
             xhr.setRequestHeader("Authorization", `Bearer ${access}`);
         }

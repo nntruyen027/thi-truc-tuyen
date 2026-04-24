@@ -6,7 +6,7 @@ import {usePermission} from "~/hook/usePermission";
 
 export default function NotFound() {
     const router = useRouter();
-    const {isAdmin} = usePermission()
+    const {isAdmin, isSuperAdmin} = usePermission()
 
     return (
         <div className="h-screen flex items-center justify-center bg-gray-50">
@@ -18,7 +18,7 @@ export default function NotFound() {
                     <Button
                         key="home"
                         type="primary"
-                        onClick={() => isAdmin() ? router.push("/admin/dashboard") : router.push("/")}
+                        onClick={() => isSuperAdmin() ? router.push("/super-admin") : isAdmin() ? router.push("/admin/dashboard") : router.push("/")}
                     >
                         Về trang chủ
                     </Button>,

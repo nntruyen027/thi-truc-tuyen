@@ -124,7 +124,10 @@ export default function Footer() {
                                 <div className="grid gap-3">
                                     {contacts.map((item) => (
                                         <div key={item.key} className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
-                                            <div className="mt-0.5 text-blue-700">
+                                            <div
+                                                className="mt-0.5"
+                                                style={{color: "var(--workspace-primary-color)"}}
+                                            >
                                                 {item.icon}
                                             </div>
                                             <div>

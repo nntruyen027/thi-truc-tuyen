@@ -9,15 +9,26 @@ const query =
 const {v4: uuid} =
     require("uuid")
 
+function toSessionUser(user) {
+    if (!user) {
+        return null
+    }
+
+    const cloned = {...user}
+    delete cloned.password
+    return cloned
+}
 
 exports.login = async (
     username,
-    password
+    password,
+    workspace
 ) => {
 
     const user =
         await query.getUserByUsername(
-            username
+            username,
+            workspace?.id || null
         )
 
     if (!user)
@@ -35,11 +46,14 @@ exports.login = async (
 
 
     const access =
-        jwtUtil.signAccess(user)
+        jwtUtil.signAccess(
+            toSessionUser(user)
+        )
 
     const refresh =
         jwtUtil.signRefresh({
-            id: user.id
+            id: user.id,
+            workspace_id: user.workspace_id || workspace?.id || null,
         })
 
 
@@ -55,13 +69,14 @@ exports.login = async (
     await query.saveRefresh(
         id,
         user.id,
+        user.workspace_id || workspace?.id || null,
         refresh,
         exp
     )
 
 
     return {
-        user,
+        user: toSessionUser(user),
         access,
         refresh
     }
@@ -79,10 +94,16 @@ exports.refresh = async (
             refreshToken
         )
 
+    const user = await query.getUserById(data.id)
+
+    if (!user) {
+        throw "USER_NOT_FOUND"
+    }
+
     const access =
-        jwtUtil.signAccess({
-            id: data.id
-        })
+        jwtUtil.signAccess(
+            toSessionUser(user)
+        )
 
     return {access}
 
@@ -94,7 +115,8 @@ exports.register = async (
     hoTen,
     password,
     repeatPass,
-    donViId
+    donViId,
+    workspace
 ) => {
     if (!repeatPass || repeatPass !== password)
         throw "Mật khẩu không khớp!"
@@ -113,7 +135,8 @@ exports.register = async (
         username,
         hash,
         hoTen,
-        donViId
+        donViId,
+        workspace?.id || null
     )
 
 }
@@ -123,7 +146,8 @@ exports.changePassword = async (
     username,
     oldPassword,
     newPassword,
-    repeatPass
+    repeatPass,
+    workspaceId = null
 ) => {
 
     if (newPassword !== repeatPass)
@@ -132,7 +156,8 @@ exports.changePassword = async (
 
     const user =
         await query.getUserByUsername(
-            username
+            username,
+            workspaceId
         )
 
     if (!user)
@@ -161,7 +186,8 @@ exports.changePassword = async (
 
     await query.updatePassword(
         username,
-        hash
+        hash,
+        workspaceId
     )
 
 
@@ -169,10 +195,14 @@ exports.changePassword = async (
 }
 
 
-exports.capNhatThongTinNguoiDung = async (username, hoTen, donViId) => {
-    return await query.capNhatThongTinNguoiDung(username, hoTen, donViId)
+exports.capNhatThongTinNguoiDung = async (username, hoTen, donViId, workspaceId = null) => {
+    return toSessionUser(
+        await query.capNhatThongTinNguoiDung(username, hoTen, donViId, workspaceId)
+    )
 }
 
-exports.layNguoiDungByUsername = async (username) => {
-    return await query.getUserByUsername(username)
+exports.layNguoiDungByUsername = async (username, workspaceId = null) => {
+    return toSessionUser(
+        await query.getUserByUsername(username, workspaceId)
+    )
 }

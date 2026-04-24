@@ -1,6 +1,6 @@
 'use client'
 
-import {App, Button, Divider, Form, Input} from "antd";
+import {App, Button, Divider, Form, Input, theme} from "antd";
 
 import {useState} from "react";
 
@@ -15,6 +15,7 @@ export default function DangKy() {
     const [form] = Form.useForm();
     const { message } = App.useApp();
     const [loading, setLoading] = useState(false);
+    const {token} = theme.useToken();
 
 
     const onDangNhap = async (values) => {
@@ -27,10 +28,12 @@ export default function DangKy() {
 
             message.success("Đăng nhập thành công");
 
-            if(user.role === 'admin')
-                router.replace('admin/dashboard');
+            if(user.role === 'super_admin')
+                router.replace('/super-admin');
+            else if(user.role === 'admin')
+                router.replace('/admin/dashboard');
             else
-                router.replace('user');
+                router.replace('/user');
 
         } catch (error) {
 
@@ -107,7 +110,7 @@ export default function DangKy() {
                 <Divider />
 
                 <div className="text-center text-sm text-slate-600">
-                    <Link href="/dang-ky">
+                    <Link href="/dang-ky" style={{color: token.colorPrimary, fontWeight: 600}}>
                         Chưa có tài khoản? Đăng ký
                     </Link>
                 </div>

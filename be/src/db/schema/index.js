@@ -4,5 +4,6 @@ module.exports = {
     ...require("./content"),
     ...require("./dm-chung"),
     ...require("./file"),
+    ...require("./platform"),
     ...require("./thi"),
 };

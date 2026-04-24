@@ -22,7 +22,8 @@ router.post(
             const result =
                 await service.login(
                     username,
-                    password
+                    password,
+                    req.workspace
                 )
 
             res.json(result)
@@ -93,6 +94,7 @@ router.post(
                     password,
                     repeatPassword,
                     donViId,
+                    req.workspace
                 )
 
             res.json(result)
@@ -108,7 +110,7 @@ router.post(
 
 router.get("/me", authMiddleware, async (req, res) => {
     try {
-        const user = await service.layNguoiDungByUsername(req.user.username)
+        const user = await service.layNguoiDungByUsername(req.user.username, req.user.workspace_id)
         resUtil.ok(res, user)
     } catch (e) {
         resUtil.error(res, e);
@@ -121,7 +123,7 @@ router.put("/profile", authMiddleware, async (req, res) => {
         const {hoTen, donViId} = req.body;
 
 
-        const user = await service.capNhatThongTinNguoiDung(req.user.username, hoTen, donViId)
+        const user = await service.capNhatThongTinNguoiDung(req.user.username, hoTen, donViId, req.user.workspace_id)
 
         resUtil.ok(res, user)
 
@@ -141,7 +143,8 @@ router.put("/password", authMiddleware, async (req, res) => {
 
         const found = await service.changePassword(req.user.username, oldPassword,
             newPassword,
-            repeatPass)
+            repeatPass,
+            req.user.workspace_id)
 
         resUtil.ok(res, found)
 

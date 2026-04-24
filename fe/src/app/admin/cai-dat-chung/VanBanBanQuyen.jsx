@@ -6,23 +6,10 @@ import {layCauHinh, suaCauHinh} from "~/services/cau-hinh";
 import {useEffect, useState} from "react";
 import useApp from "antd/es/app/useApp";
 
-export default function BanQuyen() {
+export default function BanQuyen({workspaceId = null}) {
     const [form] = Form.useForm();
     const {message} = useApp()
     const [loading, setLoading] = useState(true);
-
-    const load = async () => {
-
-        const res =
-            await layCauHinh('van-ban-ban-quyen')
-
-        if (!res.data) return
-
-        const val = res.data.gia_tri
-
-        form.setFieldsValue({noiDung: val})
-    }
-
 
     const save = async () => {
 
@@ -35,7 +22,8 @@ export default function BanQuyen() {
 
             await suaCauHinh(
                 'van-ban-ban-quyen',
-                values.noiDung
+                values.noiDung,
+                {workspaceId}
             );
 
         }
@@ -49,8 +37,19 @@ export default function BanQuyen() {
     };
 
     useEffect(() => {
-        load()
-    }, [])
+        const load = async () => {
+            const res =
+                await layCauHinh('van-ban-ban-quyen', {workspaceId})
+
+            if (!res.data) return
+
+            const val = res.data.gia_tri
+
+            form.setFieldsValue({noiDung: val})
+        }
+
+        void load()
+    }, [form, workspaceId])
 
     return <Card title={'Văn bản bản quyền'}>
         <Form form={form} layout="vertical">

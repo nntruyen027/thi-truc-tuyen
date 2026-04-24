@@ -153,6 +153,7 @@ export default function RootLayout({children}) {
 
     const {SetIsUpdatePassOpen, setIsEditOpen} = useModal();
     const {user, clearAuth} = useAuthStore();
+    const isElevatedAdmin = user?.role === "admin" || user?.role === "super_admin";
 
     const normalizedMenu = useMemo(
         () => normalizeMenu(menuConfig),
@@ -209,12 +210,12 @@ export default function RootLayout({children}) {
     }, [pathname, title]);
 
     useEffect(() => {
-        if (user && user.role !== "admin") {
+        if (user && !isElevatedAdmin) {
             router.replace("/");
         }
-    }, [router, user]);
+    }, [isElevatedAdmin, router, user]);
 
-    if (!user || user.role !== "admin") {
+    if (!user || !isElevatedAdmin) {
         return null;
     }
 
@@ -236,6 +237,20 @@ export default function RootLayout({children}) {
             icon: <SafetyOutlined/>,
             onClick: () => SetIsUpdatePassOpen(),
         },
+        {
+            key: "user-area",
+            label: "Khu vực thí sinh",
+            icon: <UserOutlined/>,
+            onClick: () => router.push("/user"),
+        },
+        ...(user?.role === "super_admin"
+            ? [{
+                key: "super-admin",
+                label: "Quản trị hệ thống",
+                icon: <SettingOutlined/>,
+                onClick: () => router.push("/super-admin"),
+            }]
+            : []),
         {
             key: "logout",
             label: "Đăng xuất",
@@ -267,10 +282,10 @@ export default function RootLayout({children}) {
                         subMenuItemBg: "transparent",
                         popupBg: "#f8fbff",
                         itemColor: "#334155",
-                        itemHoverColor: "#1948be",
-                        itemHoverBg: "rgba(25,72,190,0.08)",
-                        itemSelectedColor: "#1948be",
-                        itemSelectedBg: "rgba(25,72,190,0.14)",
+                        itemHoverColor: "var(--workspace-primary-color)",
+                        itemHoverBg: "rgba(var(--workspace-primary-rgb),0.08)",
+                        itemSelectedColor: "var(--workspace-primary-color)",
+                        itemSelectedBg: "rgba(var(--workspace-primary-rgb),0.14)",
                         groupTitleColor: "#64748b",
                         itemBorderRadius: 16,
                         itemHeight: 44,
@@ -334,7 +349,7 @@ export default function RootLayout({children}) {
             <Layout className="bg-transparent">
                 <Header
                     className="sticky top-0 z-20 flex h-[72px] items-center justify-between gap-3 border-b border-blue-900/10"
-                    style={{background: "rgb(25, 72, 190)", padding: isMobile ? "0 16px" : "0 24px"}}
+                    style={{background: "var(--workspace-primary-color)", padding: isMobile ? "0 16px" : "0 24px"}}
                 >
                     <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                         {isMobile ? (
@@ -371,10 +386,10 @@ export default function RootLayout({children}) {
                             />
                             <div className="hidden min-w-0 sm:block">
                                 <Typography.Text className="block truncate font-medium !text-white">
-                                    {user?.hoTen || "Người dùng"}
+                                    {user?.hoTen || user?.ho_ten || "Người dùng"}
                                 </Typography.Text>
                                 <div className="text-xs uppercase tracking-[0.14em] text-blue-100/80">
-                                    Quản trị viên
+                                    {user?.role === "super_admin" ? "Super Admin" : "Quản trị viên"}
                                 </div>
                             </div>
                         </div>

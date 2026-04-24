@@ -1,7 +1,7 @@
 "use client"
 
 import {useEffect, useRef, useState} from "react"
-import {App, Button, Card, Drawer, Input, Layout, Modal, Radio, Spin, Typography} from "antd"
+import {App, Button, Card, Drawer, Input, Layout, Modal, Radio, Spin, Typography, theme} from "antd"
 import {LeftOutlined, MenuOutlined, RightOutlined} from "@ant-design/icons"
 import {useRouter} from "next/navigation"
 
@@ -45,6 +45,7 @@ function normalizeQuestions(data, enableTuLuan = false) {
 export default function Thi() {
     const router = useRouter()
     const {message} = App.useApp()
+    const {token} = theme.useToken()
 
     const [loading, setLoading] = useState(true)
     const [dotThi, setDotThi] = useState(null)
@@ -408,7 +409,10 @@ export default function Thi() {
 
     const questionNavigator = (
         <div className="space-y-6">
-            <div className="rounded-[28px] border border-blue-100 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] px-5 py-5 shadow-[0_14px_30px_rgba(15,23,42,0.05)]">
+            <div
+                className="rounded-[28px] border bg-white px-5 py-5 shadow-[0_14px_30px_rgba(15,23,42,0.05)]"
+                style={{borderColor: "rgba(var(--workspace-primary-rgb), 0.18)"}}
+            >
                 <Text className="!text-xs !font-semibold !uppercase !tracking-[0.2em] !text-slate-400">
                     Điều hướng câu hỏi
                 </Text>
@@ -445,11 +449,15 @@ export default function Thi() {
                             type={itemIndex === index ? "primary" : "default"}
                             className={
                                 itemIndex === index
-                                    ? "!h-12 !rounded-[18px] !border-0 !bg-[#1948be] !font-semibold !shadow-[0_14px_28px_rgba(25,72,190,0.28)]"
+                                    ? "!h-12 !rounded-[18px] !border-0 !font-semibold"
                                     : answered
-                                        ? "!h-12 !rounded-[18px] !border-emerald-300 !bg-[linear-gradient(180deg,#ecfdf5_0%,#d1fae5_100%)] !font-semibold !text-emerald-800 !shadow-[0_10px_20px_rgba(16,185,129,0.12)]"
+                                        ? "!h-12 !rounded-[18px] !border-emerald-300 !bg-emerald-50 !font-semibold !text-emerald-800 !shadow-[0_10px_20px_rgba(16,185,129,0.12)]"
                                         : "!h-12 !rounded-[18px] !border-slate-200 !bg-white !text-slate-600"
                             }
+                            style={itemIndex === index ? {
+                                background: token.colorPrimary,
+                                boxShadow: "0 14px 28px rgba(var(--workspace-primary-rgb), 0.28)",
+                            } : undefined}
                             onClick={() => gotoQuestion(itemIndex)}
                         >
                             {item.displayOrder}
@@ -462,11 +470,15 @@ export default function Thi() {
                         type={isDuDoan ? "primary" : "default"}
                         className={
                             isDuDoan
-                                ? "!h-12 !rounded-[18px] !border-0 !bg-[#1948be] !font-semibold !shadow-[0_14px_28px_rgba(25,72,190,0.28)]"
+                                ? "!h-12 !rounded-[18px] !border-0 !font-semibold"
                                 : ketQuaDuDoan
-                                    ? "!h-12 !rounded-[18px] !border-emerald-300 !bg-[linear-gradient(180deg,#ecfdf5_0%,#d1fae5_100%)] !font-semibold !text-emerald-800"
+                                    ? "!h-12 !rounded-[18px] !border-emerald-300 !bg-emerald-50 !font-semibold !text-emerald-800"
                                     : "!h-12 !rounded-[18px] !border-slate-200 !bg-white !text-slate-600"
                         }
+                        style={isDuDoan ? {
+                            background: token.colorPrimary,
+                            boxShadow: "0 14px 28px rgba(var(--workspace-primary-rgb), 0.28)",
+                        } : undefined}
                         onClick={() => gotoQuestion(cauHoi.length)}
                     >
                         ?
@@ -485,12 +497,13 @@ export default function Thi() {
     }
 
     return (
-        <Layout className="min-h-screen bg-[linear-gradient(180deg,#f6faff_0%,#fbfdff_28%,#ffffff_100%)]">
+        <Layout className="min-h-screen bg-slate-50">
             <Layout className="mx-auto w-full max-w-7xl flex-1 gap-6 px-4 py-5 md:px-6 lg:flex-row lg:gap-7 lg:py-7">
                 {!isMobile && (
                     <Sider
                         width={280}
-                        className="!h-fit overflow-hidden rounded-[32px] border border-blue-100 !bg-[#fbfdff] shadow-[0_18px_42px_rgba(15,23,42,0.08)]"
+                        className="!h-fit overflow-hidden rounded-[32px] border !bg-white shadow-[0_18px_42px_rgba(15,23,42,0.08)]"
+                        style={{borderColor: "rgba(var(--workspace-primary-rgb), 0.18)"}}
                     >
                         <div className="p-5">
                             {questionNavigator}
@@ -501,7 +514,7 @@ export default function Thi() {
                 <Content className="min-w-0">
                     <div className="space-y-6">
                         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(20rem,0.85fr)]">
-                            <Card className="h-full overflow-hidden rounded-[32px] border border-blue-100 bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.12),_transparent_28%),linear-gradient(135deg,_#ffffff,_#f6fbff_58%,_#e8f1ff)] shadow-[0_18px_44px_rgba(37,99,235,0.08)]">
+                            <Card className="h-full overflow-hidden rounded-[32px] border bg-white shadow-[0_18px_44px_rgba(15,23,42,0.08)]" style={{borderColor: "rgba(var(--workspace-primary-rgb), 0.18)"}}>
                                 <div className="flex h-full flex-col justify-between gap-6">
                                     <div className="flex flex-wrap items-center gap-3">
                                         <Button
@@ -525,7 +538,7 @@ export default function Thi() {
                                     </div>
 
                                     <div className="space-y-3">
-                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em] !text-blue-700">
+                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em]" style={{color: token.colorPrimary}}>
                                             {isDuDoan ? "Phần dự đoán" : currentQuestion?.loai === 2 ? "Câu tự luận" : "Câu trắc nghiệm"}
                                         </Text>
                                         <Title level={3} className="!mb-0 !text-slate-900 md:!text-[2rem]">
@@ -543,17 +556,20 @@ export default function Thi() {
                                             <span>Tiến độ bài làm</span>
                                             <span className="font-semibold text-slate-700">{progressPercent}%</span>
                                         </div>
-                                        <div className="h-3 overflow-hidden rounded-full bg-blue-100">
+                                        <div className="h-3 overflow-hidden rounded-full bg-slate-100">
                                             <div
-                                                className="h-full rounded-full bg-[linear-gradient(90deg,#1948be_0%,#3b82f6_100%)] transition-all"
-                                                style={{width: `${progressPercent}%`}}
+                                                className="h-full rounded-full transition-all"
+                                                style={{
+                                                    background: token.colorPrimary,
+                                                    width: `${progressPercent}%`,
+                                                }}
                                             />
                                         </div>
                                     </div>
                                 </div>
                             </Card>
 
-                            <Card className="h-full rounded-[32px] border border-blue-100 bg-[linear-gradient(180deg,#ffffff_0%,#f5faff_100%)] shadow-[0_18px_44px_rgba(37,99,235,0.08)]">
+                            <Card className="h-full rounded-[32px] border bg-white shadow-[0_18px_44px_rgba(15,23,42,0.08)]" style={{borderColor: "rgba(var(--workspace-primary-rgb), 0.18)"}}>
                                 <div className="flex h-full flex-col gap-4">
                                     <div className="flex items-start justify-between gap-3">
                                         <div>
@@ -564,8 +580,8 @@ export default function Thi() {
                                                 Theo dõi thời gian và hoàn tất bài trước khi hết giờ.
                                             </div>
                                         </div>
-                                        <div className="rounded-2xl bg-blue-50 px-3 py-2 text-right">
-                                            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">
+                                        <div className="rounded-2xl px-3 py-2 text-right" style={{background: "rgba(var(--workspace-primary-rgb), 0.08)"}}>
+                                            <div className="text-xs font-semibold uppercase tracking-[0.18em]" style={{color: token.colorPrimary}}>
                                                 Trạng thái
                                             </div>
                                             <div className="text-base font-semibold text-slate-900">
@@ -588,7 +604,7 @@ export default function Thi() {
                             {isDuDoan && (
                                 <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em] !text-blue-700">
+                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em]" style={{color: token.colorPrimary}}>
                                             Nội dung câu hỏi
                                         </Text>
                                         <Paragraph className="!mb-0 !max-w-4xl !text-base !leading-8 !text-slate-700 md:!text-[1.08rem]">
@@ -612,7 +628,7 @@ export default function Thi() {
                             {!isDuDoan && currentQuestion?.loai === 1 && (
                                 <div className="space-y-5">
                                     <div className="space-y-2">
-                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em] !text-blue-700">
+                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em]" style={{color: token.colorPrimary}}>
                                             Nội dung câu hỏi
                                         </Text>
                                         <Paragraph className="!mb-0 !max-w-4xl !text-base !leading-8 !text-slate-700 md:!text-[1.08rem]">
@@ -642,9 +658,15 @@ export default function Thi() {
                                                     key={`${currentQuestion.clientKey}-${option.value}`}
                                                     className={`flex cursor-pointer items-start gap-4 rounded-[24px] border px-4 py-4 transition md:px-6 md:py-5 ${
                                                         currentQuestion.dap_an_chon === option.value
-                                                            ? "border-blue-500 bg-[linear-gradient(135deg,#eff6ff,_#dbeafe)] shadow-[0_12px_24px_rgba(37,99,235,0.10)]"
-                                                            : "border-slate-200 bg-white hover:border-blue-200 hover:bg-blue-50/40"
+                                                            ? "shadow-[0_12px_24px_rgba(15,23,42,0.10)]"
+                                                            : "border-slate-200 bg-white"
                                                     }`}
+                                                    style={currentQuestion.dap_an_chon === option.value
+                                                        ? {
+                                                            borderColor: token.colorPrimary,
+                                                            background: "rgba(var(--workspace-primary-rgb), 0.08)",
+                                                        }
+                                                        : undefined}
                                                 >
                                                     <Radio value={option.value} className="mt-1" />
                                                     <div className="min-w-0">
@@ -665,7 +687,7 @@ export default function Thi() {
                             {!isDuDoan && currentQuestion?.loai === 2 && (
                                 <div className="space-y-5">
                                     <div className="space-y-2">
-                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em] !text-blue-700">
+                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em]" style={{color: token.colorPrimary}}>
                                             Nội dung câu hỏi
                                         </Text>
                                         <Paragraph className="!mb-0 !max-w-4xl !text-base !leading-8 !text-slate-700 md:!text-[1.08rem]">
@@ -674,7 +696,7 @@ export default function Thi() {
                                     </div>
 
                                     {currentQuestion.goi_y && (
-                                        <div className="rounded-[24px] border border-amber-200 bg-[linear-gradient(180deg,#fffaf0_0%,#fef3c7_100%)] px-5 py-4 text-sm leading-7 text-amber-900">
+                                        <div className="rounded-[24px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm leading-7 text-amber-900">
                                             <span className="font-semibold">Gợi ý:</span> {currentQuestion.goi_y}
                                         </div>
                                     )}
@@ -701,7 +723,7 @@ export default function Thi() {
                             )}
                         </Card>
 
-                        <Card className="rounded-[32px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] shadow-[0_16px_36px_rgba(15,23,42,0.06)]">
+                        <Card className="rounded-[32px] border border-slate-200 bg-white shadow-[0_16px_36px_rgba(15,23,42,0.06)]">
                             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                                 <div className="flex items-center gap-3">
                                     <Button
@@ -720,7 +742,8 @@ export default function Thi() {
                                             size="large"
                                             icon={<RightOutlined />}
                                             iconPosition="end"
-                                            className="!h-12 !rounded-2xl !border-0 !bg-[#1948be] !px-5"
+                                            className="!h-12 !rounded-2xl !border-0 !px-5"
+                                            style={{background: token.colorPrimary}}
                                             onClick={goNext}
                                         >
                                             Câu tiếp theo

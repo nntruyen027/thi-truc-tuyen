@@ -14,6 +14,7 @@ import KetQuaCongBo from "~/app/(public)/KetQuaCongBo";
 import Reveal from "~/app/components/common/Reveal";
 import {useAuthStore} from "~/store/auth";
 import {parseCuocThiMeta} from "~/utils/cuocThiMeta";
+import {alphaColor, parseMediaConfig} from "~/utils/workspaceTheme";
 import BaiVietCuocThi from "~/app/(public)/BaiVietCuocThi";
 import TaiLieuTongHop from "~/app/(public)/TaiLieuTongHop";
 import GiaiThuongCuocThi from "~/app/(public)/GiaiThuongCuocThi";
@@ -100,6 +101,7 @@ export default function Page() {
     const [thoiGianConLai, setThoiGianConLai] = useState(null);
     const [tab, setTab] = useState("bai-viet");
     const [timelineItems, setTimelineItems] = useState([]);
+    const [isMobileViewport, setIsMobileViewport] = useState(false);
 
     const {token} = theme.useToken();
     const {colorPrimary} = token;
@@ -142,6 +144,7 @@ export default function Page() {
 
         const load = async () => {
             try {
+                const mobile = window.innerWidth < 768;
                 const khoa = getKhoa();
 
                 const [resBanner, resDotThi, resConLai] = await Promise.all([
@@ -152,13 +155,12 @@ export default function Page() {
 
                 if (!active) return;
 
-                if (resBanner.data) {
-                    const val =
-                        JSON.parse(
-                            resBanner.data.gia_tri
-                        );
+                setIsMobileViewport(mobile);
 
-                    setImage(val.url);
+                if (resBanner.data) {
+                    const val = parseMediaConfig(resBanner.data.gia_tri);
+
+                    setImage(val.duongDan || val.url || "");
                     setZoom(val.zoom || 1);
                 }
 
@@ -218,6 +220,11 @@ export default function Page() {
             return;
         }
 
+        if (currentUser.role === "super_admin") {
+            route.push("/super-admin");
+            return;
+        }
+
         if (currentUser.role === "admin") {
             route.push("/admin/dashboard");
             return;
@@ -234,7 +241,7 @@ export default function Page() {
                         <div
                             className="relative w-full overflow-hidden bg-slate-200 shadow-sm"
                             style={{
-                                aspectRatio: "16/3"
+                                aspectRatio: isMobileViewport ? "16/9" : "16/3"
                             }}
                         >
                             {image && (
@@ -294,7 +301,8 @@ export default function Page() {
                                                 <div className="flex items-start gap-3 md:gap-4">
                                                     <div className="flex h-16 w-16 shrink-0 items-center 
                                                     justify-center rounded-full border-[3px] 
-                                                    border-white bg-white text-[1.7rem] text-[#1948be] md:h-18 md:w-18">
+                                                    border-white bg-white text-[1.7rem] md:h-18 md:w-18"
+                                                    style={{color: colorPrimary}}>
                                                         {item.icon}
                                                     </div>
                                                     <div className="flex-1 rounded-[24px] bg-white px-5 py-4">
@@ -371,9 +379,16 @@ export default function Page() {
                                                     onClick={() => setTab(item.key)}
                                                     className={`flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border px-3 py-4 text-center transition duration-300 ${
                                                         tab === item.key
-                                                            ? "border-blue-600 bg-blue-50 text-blue-700 shadow-sm"
-                                                            : "border-slate-200 bg-slate-50 text-slate-700 hover:-translate-y-0.5 hover:border-blue-300 hover:text-blue-700"
+                                                            ? "shadow-sm"
+                                                            : "border-slate-200 bg-slate-50 text-slate-700 hover:-translate-y-0.5"
                                                     }`}
+                                                    style={tab === item.key
+                                                        ? {
+                                                            borderColor: colorPrimary,
+                                                            backgroundColor: alphaColor(colorPrimary, 0.1),
+                                                            color: colorPrimary,
+                                                        }
+                                                        : undefined}
                                                 >
                                                     <img src={item.image} width={40} alt="" />
                                                     <span className="text-sm font-semibold md:text-base">{item.label}</span>

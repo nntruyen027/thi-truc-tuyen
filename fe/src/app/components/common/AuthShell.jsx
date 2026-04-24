@@ -8,7 +8,7 @@ export default function AuthShell({title, subtitle, children}) {
             className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-10 sm:px-6"
             style={{
                 backgroundImage:
-                    "linear-gradient(135deg, rgba(15,23,42,0.88), rgba(25,72,190,0.72)), url('/bg_auth.jpg')",
+                    "linear-gradient(135deg, rgba(15,23,42,0.88), rgba(var(--workspace-primary-rgb),0.72)), url('/bg_auth.jpg')",
                 backgroundSize: "cover",
                 backgroundPosition: "center",
             }}
@@ -17,13 +17,17 @@ export default function AuthShell({title, subtitle, children}) {
                 <div className="mb-4">
                     <Link
                         href="/"
-                        className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-[#1948be] hover:text-[#1948be]"
+                        className="inline-flex items-center rounded-full border bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition"
+                        style={{
+                            borderColor: "rgba(var(--workspace-primary-rgb), 0.22)",
+                            color: "var(--workspace-primary-color)",
+                        }}
                     >
                         Về trang chủ
                     </Link>
                 </div>
                 <div className="mb-6 text-center">
-                    <h1 className="text-2xl font-bold uppercase tracking-[0.08em] text-[#1948be] md:text-3xl">
+                    <h1 className="text-2xl font-bold uppercase tracking-[0.08em] md:text-3xl" style={{color: "var(--workspace-primary-color)"}}>
                         {title}
                     </h1>
 

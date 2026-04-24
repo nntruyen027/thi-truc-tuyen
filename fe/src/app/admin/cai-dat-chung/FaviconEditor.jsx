@@ -6,8 +6,9 @@ import {useEffect, useState} from "react";
 
 import {layCauHinh, suaCauHinh} from "~/services/cau-hinh";
 import {getPublicFileUrl, uploadFile} from "~/services/file";
+import {parseMediaConfig} from "~/utils/workspaceTheme";
 
-export default function FaviconEditor() {
+export default function FaviconEditor({workspaceId = null}) {
     const {message} = App.useApp();
     const [image, setImage] = useState("");
 
@@ -16,24 +17,14 @@ export default function FaviconEditor() {
 
         const load = async () => {
             const res =
-                await layCauHinh("favicon");
+                await layCauHinh("favicon", {workspaceId});
 
             if (!active || !res.data?.gia_tri) {
                 return;
             }
 
-            try {
-                const parsed =
-                    JSON.parse(res.data.gia_tri);
-
-                setImage(
-                    typeof parsed === "string"
-                        ? parsed
-                        : parsed?.url || ""
-                );
-            } catch {
-                setImage(res.data.gia_tri);
-            }
+            const parsed = parseMediaConfig(res.data.gia_tri);
+            setImage(parsed.duongDan || parsed.url || "");
         };
 
         void load();
@@ -41,12 +32,13 @@ export default function FaviconEditor() {
         return () => {
             active = false;
         };
-    }, []);
+    }, [workspaceId]);
 
-    const save = async (url) => {
+    const save = async (duongDan) => {
         await suaCauHinh(
             "favicon",
-            JSON.stringify({url})
+            JSON.stringify({duongDan}),
+            {workspaceId}
         );
     };
 
@@ -54,11 +46,11 @@ export default function FaviconEditor() {
         const res =
             await uploadFile(file);
 
-        const url =
-            res?.url || res?.duong_dan;
+        const duongDan =
+            res?.duongDan || res?.duong_dan || res?.url;
 
-        setImage(url);
-        await save(url);
+        setImage(duongDan);
+        await save(duongDan);
 
         message.success("Đã cập nhật favicon");
 

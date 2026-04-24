@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useState} from "react";
 import dayjs from "dayjs";
-import {Avatar, Card, Empty, Image, List, Typography} from "antd";
+import {Avatar, Card, Empty, Image, List, Typography, theme} from "antd";
 import {CalendarOutlined, FileTextOutlined} from "@ant-design/icons";
 import {layDanhSachBaiViet} from "~/services/bai-viet";
 import {getPublicFileUrl} from "~/services/file";
@@ -24,6 +24,7 @@ export default function BaiVietCuocThi() {
     const [loading, setLoading] = useState(true);
     const [danhSach, setDanhSach] = useState([]);
     const [activeId, setActiveId] = useState(null);
+    const {token} = theme.useToken();
 
     useEffect(() => {
         let active = true;
@@ -82,9 +83,14 @@ export default function BaiVietCuocThi() {
         <div className="grid gap-5 lg:grid-cols-[360px_minmax(0,1fr)]">
             <Card
                 className="overflow-hidden rounded-3xl border border-slate-200 shadow-sm"
-                styles={{body: {padding: 0}}}
+                styles={{
+                    body: {padding: 0},
+                    header: {
+                        color: token.colorPrimary,
+                    },
+                }}
                 title={
-                    <Title level={3} className="!mb-0 !text-center !text-xl !font-bold uppercase !text-[#1948be]">
+                    <Title level={3} className="!mb-0 !text-center !text-xl !font-bold uppercase">
                         Bài viết
                     </Title>
                 }

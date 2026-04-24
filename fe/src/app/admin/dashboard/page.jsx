@@ -16,6 +16,7 @@ import {
     Table,
     Tag,
     Typography,
+    theme,
 } from "antd";
 import {
     ArrowRightOutlined,
@@ -66,6 +67,7 @@ export default function Dashboard() {
     const {message} = App.useApp();
     const router = useRouter();
     const setPageInfo = usePageInfoStore((state) => state.setPageInfo);
+    const {token} = theme.useToken();
 
     const [loading, setLoading] = useState(true);
     const [overview, setOverview] = useState({
@@ -199,11 +201,17 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-6">
-            <section className="overflow-hidden rounded-[32px] border border-blue-100 bg-[radial-gradient(circle_at_top_left,_rgba(96,165,250,0.22),_transparent_30%),linear-gradient(135deg,_#ffffff,_#eff6ff_55%,_#dbeafe)] p-6 text-slate-900 shadow-[0_24px_60px_rgba(15,23,42,0.08)] md:p-8">
+            <section
+                className="overflow-hidden rounded-[32px] border p-6 text-slate-900 shadow-[0_24px_60px_rgba(15,23,42,0.08)] md:p-8"
+                style={{
+                    borderColor: "rgba(var(--workspace-primary-rgb), 0.18)",
+                    background: "#ffffff",
+                }}
+            >
                 <Row gutter={[24, 24]} align="middle">
                     <Col xs={24} xl={15}>
                         <Space orientation="vertical" size={14} className="w-full">
-                            <Tag color="blue" className="!mr-0 w-fit !rounded-full !px-3 !py-1 !text-xs uppercase">
+                            <Tag color="blue" className="!mr-0 w-fit !rounded-full !px-3 !py-1 !text-xs uppercase" style={{background: "rgba(var(--workspace-primary-rgb), 0.1)", color: token.colorPrimary, borderColor: "rgba(var(--workspace-primary-rgb), 0.2)"}}>
                                 Trung tâm điều hành
                             </Tag>
                             <Title level={2} className="!mb-0 !text-slate-900">
@@ -216,14 +224,14 @@ export default function Dashboard() {
                                 <Button
                                     type="primary"
                                     size="large"
-                                    className="!border-0 !bg-[#1948be] hover:!bg-[#143b9f]"
                                     onClick={() => router.push("/admin/cuoc-thi")}
                                 >
                                     Quản lý cuộc thi
                                 </Button>
                                 <Button
                                     size="large"
-                                    className="!border-slate-300 !text-slate-700 hover:!border-[#1948be] hover:!text-[#1948be]"
+                                    className="!border-slate-300 !text-slate-700"
+                                    style={{borderColor: "rgba(var(--workspace-primary-rgb), 0.24)"}}
                                     icon={<ArrowRightOutlined/>}
                                     onClick={() => router.push("/admin/ket-qua-trac-nghiem")}
                                 >
@@ -251,7 +259,7 @@ export default function Dashboard() {
                                 </div>
                                 <Progress
                                     percent={todaySummary.progress}
-                                    strokeColor="#1948be"
+                                    strokeColor={token.colorPrimary}
                                     railColor="rgba(148,163,184,0.18)"
                                     format={(value) => <span className="text-slate-700">{value}%</span>}
                                 />
@@ -281,7 +289,7 @@ export default function Dashboard() {
                                 <Statistic
                                     title="Tài khoản thí sinh"
                                     value={overview.users}
-                                    prefix={<TeamOutlined className="text-blue-600"/>}
+                                    prefix={<TeamOutlined style={{color: token.colorPrimary}}/>}
                                 />
                             </Card>
                         </Col>
@@ -290,7 +298,7 @@ export default function Dashboard() {
                                 <Statistic
                                     title="Cuộc thi"
                                     value={overview.contests}
-                                    prefix={<BankOutlined className="text-cyan-600"/>}
+                                    prefix={<BankOutlined style={{color: token.colorPrimary}}/>}
                                 />
                             </Card>
                         </Col>
@@ -299,7 +307,7 @@ export default function Dashboard() {
                                 <Statistic
                                     title="Cuộc thi đang mở"
                                     value={overview.activeContests}
-                                    prefix={<NotificationOutlined className="text-emerald-600"/>}
+                                    prefix={<NotificationOutlined style={{color: token.colorPrimary}}/>}
                                 />
                             </Card>
                         </Col>
@@ -308,7 +316,7 @@ export default function Dashboard() {
                                 <Statistic
                                     title="Câu hỏi trắc nghiệm"
                                     value={overview.questions}
-                                    prefix={<FileTextOutlined className="text-violet-600"/>}
+                                    prefix={<FileTextOutlined style={{color: token.colorPrimary}}/>}
                                 />
                             </Card>
                         </Col>
@@ -385,7 +393,7 @@ export default function Dashboard() {
                                     </Paragraph>
                                     <div className="rounded-3xl bg-slate-50 p-4">
                                         <Space align="start">
-                                            <ClockCircleOutlined className="mt-1 text-lg text-blue-600"/>
+                                            <ClockCircleOutlined className="mt-1 text-lg" style={{color: token.colorPrimary}}/>
                                             <div>
                                                 <div className="font-semibold text-slate-900">
                                                     {currentDotThi ? currentDotThi.ten : "Chưa có đợt thi hoạt động"}
