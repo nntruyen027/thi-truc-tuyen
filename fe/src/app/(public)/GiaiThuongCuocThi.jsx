@@ -1,11 +1,31 @@
 'use client';
 
 import {useEffect, useMemo, useState} from "react";
-import {Card, Col, Empty, Row, Tag, Typography, theme} from "antd";
+import {Card, Empty, Tag, Typography, theme} from "antd";
 import {GiftOutlined, TeamOutlined, TrophyOutlined, UserOutlined} from "@ant-design/icons";
 import {layCauHinhGiaiThuong} from "~/services/giai-thuong";
 
 const {Paragraph, Text, Title} = Typography;
+
+function formatThousands(value) {
+    return new Intl.NumberFormat("vi-VN").format(Number(value || 0));
+}
+
+function formatNumberText(value) {
+    if (value == null) {
+        return "";
+    }
+
+    return String(value).replace(/\d[\d,.]*/g, (match) => {
+        const digits = match.replace(/[^\d]/g, "");
+
+        if (!digits) {
+            return match;
+        }
+
+        return formatThousands(digits);
+    });
+}
 
 function GiaiSection({title, icon, items, accentStyle, primaryColor}) {
     if (!items.length) {
@@ -28,48 +48,92 @@ function GiaiSection({title, icon, items, accentStyle, primaryColor}) {
                 </div>
             </div>
 
-            <Row gutter={[16, 16]}>
-                {items.map((item) => (
-                    <Col xs={24} md={12} xl={8} key={item.id}>
-                        <Card
-                            className="h-full rounded-[28px] border border-slate-200 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-                            styles={{body: {padding: 20, height: "100%"}}}
+            <div className="overflow-hidden rounded-[28px] border border-slate-200 shadow-sm">
+                <div
+                    className="hidden grid-cols-[88px_minmax(220px,1.4fr)_130px_190px_minmax(180px,1fr)] items-center gap-4 border-b border-slate-200 px-6 py-4 text-sm font-bold uppercase tracking-[0.12em] text-slate-500 md:grid"
+                    style={{background: `${primaryColor}10`}}
+                >
+                    <div>Xếp hạng</div>
+                    <div>Giải thưởng</div>
+                    <div>Số lượng</div>
+                    <div>Trị giá</div>
+                    <div>Ghi chú</div>
+                </div>
+
+                <div className="divide-y divide-slate-200 bg-white">
+                    {items.map((item, index) => (
+                        <div
+                            key={item.id}
+                            className="grid gap-4 px-4 py-5 md:grid-cols-[88px_minmax(220px,1.4fr)_130px_190px_minmax(180px,1fr)] md:items-center md:px-6"
                         >
-                            <div className="flex h-full flex-col gap-4">
-                                <div className="space-y-2">
-                                    <Tag color="gold" className="!m-0 !rounded-full !px-3 !py-1 !text-xs !font-semibold">
-                                        {item.soLuong} giải
-                                    </Tag>
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className="flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold shadow-sm"
+                                    style={accentStyle}
+                                >
+                                    {index + 1}
+                                </div>
+                                <div className="md:hidden">
+                                    <Text className="!block !text-xs !font-semibold !uppercase !tracking-[0.14em] !text-slate-400">
+                                        Xếp hạng
+                                    </Text>
+                                    <Text className="!text-sm !font-semibold !text-slate-700">
+                                        Giải {formatThousands(index + 1)}
+                                    </Text>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Text className="!block !text-xs !font-semibold !uppercase !tracking-[0.14em] !text-slate-400 md:!hidden">
+                                    Giải thưởng
+                                </Text>
+                                <div className="flex flex-wrap items-center gap-3">
                                     <Title level={5} className="!mb-0 !text-lg !font-bold !text-slate-900">
                                         {item.tenGiai}
                                     </Title>
+                                    <Tag color="gold" className="!m-0 !rounded-full !px-3 !py-1 !text-xs !font-semibold">
+                                        {formatNumberText(item.soLuong)} giải
+                                    </Tag>
                                 </div>
+                            </div>
 
+                            <div>
+                                <Text className="!block !text-xs !font-semibold !uppercase !tracking-[0.14em] !text-slate-400 md:!hidden">
+                                    Số lượng
+                                </Text>
+                                <Text className="!text-base !font-semibold !text-slate-700">
+                                    {formatNumberText(item.soLuong)}
+                                </Text>
+                            </div>
+
+                            <div>
+                                <Text className="!block !text-xs !font-semibold !uppercase !tracking-[0.14em] !text-slate-400 md:!hidden">
+                                    Trị giá
+                                </Text>
                                 <div
-                                    className="rounded-[22px] px-4 py-4"
+                                    className="inline-flex rounded-2xl px-4 py-3 text-lg font-bold"
                                     style={{
                                         border: `1px solid ${primaryColor}22`,
-                                        background: `${primaryColor}12`,
+                                        background: `${primaryColor}10`,
+                                        color: primaryColor,
                                     }}
                                 >
-                                    <Text className="!block !text-xs !font-semibold !uppercase !tracking-[0.16em] !text-slate-400">
-                                        Trị giá
-                                    </Text>
-                                    <div className="mt-2 text-2xl font-bold" style={{color: primaryColor}}>
-                                        {item.triGia}
-                                    </div>
+                                    {formatNumberText(item.triGia)}
                                 </div>
-
-                                {item.ghiChu && (
-                                    <Paragraph className="!mb-0 flex-1 !text-sm !leading-7 !text-slate-500">
-                                        {item.ghiChu}
-                                    </Paragraph>
-                                )}
                             </div>
-                        </Card>
-                    </Col>
-                ))}
-            </Row>
+
+                            <div>
+                                <Text className="!block !text-xs !font-semibold !uppercase !tracking-[0.14em] !text-slate-400 md:!hidden">
+                                    Ghi chú
+                                </Text>
+                                <Paragraph className="!mb-0 !text-sm !leading-7 !text-slate-500">
+                                    {item.ghiChu || "Theo thể lệ cuộc thi."}
+                                </Paragraph>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }
