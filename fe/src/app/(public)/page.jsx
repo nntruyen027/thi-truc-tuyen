@@ -100,7 +100,15 @@ function buildTimelineItems(dsDotThi = [], currentDotThiId, colorPrimary) {
                                 {item.ten}
                             </Text>
 
-                            <Tag color={isFinished ? "default" : isCurrent ? "processing" : "error"} className="!rounded-full !px-3 !py-1 !text-sm">
+                            <Tag
+                                color={isFinished ? "default" : isUpcoming ? "error" : undefined}
+                                className="!rounded-full !px-3 !py-1 !text-sm"
+                                style={isCurrent ? {
+                                    color: colorPrimary,
+                                    borderColor: alphaColor(colorPrimary, 0.28),
+                                    backgroundColor: alphaColor(colorPrimary, 0.12),
+                                } : undefined}
+                            >
                                 {status}
                             </Tag>
                         </div>
