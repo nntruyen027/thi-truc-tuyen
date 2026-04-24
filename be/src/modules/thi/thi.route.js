@@ -6,6 +6,7 @@ const validation = require("./thi.validation")
 
 const resUtil = require("../../utils/response")
 const auth = require("../../middlewares/auth")
+const { requireWorkspaceId } = require("../../utils/workspace-scope");
 
 
 /**
@@ -23,6 +24,7 @@ router.get(
 
             const data =
                 await query.conDuocThi(
+                    requireWorkspaceId(req),
                     dotThiId,
                     thiSinhId,
                 )
@@ -55,6 +57,7 @@ router.get(
 
             const data =
                 await query.layBaiDangLam(
+                    requireWorkspaceId(req),
                     thiSinhId,
                     dotThiId,
                 )
@@ -88,6 +91,7 @@ router.post(
 
             const data =
                 await query.taoDeThi(
+                    requireWorkspaceId(req),
                     dotThiId,
                     thiSinhId,
                 )
@@ -123,6 +127,7 @@ router.post(
 
             const data =
                 await query.batDauThi(
+                    requireWorkspaceId(req),
                     deThiId,
                     thiSinhId,
                 )
@@ -156,6 +161,7 @@ router.get(
 
             const data =
                 await query.layCauHoiDeThi(
+                    requireWorkspaceId(req),
                     deThiId,
                     baiThiId
                 )
@@ -190,6 +196,7 @@ router.post(
 
             const data =
                 await query.luuCauTraLoi(
+                    requireWorkspaceId(req),
                     baiThiId,
                     cauHoiId,
                     dapAn,
@@ -221,6 +228,7 @@ router.post(
 
             const choPhepTraLoiTuLuan =
                 await validation.coChoPhepTraLoiTuLuan(
+                    requireWorkspaceId(req),
                     baiThiId
                 )
 
@@ -228,12 +236,14 @@ router.post(
                 return resUtil.ok(res, true)
             }
 
-            await validation.ensureTuLuanAnswerAllowed(
-                baiThiId
-            )
+                await validation.ensureTuLuanAnswerAllowed(
+                    requireWorkspaceId(req),
+                    baiThiId
+                )
 
             const data =
                 await query.luuCauTraLoiTuLuan(
+                    requireWorkspaceId(req),
                     baiThiId,
                     cauHoiId,
                     dapAn,
@@ -267,6 +277,7 @@ router.post(
 
             const data =
                 await query.nopBai(
+                    requireWorkspaceId(req),
                     baiThiId,
                 )
 
@@ -300,6 +311,7 @@ router.get(
 
             const data =
                 await query.lichSuThi(
+                    requireWorkspaceId(req),
                     thiSinhId,
                     dotThiId,
                 )
@@ -328,16 +340,17 @@ router.post(
             const thiSinhId =
                 req.user.id
 
-            await validation.ensureDotThiQuestionConfigValid(dotThiId)
+            await validation.ensureDotThiQuestionConfigValid(requireWorkspaceId(req), dotThiId)
 
             const result =
                 await query.startThi(
+                    requireWorkspaceId(req),
                     dotThiId,
                     thiSinhId,
                 )
 
             const tuLuanInfo =
-                await validation.layTrangThaiTuLuanTheoDotThi(dotThiId)
+                await validation.layTrangThaiTuLuanTheoDotThi(requireWorkspaceId(req), dotThiId)
 
             if (!tuLuanInfo.coTuLuan) {
                 result.tuLuan = []
@@ -372,12 +385,14 @@ router.post(
 
             if (reason !== "submit") {
                 await validation.ensurePauseAllowed(
+                    requireWorkspaceId(req),
                     baiThiId
                 )
             }
 
             const data =
                 await query.pauseThi(
+                    requireWorkspaceId(req),
                     baiThiId
                 )
 
@@ -403,7 +418,7 @@ router.post("/du-doan/:baiThiId", auth, async (req, res) => {
         const baiThiId = req.params.baiThiId;
         const {soDuDoan} = req.body;
 
-        const data = await query.nopDuDoanKetQuan(baiThiId, soDuDoan);
+        const data = await query.nopDuDoanKetQuan(requireWorkspaceId(req), baiThiId, soDuDoan);
         resUtil.ok(res, data)
     } catch (err) {
         resUtil.error(res, err)
@@ -413,7 +428,7 @@ router.post("/du-doan/:baiThiId", auth, async (req, res) => {
 router.get("/ket-qua-trac-nghiem/dot-thi/:dotThiId/:top", async (req, res) => {
     try {
         const {dotThiId, top} = req.params;
-        const data = await query.xepHangTracNghiemTheoDotThi(dotThiId, top);
+        const data = await query.xepHangTracNghiemTheoDotThi(requireWorkspaceId(req), dotThiId, top);
         resUtil.ok(res, data)
     } catch (err) {
         resUtil.error(res, err)
@@ -424,7 +439,7 @@ router.get("/ket-qua-trac-nghiem/dot-thi/:dotThiId/:top", async (req, res) => {
 router.get("/ket-qua-trac-nghiem/cuoc-thi/:cuocThiId/:top", async (req, res) => {
     try {
         const {cuocThiId, top} = req.params;
-        const data = await query.xepHangTracNghiemTheoCuocThi(cuocThiId, top);
+        const data = await query.xepHangTracNghiemTheoCuocThi(requireWorkspaceId(req), cuocThiId, top);
         resUtil.ok(res, data)
     } catch (err) {
         resUtil.error(res, err)

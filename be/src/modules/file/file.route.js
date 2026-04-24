@@ -16,6 +16,7 @@ const auth =
 
 const resUtil =
     require("../../utils/response");
+const { requireWorkspaceId } = require("../../utils/workspace-scope");
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 
@@ -134,6 +135,7 @@ router.post(
                 await service.createFile({
                     file: uploadedFile,
                     userId: req.user.id,
+                    workspaceId: requireWorkspaceId(req),
                 });
 
             resUtil.ok(res, data);
@@ -165,6 +167,7 @@ router.get(
 
             const data =
                 await service.listFiles({
+                    workspaceId: requireWorkspaceId(req),
                     page,
                     size,
                     search,
@@ -197,6 +200,7 @@ router.delete(
 
             const data =
                 await service.deleteFile(
+                    requireWorkspaceId(req),
                     req.params.id
                 );
 

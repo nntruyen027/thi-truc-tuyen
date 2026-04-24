@@ -1,6 +1,6 @@
 const { and, count, eq, ilike, lte, gte, asc } = require("drizzle-orm");
 const db = require("../../db/client");
-const { cuocThi } = require("../../db/schema");
+const { baiThi, cuocThi, deThi, dotThi } = require("../../db/schema");
 const {
     buildPagedResult,
     normalizePagination,
@@ -24,6 +24,11 @@ function mapCuocThi(row) {
         co_tu_luan: row.coTuLuan,
         created_at: row.createdAt,
     };
+}
+
+function isMissingWorkspaceColumnError(error) {
+    const message = String(error?.message || error || "").toLowerCase();
+    return message.includes("workspace_id") && message.includes("does not exist");
 }
 
 exports.layDsCuocThi = async (size, page, search, sortField, sortType) => {
@@ -139,18 +144,47 @@ exports.layCuocThiTheoId = async (cuocThiId) => {
     return mapCuocThi(row);
 };
 
-exports.layThoiGianConLaiCuaCuocThi = async () => {
+exports.layThoiGianConLaiCuaCuocThi = async (workspaceId) => {
     const now = new Date();
+    let row;
 
-    const [row] = await db
-        .select()
-        .from(cuocThi)
-        .where(and(
-            lte(cuocThi.thoiGianBatDau, now),
-            gte(cuocThi.thoiGianKetThuc, now),
-        ))
-        .orderBy(asc(cuocThi.thoiGianKetThuc))
-        .limit(1);
+    try {
+        [row] = await db
+            .select()
+            .from(cuocThi)
+            .where(and(
+                eq(cuocThi.workspaceId, Number(workspaceId)),
+                lte(cuocThi.thoiGianBatDau, now),
+                gte(cuocThi.thoiGianKetThuc, now),
+            ))
+            .orderBy(asc(cuocThi.thoiGianKetThuc))
+            .limit(1);
+    } catch (error) {
+        if (!isMissingWorkspaceColumnError(error)) {
+            throw error;
+        }
+
+        [row] = await db
+            .select({
+                id: cuocThi.id,
+                ten: cuocThi.ten,
+                moTa: cuocThi.moTa,
+                thoiGianBatDau: cuocThi.thoiGianBatDau,
+                thoiGianKetThuc: cuocThi.thoiGianKetThuc,
+                trangThai: cuocThi.trangThai,
+                choPhepXemLichSu: cuocThi.choPhepXemLichSu,
+                choPhepXemLaiDapAn: cuocThi.choPhepXemLaiDapAn,
+                coTuLuan: cuocThi.coTuLuan,
+                createdAt: cuocThi.createdAt,
+            })
+            .from(cuocThi)
+            .where(and(
+                lte(cuocThi.thoiGianBatDau, now),
+                gte(cuocThi.thoiGianKetThuc, now),
+            ))
+            .orderBy(asc(cuocThi.thoiGianKetThuc))
+            .limit(1);
+    }
 
     const active = row || null;
 
@@ -183,4 +217,75 @@ exports.layThoiGianConLaiCuaCuocThi = async () => {
         phut,
         giay,
     };
+};
+
+exports.layTongLuotThiCuaCuocThiHienTai = async (workspaceId) => {
+    const now = new Date();
+    let activeContest;
+
+    try {
+        [activeContest] = await db
+            .select({ id: cuocThi.id })
+            .from(cuocThi)
+            .where(and(
+                eq(cuocThi.workspaceId, Number(workspaceId)),
+                lte(cuocThi.thoiGianBatDau, now),
+                gte(cuocThi.thoiGianKetThuc, now),
+            ))
+            .orderBy(asc(cuocThi.thoiGianKetThuc))
+            .limit(1);
+
+        if (!activeContest?.id) {
+            return 0;
+        }
+
+        const [row] = await db
+            .select({
+                total: count(baiThi.id),
+            })
+            .from(baiThi)
+            .innerJoin(deThi, and(
+                eq(deThi.id, baiThi.deThiId),
+                eq(deThi.workspaceId, Number(workspaceId))
+            ))
+            .innerJoin(dotThi, and(
+                eq(dotThi.id, deThi.dotThiId),
+                eq(dotThi.workspaceId, Number(workspaceId)),
+                eq(dotThi.cuocThiId, Number(activeContest.id))
+            ))
+            .where(eq(baiThi.workspaceId, Number(workspaceId)));
+
+        return Number(row?.total || 0);
+    } catch (error) {
+        if (!isMissingWorkspaceColumnError(error)) {
+            throw error;
+        }
+
+        [activeContest] = await db
+            .select({ id: cuocThi.id })
+            .from(cuocThi)
+            .where(and(
+                lte(cuocThi.thoiGianBatDau, now),
+                gte(cuocThi.thoiGianKetThuc, now),
+            ))
+            .orderBy(asc(cuocThi.thoiGianKetThuc))
+            .limit(1);
+
+        if (!activeContest?.id) {
+            return 0;
+        }
+
+        const [row] = await db
+            .select({
+                total: count(baiThi.id),
+            })
+            .from(baiThi)
+            .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+            .innerJoin(dotThi, and(
+                eq(dotThi.id, deThi.dotThiId),
+                eq(dotThi.cuocThiId, Number(activeContest.id))
+            ));
+
+        return Number(row?.total || 0);
+    }
 };

@@ -5,6 +5,7 @@ const resUtil = require("../../utils/response");
 const auth = require("../../middlewares/auth");
 const role = require("../../middlewares/role");
 const validation = require("../thi/thi.validation");
+const { requireWorkspaceId } = require("../../utils/workspace-scope");
 
 router.get(
     "/",
@@ -14,6 +15,7 @@ router.get(
             const dotThiId = req.params.dotThiId;
 
             const data = await query.layDsTracNghiem(
+                requireWorkspaceId(req),
                 dotThiId
             )
 
@@ -38,13 +40,14 @@ router.post(
             const dotThiId = req.params.dotThiId;
 
             await validation.ensureTracNghiemConfigPossible({
+                workspaceId: requireWorkspaceId(req),
                 dotThiId,
                 linhVucId: linh_vuc_id,
                 nhomId: nhom_id,
                 soLuong: so_luong,
             })
 
-            const data = await query.themTracNghiem(dotThiId, linh_vuc_id,
+            const data = await query.themTracNghiem(requireWorkspaceId(req), dotThiId, linh_vuc_id,
                 nhom_id,
                 so_luong)
 
@@ -72,6 +75,7 @@ router.put(
             const dotThiId = req.params.dotThiId;
 
             await validation.ensureTracNghiemConfigPossible({
+                workspaceId: requireWorkspaceId(req),
                 dotThiId,
                 linhVucId: linh_vuc_id,
                 nhomId: nhom_id,
@@ -79,7 +83,7 @@ router.put(
                 ignoreId: id,
             })
 
-            const data = await query.suaTracNghiem(id, linh_vuc_id,
+            const data = await query.suaTracNghiem(requireWorkspaceId(req), id, linh_vuc_id,
                 nhom_id,
                 so_luong)
 
@@ -99,7 +103,7 @@ router.delete(
         try {
             const id = req.params.id
 
-            const data = await query.xoaTracNghiem(id)
+            const data = await query.xoaTracNghiem(requireWorkspaceId(req), id)
 
 
             resUtil.ok(res, data)

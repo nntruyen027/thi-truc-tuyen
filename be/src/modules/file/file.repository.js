@@ -1,4 +1,4 @@
-const { count, desc, eq, ilike } = require("drizzle-orm");
+const { and, count, desc, eq, ilike } = require("drizzle-orm");
 const db = require("../../db/client");
 const { files } = require("../../db/schema");
 
@@ -11,6 +11,7 @@ const buildSearchWhere = (search) => {
 };
 
 exports.create = async ({
+    workspaceId,
     ten,
     tenGoc,
     duongDan,
@@ -21,6 +22,7 @@ exports.create = async ({
     const [created] = await db
         .insert(files)
         .values({
+            workspaceId: Number(workspaceId),
             ten,
             tenGoc,
             duongDan,
@@ -34,13 +36,21 @@ exports.create = async ({
 };
 
 exports.findMany = async ({
+    workspaceId,
     page = 1,
     size = 10,
     search = "",
 }) => {
     const currentPage = Math.max(Number(page) || 1, 1);
     const pageSize = Math.max(Number(size) || 10, 1);
-    const where = buildSearchWhere(search);
+    const clauses = [eq(files.workspaceId, Number(workspaceId))];
+    const searchWhere = buildSearchWhere(search);
+
+    if (searchWhere) {
+        clauses.push(searchWhere);
+    }
+
+    const where = and(...clauses);
 
     const rowsQuery = db
             .select()
@@ -56,8 +66,8 @@ exports.findMany = async ({
             .from(files);
 
     const [rows, totalRows] = await Promise.all([
-        where ? rowsQuery.where(where) : rowsQuery,
-        where ? totalQuery.where(where) : totalQuery,
+        rowsQuery.where(where),
+        totalQuery.where(where),
     ]);
 
     return {
@@ -66,20 +76,26 @@ exports.findMany = async ({
     };
 };
 
-exports.findById = async (id) => {
+exports.findById = async (workspaceId, id) => {
     const [row] = await db
         .select()
         .from(files)
-        .where(eq(files.id, Number(id)))
+        .where(and(
+            eq(files.workspaceId, Number(workspaceId)),
+            eq(files.id, Number(id))
+        ))
         .limit(1);
 
     return row || null;
 };
 
-exports.removeById = async (id) => {
+exports.removeById = async (workspaceId, id) => {
     await db
         .delete(files)
-        .where(eq(files.id, Number(id)));
+        .where(and(
+            eq(files.workspaceId, Number(workspaceId)),
+            eq(files.id, Number(id))
+        ));
 
     return {
         ok: true,

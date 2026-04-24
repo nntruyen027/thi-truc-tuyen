@@ -7,7 +7,7 @@ import {layDotThiHienTai, layDotThi} from "~/services/thi/dot-thi";
 import {Button, Card, Col, Flex, Row, Tag, Timeline, Typography, theme} from "antd";
 import {LaptopOutlined, ProfileOutlined, TeamOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
-import {layThoiGianConLaiCuaCuocThi} from "~/services/thi/cuoc-thi";
+import {layLuotThiHienTai, layThoiGianConLaiCuaCuocThi} from "~/services/thi/cuoc-thi";
 import CountDown from "~/app/(public)/CountDown";
 import {useRouter} from "next/navigation";
 import KetQuaCongBo from "~/app/(public)/KetQuaCongBo";
@@ -20,6 +20,7 @@ import TaiLieuTongHop from "~/app/(public)/TaiLieuTongHop";
 import GiaiThuongCuocThi from "~/app/(public)/GiaiThuongCuocThi";
 
 const {Text, Paragraph} = Typography;
+const SO_LUOT_THI_TOI_THIEU = 132;
 
 const tabItems = [
     {
@@ -99,6 +100,7 @@ export default function Page() {
     const [zoom, setZoom] = useState(1);
     const [dotThi, setDotThi] = useState(null);
     const [thoiGianConLai, setThoiGianConLai] = useState(null);
+    const [tongLuotThi, setTongLuotThi] = useState(SO_LUOT_THI_TOI_THIEU);
     const [tab, setTab] = useState("bai-viet");
     const [timelineItems, setTimelineItems] = useState([]);
     const [isMobileViewport, setIsMobileViewport] = useState(false);
@@ -143,49 +145,77 @@ export default function Page() {
         let active = true;
 
         const load = async () => {
+            const applyIfActive = (callback) => {
+                if (active) {
+                    callback();
+                }
+            };
+
+            const mobile = window.innerWidth < 768;
+            const khoa = getKhoa();
+
             try {
-                const mobile = window.innerWidth < 768;
-                const khoa = getKhoa();
+            } catch (error) {
+                console.error("Không thể tải dữ liệu trang chủ", error);
+            }
 
-                const [resBanner, resDotThi, resConLai] = await Promise.all([
-                    layCauHinh(khoa),
-                    layDotThiHienTai(),
-                    layThoiGianConLaiCuaCuocThi()
-                ]);
+            const [bannerResult, dotThiResult, conLaiResult, luotThiResult] = await Promise.allSettled([
+                layCauHinh(khoa),
+                layDotThiHienTai(),
+                layThoiGianConLaiCuaCuocThi(),
+                layLuotThiHienTai(),
+            ]);
 
-                if (!active) return;
-
+            applyIfActive(() => {
                 setIsMobileViewport(mobile);
+            });
 
-                if (resBanner.data) {
-                    const val = parseMediaConfig(resBanner.data.gia_tri);
+            if (bannerResult.status === "fulfilled" && bannerResult.value?.data) {
+                const val = parseMediaConfig(bannerResult.value.data.gia_tri);
 
+                applyIfActive(() => {
                     setImage(val.duongDan || val.url || "");
                     setZoom(val.zoom || 1);
-                }
+                });
+            }
 
-                if (resDotThi.data) {
-                    setDotThi(resDotThi.data);
+            if (dotThiResult.status === "fulfilled" && dotThiResult.value?.data) {
+                const currentDotThi = dotThiResult.value.data;
 
-                    if (resDotThi.data.cuoc_thi_id) {
-                        const dsDotThi = await layDotThi(resDotThi.data.cuoc_thi_id, {
+                applyIfActive(() => {
+                    setDotThi(currentDotThi);
+                });
+
+                if (currentDotThi.cuoc_thi_id) {
+                    try {
+                        const dsDotThi = await layDotThi(currentDotThi.cuoc_thi_id, {
                             size: 50,
                             page: 1,
                         });
 
-                        if (active) {
+                        applyIfActive(() => {
                             setTimelineItems(
-                                buildTimelineItems(dsDotThi?.data || [], resDotThi.data.id)
+                                buildTimelineItems(dsDotThi?.data || [], currentDotThi.id)
                             );
-                        }
+                        });
+                    } catch (error) {
+                        console.error("Không thể tải timeline đợt thi", error);
                     }
                 }
+            }
 
-                if (resConLai.data) {
-                    setThoiGianConLai(resConLai.data);
-                }
-            } catch (error) {
-                console.error("Không thể tải dữ liệu trang chủ", error);
+            if (conLaiResult.status === "fulfilled" && conLaiResult.value?.data) {
+                applyIfActive(() => {
+                    setThoiGianConLai(conLaiResult.value.data);
+                });
+            }
+
+            if (luotThiResult.status === "fulfilled") {
+                applyIfActive(() => {
+                    setTongLuotThi(
+                        Math.max(Number(luotThiResult.value?.data || 0), SO_LUOT_THI_TOI_THIEU)
+                    );
+                });
             }
         };
 
@@ -232,6 +262,11 @@ export default function Page() {
 
         route.push("/user");
     };
+
+    const hienThiTongLuotThi = useMemo(
+        () => Math.max(Number(tongLuotThi || 0), SO_LUOT_THI_TOI_THIEU),
+        [tongLuotThi]
+    );
 
     return (
         <div className="w-full">
@@ -344,8 +379,12 @@ export default function Page() {
                                             </Button>
                                             
                                         </div>
-                                        <Text className="!mb-0 !text-sm !text-slate-500">
-                                            Bạn cần đăng nhập để tham gia cuộc thi!
+                                        <Text style={{
+                                                    color: colorPrimary
+                                                }} className="!mb-0  uppercase !text-2xl">
+                                            Đã có  
+                                                <span className="font-bold text-7xl"> {Intl.NumberFormat("vi-VN").format(hienThiTongLuotThi)} </span> 
+                                            lượt thi.
                                         </Text>
                                         
 

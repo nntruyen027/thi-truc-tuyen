@@ -4,6 +4,7 @@ const query = require("./cuoc_thi.query")
 const resUtil = require("../../utils/response");
 const auth = require("../../middlewares/auth");
 const role = require("../../middlewares/role");
+const { requireWorkspaceId } = require("../../utils/workspace-scope");
 
 router.get("/",
     async (req, res) => {
@@ -37,6 +38,22 @@ router.get("/con-lai", async (req, res) => {
     try {
 
         const data = await query.layThoiGianConLaiCuaCuocThi(
+            requireWorkspaceId(req),
+        )
+
+        resUtil.ok(res, data)
+
+    } catch (err) {
+
+        resUtil.error(res, err)
+
+    }
+})
+
+router.get("/luot-thi-hien-tai", async (req, res) => {
+    try {
+        const data = await query.layTongLuotThiCuaCuocThiHienTai(
+            requireWorkspaceId(req),
         )
 
         resUtil.ok(res, data)

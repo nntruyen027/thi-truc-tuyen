@@ -1,4 +1,4 @@
-const { count, eq, ilike } = require("drizzle-orm");
+const { and, count, eq, ilike } = require("drizzle-orm");
 const db = require("../../db/client");
 const { donVi, linhVuc, nhomCauHoi } = require("../../db/schema");
 const {
@@ -36,6 +36,7 @@ function getTable(tenDm) {
 }
 
 exports.layDsDanhMuc = async (
+    workspaceId,
     tenDm,
     size,
     page,
@@ -45,9 +46,13 @@ exports.layDsDanhMuc = async (
 ) => {
     const table = getTable(tenDm);
     const paging = normalizePagination({page, size});
-    const where = search?.trim()
-        ? ilike(table.ten, `%${search.trim()}%`)
-        : undefined;
+    const clauses = [eq(table.workspaceId, Number(workspaceId))];
+
+    if (search?.trim()) {
+        clauses.push(ilike(table.ten, `%${search.trim()}%`));
+    }
+
+    const where = and(...clauses);
 
     const sort = resolveSort({
         sortField,
@@ -72,8 +77,8 @@ exports.layDsDanhMuc = async (
         .from(table);
 
     const [rows, totalRows] = await Promise.all([
-        where ? rowsQuery.where(where) : rowsQuery,
-        where ? totalQuery.where(where) : totalQuery,
+        rowsQuery.where(where),
+        totalQuery.where(where),
     ]);
 
     return buildPagedResult({
@@ -84,12 +89,13 @@ exports.layDsDanhMuc = async (
     });
 };
 
-exports.themDanhMuc = async (tenDm, value) => {
+exports.themDanhMuc = async (workspaceId, tenDm, value) => {
     const table = getTable(tenDm);
 
     const [created] = await db
         .insert(table)
         .values({
+            workspaceId: Number(workspaceId),
             ten: value.ten,
             moTa: value.mo_ta,
         })
@@ -98,7 +104,7 @@ exports.themDanhMuc = async (tenDm, value) => {
     return mapDanhMuc(created);
 };
 
-exports.suaDanhMuc = async (tenDm, id, value) => {
+exports.suaDanhMuc = async (workspaceId, tenDm, id, value) => {
     const table = getTable(tenDm);
 
     const [updated] = await db
@@ -107,19 +113,24 @@ exports.suaDanhMuc = async (tenDm, id, value) => {
             ten: value.ten,
             moTa: value.mo_ta,
         })
-        .where(eq(table.id, Number(id)))
+        .where(and(
+            eq(table.workspaceId, Number(workspaceId)),
+            eq(table.id, Number(id))
+        ))
         .returning();
 
     return mapDanhMuc(updated);
 };
 
-exports.xoaDanhMuc = async (tenDm, id) => {
+exports.xoaDanhMuc = async (workspaceId, tenDm, id) => {
     const table = getTable(tenDm);
 
     await db
         .delete(table)
-        .where(eq(table.id, Number(id)));
+        .where(and(
+            eq(table.workspaceId, Number(workspaceId)),
+            eq(table.id, Number(id))
+        ));
 
     return true;
 };
-

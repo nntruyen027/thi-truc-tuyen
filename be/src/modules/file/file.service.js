@@ -25,6 +25,7 @@ const removePhysicalFile = async (relativePath) => {
 exports.createFile = async ({
     file,
     userId,
+    workspaceId,
 }) => {
     if (!file || typeof file !== "object") {
         throw new Error("Không tìm thấy file tải lên");
@@ -52,6 +53,7 @@ exports.createFile = async ({
 
     try {
         const created = await repository.create({
+            workspaceId,
             ten: file.filename || file.originalname || path.basename(filePath),
             tenGoc: file.originalname || file.filename || path.basename(filePath),
             duongDan,
@@ -71,11 +73,13 @@ exports.createFile = async ({
 };
 
 exports.listFiles = async ({
+    workspaceId,
     page,
     size,
     search,
 }) => {
     const result = await repository.findMany({
+        workspaceId,
         page,
         size,
         search,
@@ -90,8 +94,8 @@ exports.listFiles = async ({
     };
 };
 
-exports.deleteFile = async (id) => {
-    const existing = await repository.findById(id);
+exports.deleteFile = async (workspaceId, id) => {
+    const existing = await repository.findById(workspaceId, id);
 
     if (!existing) {
         return {
@@ -99,7 +103,7 @@ exports.deleteFile = async (id) => {
         };
     }
 
-    await repository.removeById(id);
+    await repository.removeById(workspaceId, id);
     await removePhysicalFile(existing.duongDan);
 
     return {

@@ -7,6 +7,7 @@ const {
     deThi,
     deThiCauHoi,
     dotThi,
+    tracNghiemDotThi,
     tracNghiem,
     tuLuanDotThi,
     users,
@@ -200,20 +201,41 @@ function mapRankingRow(row) {
     };
 }
 
-async function layThoiGianThiTheoDeThi(tx, deThiId) {
+async function ensureScopedEntityExists(tx, table, workspaceId, id, message) {
+    const [row] = await tx
+        .select({ id: table.id })
+        .from(table)
+        .where(and(
+            eq(table.workspaceId, Number(workspaceId)),
+            eq(table.id, Number(id))
+        ))
+        .limit(1);
+
+    if (!row) {
+        throw message;
+    }
+}
+
+async function layThoiGianThiTheoDeThi(tx, workspaceId, deThiId) {
     const [row] = await tx
         .select({
             thoiGianThi: dotThi.thoiGianThi,
         })
         .from(deThi)
-        .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
-        .where(eq(deThi.id, Number(deThiId)))
+        .innerJoin(dotThi, and(
+            eq(dotThi.id, deThi.dotThiId),
+            eq(dotThi.workspaceId, Number(workspaceId))
+        ))
+        .where(and(
+            eq(deThi.workspaceId, Number(workspaceId)),
+            eq(deThi.id, Number(deThiId))
+        ))
         .limit(1);
 
     return row?.thoiGianThi || 0;
 }
 
-async function layCauHoiDeThiInternal(tx, deThiId, baiThiId) {
+async function layCauHoiDeThiInternal(tx, workspaceId, deThiId, baiThiId) {
     const rows = await tx
         .select({
             id: tracNghiem.id,
@@ -227,7 +249,14 @@ async function layCauHoiDeThiInternal(tx, deThiId, baiThiId) {
             dapAnChon: baiThiChiTiet.dapAnChon,
         })
         .from(deThiCauHoi)
-        .innerJoin(tracNghiem, eq(tracNghiem.id, deThiCauHoi.cauHoiId))
+        .innerJoin(deThi, and(
+            eq(deThi.id, deThiCauHoi.deThiId),
+            eq(deThi.workspaceId, Number(workspaceId))
+        ))
+        .innerJoin(tracNghiem, and(
+            eq(tracNghiem.id, deThiCauHoi.cauHoiId),
+            eq(tracNghiem.workspaceId, Number(workspaceId))
+        ))
         .leftJoin(
             baiThiChiTiet,
             and(
@@ -241,14 +270,20 @@ async function layCauHoiDeThiInternal(tx, deThiId, baiThiId) {
     return rows.map(mapTracNghiemQuestion);
 }
 
-async function layCauHoiTuLuanInternal(tx, baiThiId) {
+async function layCauHoiTuLuanInternal(tx, workspaceId, baiThiId) {
     const [info] = await tx
         .select({
             dotThiId: deThi.dotThiId,
         })
         .from(baiThi)
-        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
-        .where(eq(baiThi.id, Number(baiThiId)))
+        .innerJoin(deThi, and(
+            eq(deThi.id, baiThi.deThiId),
+            eq(deThi.workspaceId, Number(workspaceId))
+        ))
+        .where(and(
+            eq(baiThi.workspaceId, Number(workspaceId)),
+            eq(baiThi.id, Number(baiThiId))
+        ))
         .limit(1);
 
     if (!info?.dotThiId) {
@@ -272,28 +307,38 @@ async function layCauHoiTuLuanInternal(tx, baiThiId) {
                 eq(baiThiChiTietTuLuan.baiThiId, Number(baiThiId))
             )
         )
-        .where(eq(tuLuanDotThi.dotThiId, Number(info.dotThiId)))
+        .where(and(
+            eq(tuLuanDotThi.workspaceId, Number(workspaceId)),
+            eq(tuLuanDotThi.dotThiId, Number(info.dotThiId))
+        ))
         .orderBy(asc(tuLuanDotThi.id));
 
     return rows.map(mapTuLuanQuestion);
 }
 
-exports.conDuocThi = async (dotThiId, thiSinhId) => {
+exports.conDuocThi = async (workspaceId, dotThiId, thiSinhId) => {
     const [dotThiInfo, completedRows] = await Promise.all([
         db
             .select({
                 soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
             })
             .from(dotThi)
-            .where(eq(dotThi.id, Number(dotThiId)))
+            .where(and(
+                eq(dotThi.workspaceId, Number(workspaceId)),
+                eq(dotThi.id, Number(dotThiId))
+            ))
             .limit(1),
         db
             .select({
                 total: sql`count(*)::int`,
             })
             .from(baiThi)
-            .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+            .innerJoin(deThi, and(
+                eq(deThi.id, baiThi.deThiId),
+                eq(deThi.workspaceId, Number(workspaceId))
+            ))
             .where(and(
+                eq(baiThi.workspaceId, Number(workspaceId)),
                 eq(baiThi.thiSinhId, Number(thiSinhId)),
                 eq(deThi.dotThiId, Number(dotThiId)),
                 eq(baiThi.trangThai, 1)
@@ -306,14 +351,18 @@ exports.conDuocThi = async (dotThiId, thiSinhId) => {
     return daThi < max;
 };
 
-exports.layDeDangLam = async (dotThiId, thiSinhId) => {
+exports.layDeDangLam = async (workspaceId, dotThiId, thiSinhId) => {
     const [row] = await db
         .select({
             id: deThi.id,
         })
         .from(deThi)
-        .innerJoin(baiThi, eq(baiThi.deThiId, deThi.id))
+        .innerJoin(baiThi, and(
+            eq(baiThi.deThiId, deThi.id),
+            eq(baiThi.workspaceId, Number(workspaceId))
+        ))
         .where(and(
+            eq(deThi.workspaceId, Number(workspaceId)),
             eq(deThi.dotThiId, Number(dotThiId)),
             eq(baiThi.thiSinhId, Number(thiSinhId)),
             eq(baiThi.trangThai, 0)
@@ -323,7 +372,7 @@ exports.layDeDangLam = async (dotThiId, thiSinhId) => {
     return row?.id || null;
 };
 
-exports.taoDeThi = async (dotThiId, thiSinhId) => {
+exports.taoDeThi = async (workspaceId, dotThiId, thiSinhId) => {
     return db.transaction(async (tx) => {
         const [lanThiRow] = await tx
             .select({
@@ -331,6 +380,7 @@ exports.taoDeThi = async (dotThiId, thiSinhId) => {
             })
             .from(deThi)
             .where(and(
+                eq(deThi.workspaceId, Number(workspaceId)),
                 eq(deThi.dotThiId, Number(dotThiId)),
                 eq(deThi.thiSinhId, Number(thiSinhId))
             ));
@@ -338,6 +388,7 @@ exports.taoDeThi = async (dotThiId, thiSinhId) => {
         const [createdDeThi] = await tx
             .insert(deThi)
             .values({
+                workspaceId: Number(workspaceId),
                 dotThiId: Number(dotThiId),
                 thiSinhId: Number(thiSinhId),
                 lanThi: Number(lanThiRow?.lanThi || 1),
@@ -346,8 +397,11 @@ exports.taoDeThi = async (dotThiId, thiSinhId) => {
 
         const cauHinhRows = await tx
             .select()
-            .from(require("../../db/schema").tracNghiemDotThi)
-            .where(eq(require("../../db/schema").tracNghiemDotThi.dotThiId, Number(dotThiId)));
+            .from(tracNghiemDotThi)
+            .where(and(
+                eq(tracNghiemDotThi.workspaceId, Number(workspaceId)),
+                eq(tracNghiemDotThi.dotThiId, Number(dotThiId))
+            ));
 
         let thuTu = 0;
 
@@ -356,6 +410,7 @@ exports.taoDeThi = async (dotThiId, thiSinhId) => {
                 .select({id: tracNghiem.id})
                 .from(tracNghiem)
                 .where(and(
+                    eq(tracNghiem.workspaceId, Number(workspaceId)),
                     eq(tracNghiem.linhVucId, config.linhVucId),
                     eq(tracNghiem.nhomId, config.nhomId)
                 ))
@@ -379,18 +434,22 @@ exports.taoDeThi = async (dotThiId, thiSinhId) => {
     });
 };
 
-exports.batDauThi = async (deThiId, thiSinhId) => {
+exports.batDauThi = async (workspaceId, deThiId, thiSinhId) => {
     const [deRow] = await db
         .select({
             lanThi: deThi.lanThi,
         })
         .from(deThi)
-        .where(eq(deThi.id, Number(deThiId)))
+        .where(and(
+            eq(deThi.workspaceId, Number(workspaceId)),
+            eq(deThi.id, Number(deThiId))
+        ))
         .limit(1);
 
     const [created] = await db
         .insert(baiThi)
         .values({
+            workspaceId: Number(workspaceId),
             deThiId: Number(deThiId),
             thiSinhId: Number(thiSinhId),
             lanThi: deRow?.lanThi || 1,
@@ -400,7 +459,12 @@ exports.batDauThi = async (deThiId, thiSinhId) => {
     return created?.id || null;
 };
 
-exports.luuCauTraLoi = async (baiThiId, cauHoiId, dapAn) => {
+exports.luuCauTraLoi = async (workspaceId, baiThiId, cauHoiId, dapAn) => {
+    await Promise.all([
+        ensureScopedEntityExists(db, baiThi, workspaceId, baiThiId, "Bài thi không tồn tại trong workspace hiện tại."),
+        ensureScopedEntityExists(db, tracNghiem, workspaceId, cauHoiId, "Câu hỏi không tồn tại trong workspace hiện tại."),
+    ]);
+
     await db
         .insert(baiThiChiTiet)
         .values({
@@ -418,7 +482,12 @@ exports.luuCauTraLoi = async (baiThiId, cauHoiId, dapAn) => {
     return null;
 };
 
-exports.luuCauTraLoiTuLuan = async (baiThiId, cauHoiId, dapAn) => {
+exports.luuCauTraLoiTuLuan = async (workspaceId, baiThiId, cauHoiId, dapAn) => {
+    await Promise.all([
+        ensureScopedEntityExists(db, baiThi, workspaceId, baiThiId, "Bài thi không tồn tại trong workspace hiện tại."),
+        ensureScopedEntityExists(db, tuLuanDotThi, workspaceId, cauHoiId, "Câu hỏi tự luận không tồn tại trong workspace hiện tại."),
+    ]);
+
     await db
         .insert(baiThiChiTietTuLuan)
         .values({
@@ -436,8 +505,10 @@ exports.luuCauTraLoiTuLuan = async (baiThiId, cauHoiId, dapAn) => {
     return null;
 };
 
-exports.nopBai = async (baiThiIdValue) => {
+exports.nopBai = async (workspaceId, baiThiIdValue) => {
     return db.transaction(async (tx) => {
+        await ensureScopedEntityExists(tx, baiThi, workspaceId, baiThiIdValue, "Bài thi không tồn tại trong workspace hiện tại.");
+
         const chiTietRows = await tx
             .select({
                 id: baiThiChiTiet.id,
@@ -446,7 +517,10 @@ exports.nopBai = async (baiThiIdValue) => {
                 diemCauHoi: tracNghiem.diem,
             })
             .from(baiThiChiTiet)
-            .innerJoin(tracNghiem, eq(tracNghiem.id, baiThiChiTiet.cauHoiId))
+            .innerJoin(tracNghiem, and(
+                eq(tracNghiem.id, baiThiChiTiet.cauHoiId),
+                eq(tracNghiem.workspaceId, Number(workspaceId))
+            ))
             .where(eq(baiThiChiTiet.baiThiId, Number(baiThiIdValue)));
 
         let tongDiem = 0;
@@ -472,13 +546,16 @@ exports.nopBai = async (baiThiIdValue) => {
                 thoiGianNop: new Date(),
                 diem: tongDiem,
             })
-            .where(eq(baiThi.id, Number(baiThiIdValue)));
+            .where(and(
+                eq(baiThi.workspaceId, Number(workspaceId)),
+                eq(baiThi.id, Number(baiThiIdValue))
+            ));
 
         return tongDiem;
     });
 };
 
-exports.lichSuThi = async (thiSinhId, dotThiId) => {
+exports.lichSuThi = async (workspaceId, thiSinhId, dotThiId) => {
     const rows = await db
         .select({
             id: baiThi.id,
@@ -508,9 +585,16 @@ exports.lichSuThi = async (thiSinhId, dotThiId) => {
             createdAtDot: dotThi.createdAt,
         })
         .from(baiThi)
-        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
-        .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
+        .innerJoin(deThi, and(
+            eq(deThi.id, baiThi.deThiId),
+            eq(deThi.workspaceId, Number(workspaceId))
+        ))
+        .innerJoin(dotThi, and(
+            eq(dotThi.id, deThi.dotThiId),
+            eq(dotThi.workspaceId, Number(workspaceId))
+        ))
         .where(and(
+            eq(baiThi.workspaceId, Number(workspaceId)),
             eq(baiThi.thiSinhId, Number(thiSinhId)),
             eq(deThi.dotThiId, Number(dotThiId))
         ))
@@ -537,11 +621,11 @@ exports.lichSuThi = async (thiSinhId, dotThiId) => {
     }));
 };
 
-exports.layCauHoiDeThi = async (deThiId, baiThiId) => {
-    return layCauHoiDeThiInternal(db, deThiId, baiThiId);
+exports.layCauHoiDeThi = async (workspaceId, deThiId, baiThiId) => {
+    return layCauHoiDeThiInternal(db, workspaceId, deThiId, baiThiId);
 };
 
-exports.layBaiDangLam = async (thiSinhId, dotThiId) => {
+exports.layBaiDangLam = async (workspaceId, thiSinhId, dotThiId) => {
     const [row] = await db
         .select({
             id: baiThi.id,
@@ -558,8 +642,12 @@ exports.layBaiDangLam = async (thiSinhId, dotThiId) => {
             soDuDoan: baiThi.soDuDoan,
         })
         .from(baiThi)
-        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .innerJoin(deThi, and(
+            eq(deThi.id, baiThi.deThiId),
+            eq(deThi.workspaceId, Number(workspaceId))
+        ))
         .where(and(
+            eq(baiThi.workspaceId, Number(workspaceId)),
             eq(baiThi.thiSinhId, Number(thiSinhId)),
             eq(deThi.dotThiId, Number(dotThiId)),
             eq(baiThi.trangThai, 0)
@@ -569,9 +657,9 @@ exports.layBaiDangLam = async (thiSinhId, dotThiId) => {
     return row ? mapBaiThi(row) : {};
 };
 
-exports.startThi = async (dotThiId, thiSinhId) => {
+exports.startThi = async (workspaceId, dotThiId, thiSinhId) => {
     return db.transaction(async (tx) => {
-        const conDuoc = await exports.conDuocThi(dotThiId, thiSinhId);
+        const conDuoc = await exports.conDuocThi(workspaceId, dotThiId, thiSinhId);
 
         if (!conDuoc) {
             return {error: "het_lan_thi"};
@@ -587,9 +675,16 @@ exports.startThi = async (dotThiId, thiSinhId) => {
                 dangLam: baiThi.dangLam,
             })
             .from(baiThi)
-            .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
-            .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
+            .innerJoin(deThi, and(
+                eq(deThi.id, baiThi.deThiId),
+                eq(deThi.workspaceId, Number(workspaceId))
+            ))
+            .innerJoin(dotThi, and(
+                eq(dotThi.id, deThi.dotThiId),
+                eq(dotThi.workspaceId, Number(workspaceId))
+            ))
             .where(and(
+                eq(baiThi.workspaceId, Number(workspaceId)),
                 eq(baiThi.thiSinhId, Number(thiSinhId)),
                 eq(deThi.dotThiId, Number(dotThiId)),
                 eq(baiThi.trangThai, 0)
@@ -603,9 +698,9 @@ exports.startThi = async (dotThiId, thiSinhId) => {
         let lanBatDau = existing?.lanBatDau || null;
 
         if (!baiThiIdValue) {
-            deThiIdValue = await exports.taoDeThi(dotThiId, thiSinhId);
-            baiThiIdValue = await exports.batDauThi(deThiIdValue, thiSinhId);
-            thoiGianThi = await layThoiGianThiTheoDeThi(tx, deThiIdValue);
+            deThiIdValue = await exports.taoDeThi(workspaceId, dotThiId, thiSinhId);
+            baiThiIdValue = await exports.batDauThi(workspaceId, deThiIdValue, thiSinhId);
+            thoiGianThi = await layThoiGianThiTheoDeThi(tx, workspaceId, deThiIdValue);
             tongDaLam = 0;
             lanBatDau = null;
         }
@@ -619,7 +714,10 @@ exports.startThi = async (dotThiId, thiSinhId) => {
                     lanBatDau: now,
                     dangLam: true,
                 })
-                .where(eq(baiThi.id, Number(baiThiIdValue)));
+                .where(and(
+                    eq(baiThi.workspaceId, Number(workspaceId)),
+                    eq(baiThi.id, Number(baiThiIdValue))
+                ));
 
             lanBatDau = now;
         }
@@ -632,8 +730,8 @@ exports.startThi = async (dotThiId, thiSinhId) => {
         }
 
         const [cauHoi, tuLuan] = await Promise.all([
-            layCauHoiDeThiInternal(tx, deThiIdValue, baiThiIdValue),
-            layCauHoiTuLuanInternal(tx, baiThiIdValue),
+            layCauHoiDeThiInternal(tx, workspaceId, deThiIdValue, baiThiIdValue),
+            layCauHoiTuLuanInternal(tx, workspaceId, baiThiIdValue),
         ]);
 
         return {
@@ -649,14 +747,17 @@ exports.startThi = async (dotThiId, thiSinhId) => {
     });
 };
 
-exports.pauseThi = async (baiThiIdValue) => {
+exports.pauseThi = async (workspaceId, baiThiIdValue) => {
     const [row] = await db
         .select({
             lanBatDau: baiThi.lanBatDau,
             tongThoiGianDaLam: baiThi.tongThoiGianDaLam,
         })
         .from(baiThi)
-        .where(eq(baiThi.id, Number(baiThiIdValue)))
+        .where(and(
+            eq(baiThi.workspaceId, Number(workspaceId)),
+            eq(baiThi.id, Number(baiThiIdValue))
+        ))
         .limit(1);
 
     if (!row?.lanBatDau) {
@@ -672,18 +773,24 @@ exports.pauseThi = async (baiThiIdValue) => {
             dangLam: false,
             lanBatDau: null,
         })
-        .where(eq(baiThi.id, Number(baiThiIdValue)));
+        .where(and(
+            eq(baiThi.workspaceId, Number(workspaceId)),
+            eq(baiThi.id, Number(baiThiIdValue))
+        ));
 
     return true;
 };
 
-exports.nopDuDoanKetQuan = async (baiThiIdValue, soDuDoan) => {
+exports.nopDuDoanKetQuan = async (workspaceId, baiThiIdValue, soDuDoan) => {
     const updated = await db
         .update(baiThi)
         .set({
             soDuDoan,
         })
-        .where(eq(baiThi.id, Number(baiThiIdValue)))
+        .where(and(
+            eq(baiThi.workspaceId, Number(workspaceId)),
+            eq(baiThi.id, Number(baiThiIdValue))
+        ))
         .returning({id: baiThi.id});
 
     if (!updated.length) {
@@ -693,7 +800,7 @@ exports.nopDuDoanKetQuan = async (baiThiIdValue, soDuDoan) => {
     return true;
 };
 
-async function layDanhSachBaiThiXepHang(whereClause) {
+async function layDanhSachBaiThiXepHang(workspaceId, whereClause) {
     const examRows = await db
         .select({
             baiThiId: baiThi.id,
@@ -708,9 +815,18 @@ async function layDanhSachBaiThiXepHang(whereClause) {
             createdAt: users.createdAt,
         })
         .from(baiThi)
-        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
-        .innerJoin(users, eq(users.id, baiThi.thiSinhId))
-        .where(whereClause);
+        .innerJoin(deThi, and(
+            eq(deThi.id, baiThi.deThiId),
+            eq(deThi.workspaceId, Number(workspaceId))
+        ))
+        .innerJoin(users, and(
+            eq(users.id, baiThi.thiSinhId),
+            eq(users.workspaceId, Number(workspaceId))
+        ))
+        .where(and(
+            eq(baiThi.workspaceId, Number(workspaceId)),
+            whereClause
+        ));
 
     if (!examRows.length) {
         return [];
@@ -776,9 +892,13 @@ async function layDanhSachBaiThiXepHang(whereClause) {
         .sort(compareRankingRow);
 }
 
-exports.xepHangTracNghiemTheoDotThi = async (dotThiId, topGiai) => {
+exports.xepHangTracNghiemTheoDotThi = async (workspaceId, dotThiId, topGiai) => {
     const rows = await layDanhSachBaiThiXepHang(
-        eq(deThi.dotThiId, Number(dotThiId))
+        workspaceId,
+        and(
+            eq(deThi.workspaceId, Number(workspaceId)),
+            eq(deThi.dotThiId, Number(dotThiId))
+        )
     );
 
     return rows
@@ -786,11 +906,14 @@ exports.xepHangTracNghiemTheoDotThi = async (dotThiId, topGiai) => {
         .map(mapRankingRow);
 };
 
-exports.xepHangTracNghiemTheoCuocThi = async (cuocThiId, topGiai) => {
+exports.xepHangTracNghiemTheoCuocThi = async (workspaceId, cuocThiId, topGiai) => {
     const rows = await db
         .select({ id: dotThi.id })
         .from(dotThi)
-        .where(eq(dotThi.cuocThiId, Number(cuocThiId)));
+        .where(and(
+            eq(dotThi.workspaceId, Number(workspaceId)),
+            eq(dotThi.cuocThiId, Number(cuocThiId))
+        ));
 
     const dotThiIds = rows.map((row) => row.id);
 
@@ -799,7 +922,11 @@ exports.xepHangTracNghiemTheoCuocThi = async (cuocThiId, topGiai) => {
     }
 
     const data = await layDanhSachBaiThiXepHang(
-        inArray(deThi.dotThiId, dotThiIds)
+        workspaceId,
+        and(
+            eq(deThi.workspaceId, Number(workspaceId)),
+            inArray(deThi.dotThiId, dotThiIds)
+        )
     );
 
     return data

@@ -15,6 +15,7 @@ const thiSchema = pgSchema("thi");
 
 const cuocThi = thiSchema.table("cuoc_thi", {
     id: serial("id").primaryKey(),
+    workspaceId: integer("workspace_id").notNull(),
     ten: varchar("ten", { length: 500 }),
     moTa: varchar("mo_ta", { length: 1000 }),
     thoiGianBatDau: timestamp("thoi_gian_bat_dau"),
@@ -26,10 +27,13 @@ const cuocThi = thiSchema.table("cuoc_thi", {
     createdAt: timestamp("created_at").defaultNow(),
 }, (table) => ({
     thoiGianRangeIdx: index("cuoc_thi_thoi_gian_range_idx").on(table.thoiGianBatDau, table.thoiGianKetThuc),
+    workspaceTenIdx: index("cuoc_thi_workspace_ten_idx").on(table.workspaceId, table.ten),
+    workspaceTimeIdx: index("cuoc_thi_workspace_thoi_gian_idx").on(table.workspaceId, table.thoiGianBatDau, table.thoiGianKetThuc),
 }));
 
 const dotThi = thiSchema.table("dot_thi", {
     id: serial("id").primaryKey(),
+    workspaceId: integer("workspace_id").notNull(),
     cuocThiId: integer("cuoc_thi_id"),
     ten: varchar("ten", { length: 500 }),
     moTa: varchar("mo_ta", { length: 500 }),
@@ -46,10 +50,14 @@ const dotThi = thiSchema.table("dot_thi", {
 }, (table) => ({
     cuocThiIdx: index("dot_thi_cuoc_thi_id_idx").on(table.cuocThiId),
     thoiGianRangeIdx: index("dot_thi_thoi_gian_range_idx").on(table.thoiGianBatDau, table.thoiGianKetThuc),
+    workspaceCuocThiIdx: index("dot_thi_workspace_cuoc_thi_id_idx").on(table.workspaceId, table.cuocThiId),
+    workspaceCuocThiTenIdx: index("dot_thi_workspace_cuoc_thi_ten_idx").on(table.workspaceId, table.cuocThiId, table.ten),
+    workspaceTimeIdx: index("dot_thi_workspace_thoi_gian_idx").on(table.workspaceId, table.thoiGianBatDau, table.thoiGianKetThuc),
 }));
 
 const tracNghiem = thiSchema.table("trac_nghiem", {
     id: serial("id").primaryKey(),
+    workspaceId: integer("workspace_id").notNull(),
     linhVucId: integer("linh_vuc_id"),
     nhomId: integer("nhom_id"),
     cauHoi: text("cau_hoi").notNull(),
@@ -61,27 +69,35 @@ const tracNghiem = thiSchema.table("trac_nghiem", {
     diem: integer("diem"),
 }, (table) => ({
     linhVucNhomIdx: index("trac_nghiem_linh_vuc_nhom_idx").on(table.linhVucId, table.nhomId),
+    workspaceLinhVucNhomIdx: index("trac_nghiem_workspace_linh_vuc_nhom_idx").on(table.workspaceId, table.linhVucId, table.nhomId),
 }));
 
 const tracNghiemDotThi = thiSchema.table("trac_nghiem_dot_thi", {
     id: serial("id").primaryKey(),
+    workspaceId: integer("workspace_id").notNull(),
     dotThiId: integer("dot_thi_id"),
     linhVucId: integer("linh_vuc_id"),
     nhomId: integer("nhom_id"),
     soLuong: integer("so_luong"),
 }, (table) => ({
     dotThiIdx: index("trac_nghiem_dot_thi_dot_thi_id_idx").on(table.dotThiId),
+    workspaceDotThiIdx: index("trac_nghiem_dot_thi_workspace_dot_thi_id_idx").on(table.workspaceId, table.dotThiId),
 }));
 
 const tuLuanDotThi = thiSchema.table("tu_luan_dot_thi", {
     id: serial("id").primaryKey(),
+    workspaceId: integer("workspace_id").notNull(),
     dotThiId: integer("dot_thi_id"),
     cauHoi: text("cau_hoi"),
     goiY: text("goi_y").default(""),
-});
+}, (table) => ({
+    dotThiIdx: index("tu_luan_dot_thi_dot_thi_id_idx").on(table.dotThiId),
+    workspaceDotThiIdx: index("tu_luan_dot_thi_workspace_dot_thi_id_idx").on(table.workspaceId, table.dotThiId),
+}));
 
 const deThi = thiSchema.table("de_thi", {
     id: serial("id").primaryKey(),
+    workspaceId: integer("workspace_id").notNull(),
     dotThiId: integer("dot_thi_id"),
     thiSinhId: integer("thi_sinh_id"),
     lanThi: integer("lan_thi"),
@@ -89,6 +105,7 @@ const deThi = thiSchema.table("de_thi", {
     trangThai: integer("trang_thai").default(0),
 }, (table) => ({
     dotThiThiSinhIdx: index("de_thi_dot_thi_thi_sinh_idx").on(table.dotThiId, table.thiSinhId),
+    workspaceDotThiThiSinhIdx: index("de_thi_workspace_dot_thi_thi_sinh_idx").on(table.workspaceId, table.dotThiId, table.thiSinhId),
 }));
 
 const deThiCauHoi = thiSchema.table("de_thi_cau_hoi", {
@@ -102,6 +119,7 @@ const deThiCauHoi = thiSchema.table("de_thi_cau_hoi", {
 
 const baiThi = thiSchema.table("bai_thi", {
     id: serial("id").primaryKey(),
+    workspaceId: integer("workspace_id").notNull(),
     deThiId: integer("de_thi_id"),
     thiSinhId: integer("thi_sinh_id"),
     lanThi: integer("lan_thi"),
@@ -116,6 +134,8 @@ const baiThi = thiSchema.table("bai_thi", {
 }, (table) => ({
     thiSinhTrangThaiIdx: index("bai_thi_thi_sinh_trang_thai_idx").on(table.thiSinhId, table.trangThai),
     deThiIdx: index("bai_thi_de_thi_id_idx").on(table.deThiId),
+    thiSinhTrangThaiDeThiIdx: index("bai_thi_thi_sinh_trang_thai_de_thi_idx").on(table.thiSinhId, table.trangThai, table.deThiId),
+    workspaceThiSinhTrangThaiDeThiIdx: index("bai_thi_workspace_thi_sinh_trang_thai_de_thi_idx").on(table.workspaceId, table.thiSinhId, table.trangThai, table.deThiId),
 }));
 
 const baiThiChiTiet = thiSchema.table(

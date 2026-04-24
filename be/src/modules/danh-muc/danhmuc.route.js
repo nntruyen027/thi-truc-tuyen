@@ -4,6 +4,7 @@ const query = require("./danhmuc.query")
 const resUtil = require("../../utils/response")
 const auth = require("../../middlewares/auth")
 const role = require("../../middlewares/role")
+const { requireWorkspaceId } = require("../../utils/workspace-scope");
 
 router.get(
     "/:tenDm",
@@ -25,6 +26,7 @@ router.get(
 
             const data =
                 await query.layDsDanhMuc(
+                    requireWorkspaceId(req),
                     tenDm,
                     Number(size),
                     Number(page),
@@ -61,6 +63,7 @@ router.post(
 
             const data =
                 await query.themDanhMuc(
+                    requireWorkspaceId(req),
                     tenDm,
                     value
                 )
@@ -99,6 +102,7 @@ router.put(
 
             const data =
                 await query.suaDanhMuc(
+                    requireWorkspaceId(req),
                     tenDm,
                     id,
                     value
@@ -136,6 +140,7 @@ router.delete(
 
             const data =
                 await query.xoaDanhMuc(
+                    requireWorkspaceId(req),
                     tenDm,
                     id
                 )

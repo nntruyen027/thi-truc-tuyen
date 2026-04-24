@@ -6,6 +6,7 @@ const auth = require("../../middlewares/auth");
 const role = require("../../middlewares/role");
 const path = require("path")
 const upload = require("../../utils/upload")
+const { requireWorkspaceId } = require("../../utils/workspace-scope");
 
 const XLSX =
     require("xlsx")
@@ -25,6 +26,7 @@ router.get(
             } = req.query
 
             const data = await query.layDsTracNghiem(
+                requireWorkspaceId(req),
                 Number(size),
                 Number(page),
                 search,
@@ -57,7 +59,9 @@ router.post(
                 diem
             } = req.body
 
-            const data = await query.themTracNghiem(linh_vuc_id,
+            const data = await query.themTracNghiem(
+                requireWorkspaceId(req),
+                linh_vuc_id,
                 nhom_id,
                 cau_hoi,
                 cauA,
@@ -94,7 +98,7 @@ router.put(
                 diem
             } = req.body
 
-            const data = await query.suaTracNghiem(id, linh_vuc_id,
+            const data = await query.suaTracNghiem(requireWorkspaceId(req), id, linh_vuc_id,
                 nhom_id,
                 cau_hoi,
                 cauA,
@@ -120,7 +124,7 @@ router.delete(
         try {
             const id = req.params.id
 
-            const data = await query.xoaTracNghiem(id)
+            const data = await query.xoaTracNghiem(requireWorkspaceId(req), id)
 
 
             resUtil.ok(res, data)
@@ -172,6 +176,7 @@ router.post(
             for (const r of rows) {
 
                 await query.themTracNghiemImport(
+                    requireWorkspaceId(req),
                     r
                 )
 

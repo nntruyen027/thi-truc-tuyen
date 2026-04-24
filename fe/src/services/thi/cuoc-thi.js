@@ -45,6 +45,16 @@ export async function layThoiGianConLaiCuaCuocThi () {
     }
 }
 
+export async function layLuotThiHienTai () {
+    try {
+        const res = await api.get(BASE_PATH + "/luot-thi-hien-tai")
+        return res.data;
+    }
+    catch (e) {
+        throw new Error(e?.response?.data?.message);
+    }
+}
+
 export async function themCuocThi(value) {
     try {
         const res = await api.post(BASE_PATH, value);

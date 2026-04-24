@@ -5,6 +5,7 @@ const resUtil = require("../../utils/response");
 const auth = require("../../middlewares/auth");
 const role = require("../../middlewares/role");
 const validation = require("../thi/thi.validation");
+const { requireWorkspaceId } = require("../../utils/workspace-scope");
 
 router.get(
     "/",
@@ -15,13 +16,14 @@ router.get(
             const dotThiId = req.params.dotThiId;
 
             const info =
-                await validation.layTrangThaiTuLuanTheoDotThi(dotThiId);
+                await validation.layTrangThaiTuLuanTheoDotThi(requireWorkspaceId(req), dotThiId);
 
             if (!info.coTuLuan) {
                 return resUtil.ok(res, []);
             }
 
             const data = await query.layDsTuLuan(
+                requireWorkspaceId(req),
                 dotThiId
             )
 
@@ -42,10 +44,11 @@ router.post(
             const dotThiId = req.params.dotThiId;
 
             await validation.ensureTuLuanAllowed(
+                requireWorkspaceId(req),
                 dotThiId
             )
 
-            const data = await query.themTuLuan(dotThiId, cau_hoi, goi_y)
+            const data = await query.themTuLuan(requireWorkspaceId(req), dotThiId, cau_hoi, goi_y)
 
 
             resUtil.ok(res, data)
@@ -66,10 +69,11 @@ router.put(
             const dotThiId = req.params.dotThiId
 
             await validation.ensureTuLuanAllowed(
+                requireWorkspaceId(req),
                 dotThiId
             )
 
-            const data = await query.suaTuLuan(id, cau_hoi, goi_y)
+            const data = await query.suaTuLuan(requireWorkspaceId(req), id, cau_hoi, goi_y)
 
 
             resUtil.ok(res, data)
@@ -87,7 +91,7 @@ router.delete(
         try {
             const id = req.params.id
 
-            const data = await query.xoaTuLuan(id)
+            const data = await query.xoaTuLuan(requireWorkspaceId(req), id)
 
 
             resUtil.ok(res, data)

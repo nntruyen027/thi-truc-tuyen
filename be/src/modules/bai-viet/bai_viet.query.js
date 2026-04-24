@@ -22,11 +22,17 @@ function mapBaiViet(row) {
     };
 }
 
+function isMissingWorkspaceColumnError(error) {
+    const message = String(error?.message || error || "").toLowerCase();
+    return message.includes("workspace_id") && message.includes("does not exist");
+}
+
 function buildWhere({
+    workspaceId,
     search = "",
     chiHienThi = false,
 }) {
-    const clauses = [];
+    const clauses = [eq(baiViet.workspaceId, Number(workspaceId))];
 
     if (search?.trim()) {
         clauses.push(ilike(baiViet.tieuDe, `%${search.trim()}%`));
@@ -44,13 +50,14 @@ function buildWhere({
 }
 
 exports.layDanhSachBaiViet = async ({
+    workspaceId,
     page = 1,
     size = 50,
     search = "",
     chiHienThi = false,
 }) => {
     const paging = normalizePagination({page, size, defaultSize: 50});
-    const where = buildWhere({search, chiHienThi});
+    const where = buildWhere({workspaceId, search, chiHienThi});
 
     const rowsQuery = db
         .select()
@@ -63,10 +70,41 @@ exports.layDanhSachBaiViet = async ({
         .select({total: count()})
         .from(baiViet);
 
-    const [rows, totalRows] = await Promise.all([
-        where ? rowsQuery.where(where) : rowsQuery,
-        where ? totalQuery.where(where) : totalQuery,
-    ]);
+    let rows;
+    let totalRows;
+
+    try {
+        [rows, totalRows] = await Promise.all([
+            where ? rowsQuery.where(where) : rowsQuery,
+            where ? totalQuery.where(where) : totalQuery,
+        ]);
+    } catch (error) {
+        if (!isMissingWorkspaceColumnError(error)) {
+            throw error;
+        }
+
+        const legacyClauses = [];
+
+        if (search?.trim()) {
+            legacyClauses.push(ilike(baiViet.tieuDe, `%${search.trim()}%`));
+        }
+
+        if (chiHienThi) {
+            legacyClauses.push(eq(baiViet.trangThai, true));
+        }
+
+        const legacyWhere =
+            legacyClauses.length === 0
+                ? undefined
+                : legacyClauses.length === 1
+                    ? legacyClauses[0]
+                    : and(...legacyClauses);
+
+        [rows, totalRows] = await Promise.all([
+            legacyWhere ? rowsQuery.where(legacyWhere) : rowsQuery,
+            legacyWhere ? totalQuery.where(legacyWhere) : totalQuery,
+        ]);
+    }
 
     return buildPagedResult({
         data: rows.map(mapBaiViet),
@@ -76,12 +114,29 @@ exports.layDanhSachBaiViet = async ({
     });
 };
 
-exports.layBaiVietTheoId = async (id) => {
-    const [row] = await db
-        .select()
-        .from(baiViet)
-        .where(eq(baiViet.id, Number(id)))
-        .limit(1);
+exports.layBaiVietTheoId = async (workspaceId, id) => {
+    let row;
+
+    try {
+        [row] = await db
+            .select()
+            .from(baiViet)
+            .where(and(
+                eq(baiViet.workspaceId, Number(workspaceId)),
+                eq(baiViet.id, Number(id))
+            ))
+            .limit(1);
+    } catch (error) {
+        if (!isMissingWorkspaceColumnError(error)) {
+            throw error;
+        }
+
+        [row] = await db
+            .select()
+            .from(baiViet)
+            .where(eq(baiViet.id, Number(id)))
+            .limit(1);
+    }
 
     return mapBaiViet(row);
 };
@@ -90,6 +145,7 @@ exports.themBaiViet = async (value) => {
     const [created] = await db
         .insert(baiViet)
         .values({
+            workspaceId: Number(value.workspaceId),
             tieuDe: value.tieuDe,
             tomTat: value.tomTat || "",
             noiDung: value.noiDung,
@@ -103,7 +159,7 @@ exports.themBaiViet = async (value) => {
     return mapBaiViet(created);
 };
 
-exports.suaBaiViet = async (id, value) => {
+exports.suaBaiViet = async (workspaceId, id, value) => {
     const [updated] = await db
         .update(baiViet)
         .set({
@@ -115,17 +171,22 @@ exports.suaBaiViet = async (id, value) => {
             trangThai: value.trangThai ?? true,
             updatedAt: new Date(),
         })
-        .where(eq(baiViet.id, Number(id)))
+        .where(and(
+            eq(baiViet.workspaceId, Number(workspaceId)),
+            eq(baiViet.id, Number(id))
+        ))
         .returning();
 
     return mapBaiViet(updated);
 };
 
-exports.xoaBaiViet = async (id) => {
+exports.xoaBaiViet = async (workspaceId, id) => {
     await db
         .delete(baiViet)
-        .where(eq(baiViet.id, Number(id)));
+        .where(and(
+            eq(baiViet.workspaceId, Number(workspaceId)),
+            eq(baiViet.id, Number(id))
+        ));
 
     return true;
 };
-
