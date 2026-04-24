@@ -60,7 +60,7 @@ export async function suaDotThi(id,cuocThiId, value) {
 
 export async function xoaDotThi(id, cuocThiId) {
     try {
-        const res = await api.delete(BASE_PATH(cuocThiId) + '/' + id);
+        await api.delete(BASE_PATH(cuocThiId) + '/' + id);
     }
     catch (e) {
         throw new Error(e?.response?.data?.message);

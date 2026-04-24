@@ -1,5 +1,6 @@
 'use client';
 
+import Image from "next/image";
 import {App, Button, Card, Upload} from "antd";
 import {UploadOutlined} from "@ant-design/icons";
 import {useEffect, useState} from "react";
@@ -72,9 +73,11 @@ export default function FaviconEditor({workspaceId = null}) {
             <div className="mt-4 flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     {image ? (
-                        <img
+                        <Image
                             src={getPublicFileUrl(image)}
                             alt="Favicon preview"
+                            width={40}
+                            height={40}
                             className="h-10 w-10 object-contain"
                         />
                     ) : (

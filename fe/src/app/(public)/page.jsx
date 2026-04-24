@@ -1,5 +1,6 @@
 'use client';
 
+import Image from "next/image";
 import {layCauHinh} from "~/services/cau-hinh";
 import {useEffect, useMemo, useState} from "react";
 import {getPublicFileUrl} from "~/services/file";
@@ -71,7 +72,7 @@ function buildTimelineItems(dsDotThi = [], currentDotThiId) {
 
             return {
                 color,
-                children: (
+                content: (
                     <div className="space-y-2 pb-3">
                         <div className="flex flex-wrap items-center gap-2">
                             <Text className="!text-base !font-semibold !text-slate-900">
@@ -308,12 +309,12 @@ export default function Page() {
 
             </Reveal>
 
-            <div className="mx-auto w-full px-4 py-6 sm:px-20 lg:px-60">
+            <div className="mx-auto w-full px-4 py-6 sm:px-8 md:px-10 lg:px-14 xl:px-20 2xl:px-50">
                 <Row gutter={[20, 20]} align="stretch">
-                    <Col xs={24} xl={11} className="flex">
+                    <Col xs={24} xl={12} className="flex">
                         <Reveal delay={90} className="h-full w-full">
                             <Card
-                                className="h-full overflow-hidden rounded-[32px] border-0 shadow-[0_22px_50px_rgba(15,23,42,0.10)]"
+                                className="h-full overflow-hidden rounded-2xl border-0 shadow-[0_22px_50px_rgba(15,23,42,0.10)]"
                                 styles={{body: {padding: 0, height: "100%"}}}
                             >
                                 <Flex vertical className="h-full bg-slate-100">
@@ -354,7 +355,7 @@ export default function Page() {
                         </Reveal>
                     </Col>
 
-                    <Col xs={24} xl={13} className="flex">
+                    <Col xs={24} xl={12} className="flex">
                         <Reveal delay={110} className="h-full w-full">
                             <Flex vertical gap={16} className="h-full w-full">
                                 {thoiGianConLai && (
@@ -406,6 +407,7 @@ export default function Page() {
                                     styles={{body: {padding: 24, height: "100%"}}}
                                 >
                                      <Timeline
+                                     
                                 items={timelineItems}
                                 orientation="horizontal"
                             />
@@ -438,7 +440,7 @@ export default function Page() {
                                                         }
                                                         : undefined}
                                                 >
-                                                    <img src={item.image} width={40} alt="" />
+                                                    <Image src={item.image} width={40} height={40} alt="" />
                                                     <span className="text-sm font-semibold md:text-base">{item.label}</span>
                                                 </button>
                                             ))}

@@ -1,6 +1,6 @@
 'use client'
 
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {App, Button, Dropdown, Input, Modal, Switch, Table, Tag} from "antd";
 
 import {useDebounce} from "~/hook/data";
@@ -45,7 +45,7 @@ export default function CuocThi() {
 
     // ===== fetch =====
 
-    const fetchData = async (
+    const fetchData = useCallback(async (
         page = 1,
         size = 10,
         search = "",
@@ -83,7 +83,7 @@ export default function CuocThi() {
 
         }
 
-    };
+    }, [message]);
 
     const handleDelete = (id) => {
         setDeletingId(id);
@@ -151,7 +151,7 @@ export default function CuocThi() {
             sorter.sortType
         );
 
-    }, [debouncedSearch]);
+    }, [debouncedSearch, fetchData, pagination.pageSize, sorter.sortField, sorter.sortType]);
 
 
     // ===== first load =====
@@ -164,7 +164,7 @@ export default function CuocThi() {
             title: "Cuộc thi"
         });
 
-    }, []);
+    }, [fetchData, setPageInfo]);
 
 
 

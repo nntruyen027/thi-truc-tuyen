@@ -9,7 +9,7 @@ import useApp from "antd/es/app/useApp";
 export default function BanQuyen({workspaceId = null}) {
     const [form] = Form.useForm();
     const {message} = useApp()
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
 
     const save = async () => {
 
@@ -57,7 +57,7 @@ export default function BanQuyen({workspaceId = null}) {
                 <Editor/>
             </Form.Item>
             <div className={'flex justify-end'}>
-                <Button onClick={save} type={'primary'}>Lưu lại</Button>
+                <Button loading={loading} onClick={save} type={'primary'}>Lưu lại</Button>
             </div>
         </Form>
     </Card>

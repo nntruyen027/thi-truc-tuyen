@@ -1,3 +1,4 @@
+import Image from "next/image";
 import {App, Button, Card, Slider, Typography, Upload} from "antd";
 import {useEffect, useState} from "react";
 import {UploadOutlined} from "@ant-design/icons";

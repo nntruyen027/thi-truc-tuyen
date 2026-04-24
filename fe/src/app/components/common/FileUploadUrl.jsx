@@ -5,7 +5,7 @@ import {DeleteOutlined, EyeOutlined, FileOutlined, UploadOutlined} from "@ant-de
 import {useState} from "react";
 import {getPublicFileUrl, uploadFile} from "~/services/file";
 
-const {Link, Text} = Typography;
+const {Link} = Typography;
 
 export default function FileUploadUrl({
                                           value,
@@ -70,6 +70,7 @@ export default function FileUploadUrl({
                                 <>
                                     <Image
                                         src={fileUrl}
+                                        alt=""
                                         width={80}
                                         style={{borderRadius: 6}}
                                         preview={{

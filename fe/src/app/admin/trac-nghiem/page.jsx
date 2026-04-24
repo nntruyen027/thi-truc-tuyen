@@ -1,6 +1,6 @@
 'use client'
 
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {App, Button, Dropdown, Input, Modal, Table, Upload} from "antd";
 
 import {useDebounce} from "~/hook/data";
@@ -22,9 +22,6 @@ export default function TracNghiem() {
     const [editing, setEditing] = useState(null)
     const [deletingId, setDeletingId] = useState(null);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-    const [file, setFile] = useState(null);
-
-
     const [pagination, setPagination] = useState({
         current: 1,
         pageSize: 10,
@@ -42,7 +39,7 @@ export default function TracNghiem() {
 
     // ===== fetch =====
 
-    const fetchData = async (
+    const fetchData = useCallback(async (
         page = 1,
         size = 10,
         search = "",
@@ -80,7 +77,7 @@ export default function TracNghiem() {
 
         }
 
-    };
+    }, [message]);
 
     const handleImportFile = (file) => {
 
@@ -172,7 +169,7 @@ export default function TracNghiem() {
             sorter.sortType
         );
 
-    }, [debouncedSearch]);
+    }, [debouncedSearch, fetchData, pagination.pageSize, sorter.sortField, sorter.sortType]);
 
 
     // ===== first load =====
@@ -185,7 +182,7 @@ export default function TracNghiem() {
             title: "Trắc nghiệm"
         });
 
-    }, []);
+    }, [fetchData, setPageInfo]);
 
 
 

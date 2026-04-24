@@ -9,7 +9,7 @@ import useApp from "antd/es/app/useApp";
 export default function CotChanTrang({tieuDe, khoa, workspaceId = null}) {
     const [form] = Form.useForm();
     const {message} = useApp()
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
 
     const save = async () => {
 
@@ -63,7 +63,7 @@ export default function CotChanTrang({tieuDe, khoa, workspaceId = null}) {
                 <Editor/>
             </Form.Item>
             <div className={'flex justify-end'}>
-                <Button onClick={save} type={'primary'}>Lưu lại</Button>
+                <Button loading={loading} onClick={save} type={'primary'}>Lưu lại</Button>
             </div>
         </Form>
     </Card>

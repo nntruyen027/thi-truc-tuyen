@@ -17,8 +17,8 @@ export default function TracNghiemModal({
 
     const { message } = App.useApp();
     const [form] = Form.useForm();
-    const { dsLinhVuc, loading: linhVucLoading, setSearchLinhVuc, loadMore: loadMoreLinhVuc } = useLinhVucSelect();
-    const { dsNhomCauHoi, loading: nhomLoading, setSearchNhomCauHoi, loadMore: loadMoreNhom } = useNhomCauHoiSelect();
+    const { dsLinhVuc, loading: linhVucLoading, setSearchLinhVuc } = useLinhVucSelect();
+    const { dsNhomCauHoi, loading: nhomLoading, setSearchNhomCauHoi } = useNhomCauHoiSelect();
 
 
 

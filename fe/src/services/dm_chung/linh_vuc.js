@@ -47,7 +47,7 @@ export async function suaLinhVuc(id, value) {
 
 export async function xoaLinhVuc(id) {
     try {
-        const res = await api.delete(BASE_PATH + '/' + id);
+        await api.delete(BASE_PATH + '/' + id);
     }
     catch (e) {
         throw new Error(e?.response?.data?.message);

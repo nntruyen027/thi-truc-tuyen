@@ -1,6 +1,6 @@
 'use client'
 
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 import {App, Button, Divider, Dropdown, Input, Modal, Table} from "antd";
 
 import {useDebounce} from "~/hook/data";
@@ -51,7 +51,7 @@ export default function DotThi() {
     const choPhepTuLuan =
         !!cuocThi?.co_tu_luan;
 
-    const fetchCuocThi = async () => {
+    const fetchCuocThi = useCallback(async () => {
         try {
             setLoading(true);
             const res = await layCuocThiTheoId(cuocThiId)
@@ -64,11 +64,11 @@ export default function DotThi() {
             setLoading(false);
         }
 
-    }
+    }, [cuocThiId, message])
 
     // ===== fetch =====
 
-    const fetchData = async (
+    const fetchData = useCallback(async (
         page = 1,
         size = 10,
         search = "",
@@ -106,7 +106,7 @@ export default function DotThi() {
 
         }
 
-    };
+    }, [cuocThiId, message]);
 
     const handleDelete = (id) => {
         setDeletingId(id);
@@ -149,7 +149,7 @@ export default function DotThi() {
             sorter.sortType
         );
 
-    }, [debouncedSearch]);
+    }, [debouncedSearch, fetchData, pagination.pageSize, sorter.sortField, sorter.sortType]);
 
 
     // ===== first load =====
@@ -163,7 +163,7 @@ export default function DotThi() {
             title: "Đợt thi"
         });
 
-    }, []);
+    }, [fetchCuocThi, fetchData, setPageInfo]);
 
 
 

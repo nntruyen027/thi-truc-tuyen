@@ -47,7 +47,7 @@ export async function suaDonVi(id, value) {
 
 export async function xoaDonVi(id) {
     try {
-        const res = await api.delete(BASE_PATH + '/' + id);
+        await api.delete(BASE_PATH + '/' + id);
     }
     catch (e) {
         throw new Error(e?.response?.data?.message);

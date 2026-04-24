@@ -9,8 +9,7 @@ import {
     Modal,
     Select,
     Table,
-    Tag,
-    Typography
+    Tag
 } from "antd";
 import {
     DeleteOutlined,
@@ -33,8 +32,6 @@ import {
 } from "~/services/dm_chung/nguoi_dung";
 import {layDanhSachWorkspace} from "~/services/workspace";
 import UserModal from "./UserModal";
-
-const {Text, Title} = Typography;
 
 export default function NguoiDung() {
     const setPageInfo = usePageInfoStore((state) => state.setPageInfo);

@@ -1,13 +1,12 @@
 'use client';
 
 import {useEffect, useMemo, useState} from "react";
-import {Button, Card, Col, Empty, Row, Space, Tag, Typography, theme} from "antd";
+import {Button, Card, Col, Empty, Row, Space, Typography, theme} from "antd";
 import {
     DownloadOutlined,
     EyeOutlined,
     FilePdfOutlined,
     FolderOpenOutlined,
-    InfoCircleOutlined
 } from "@ant-design/icons";
 import {layCauHinh} from "~/services/cau-hinh";
 import {getPublicFileUrl} from "~/services/file";
@@ -147,7 +146,7 @@ export default function TaiLieuTongHop() {
             loading={loading}
         >
            
-            <Space direction="vertical" size={20} className="!flex">
+            <Space orientation="vertical" size={20} className="!flex">
                 {Object.entries(groupedTaiLieu).map(([nhom, items]) => (
                     <div key={nhom} className="space-y-4">
                         <div className="flex items-center gap-3">

@@ -42,7 +42,7 @@ export default function InnerLayout({ children }) {
                         refresh
                     });
 
-                } catch (e) {
+                } catch {
 
                     clearAuth();
 

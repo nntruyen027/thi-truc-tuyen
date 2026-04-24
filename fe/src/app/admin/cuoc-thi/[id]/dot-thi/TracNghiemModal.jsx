@@ -2,7 +2,7 @@
 
 import {App, Button, Grid, InputNumber, Modal, Popconfirm, Select, Table} from "antd";
 
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 
 import {
     layTracNghiemDotThi,
@@ -38,7 +38,7 @@ export default function TracNghiemDotThiModal({
 
     // load
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const res =
                 await layTracNghiemDotThi(
@@ -51,7 +51,7 @@ export default function TracNghiemDotThiModal({
             message.error(e.message);
         }
 
-    };
+    }, [cuocThiId, dotThiId, message]);
 
 
     useEffect(() => {
@@ -66,7 +66,7 @@ export default function TracNghiemDotThiModal({
         }
 
 
-    }, [open]);
+    }, [fetchData, open]);
 
 
     // add

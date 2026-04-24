@@ -119,7 +119,7 @@ export default function DotThiModal({
 
     };
 
-    const validateTime = (_, value) => {
+    const validateTime = () => {
 
         const start =
             form.getFieldValue(

@@ -51,6 +51,11 @@ const modules = {
 export default function Editor({value, onChange}) {
     const editorRef = useRef(null);
     const quillRef = useRef(null);
+    const onChangeRef = useRef(onChange);
+
+    useEffect(() => {
+        onChangeRef.current = onChange;
+    }, [onChange]);
 
     useEffect(() => {
         if (!editorRef.current || quillRef.current) return;
@@ -61,7 +66,7 @@ export default function Editor({value, onChange}) {
         });
 
         quillRef.current.on("text-change", () => {
-            onChange?.(quillRef.current.root.innerHTML);
+            onChangeRef.current?.(quillRef.current.root.innerHTML);
         });
     }, []);
 

@@ -2,7 +2,7 @@
 
 import {App, Button, Grid, Input, Modal, Popconfirm, Table} from "antd";
 
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
 
 import {layTuLuanDotThi, suaTuLuanDotThi, themTuLuanDotThi, xoaTuLuanDotThi} from "~/services/thi/dot-thi";
 
@@ -35,7 +35,7 @@ export default function TuLuanDotThiModal({
 
     // load
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             const res =
                 await layTuLuanDotThi(
@@ -50,7 +50,7 @@ export default function TuLuanDotThiModal({
             message.error(e.message);
         }
 
-    };
+    }, [cuocThiId, dotThiId, message]);
 
 
     useEffect(() => {
@@ -64,7 +64,7 @@ export default function TuLuanDotThiModal({
             return () => clearTimeout(timer);
         }
 
-    }, [open]);
+    }, [fetchData, open]);
 
 
     // add
