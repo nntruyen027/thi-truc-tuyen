@@ -368,16 +368,25 @@ export default function Page() {
                                     styles={{body: {padding: 24, height: "100%"}}}
                                 >
                                     <Flex vertical justify="space-around" gap={24} className="h-full text-center">
-                                        <div>
+                                        <div className="flex justify-center">
+                                            <div className="join-exam-pulse relative inline-flex items-center justify-center">
+                                                <span
+                                                    className="join-exam-pulse__ring join-exam-pulse__ring--outer"
+                                                    style={{"--pulse-color": alphaColor(colorPrimary, 0.22)}}
+                                                />
+                                                <span
+                                                    className="join-exam-pulse__ring join-exam-pulse__ring--inner"
+                                                    style={{"--pulse-color": alphaColor(colorPrimary, 0.34)}}
+                                                />
                                             <Button
                                                 type="primary"
                                                 size="large"
-                                                className="!h-14 w-full !rounded-2xl !text-lg !font-bold sm:!w-auto sm:min-w-[15rem]"
+                                                className="join-exam-pulse__button !h-14 w-full !rounded-2xl !text-lg !font-bold sm:!w-auto sm:min-w-[15rem]"
                                                 onClick={handleJoinExam}
                                             >
-                                                Tham gia thi
+                                                THAM GIA THI
                                             </Button>
-                                            
+                                            </div>
                                         </div>
                                         <Text style={{
                                                     color: colorPrimary
@@ -458,6 +467,86 @@ export default function Page() {
                     </Col>
                 </Row>
             </div>
+            <style>{`
+                .join-exam-pulse {
+                    isolation: isolate;
+                }
+
+                .join-exam-pulse__button {
+                    position: relative;
+                    z-index: 2;
+                    animation: join-exam-heartbeat 2.8s ease-in-out infinite;
+                    box-shadow:
+                        0 0 0 1px rgba(25, 72, 190, 0.10),
+                        0 0 22px rgba(25, 72, 190, 0.22),
+                        0 0 42px rgba(25, 72, 190, 0.16);
+                }
+
+                .join-exam-pulse__ring {
+                    position: absolute;
+                    inset: -2px;
+                    border-radius: 18px;
+                    background: var(--pulse-color);
+                    z-index: 1;
+                    pointer-events: none;
+                    transform-origin: center;
+                    filter: blur(2px);
+                }
+
+                .join-exam-pulse__ring--inner {
+                    animation: join-exam-wave-inner 2.8s ease-out infinite;
+                }
+
+                .join-exam-pulse__ring--outer {
+                    animation: join-exam-wave-outer 2.8s ease-out infinite 0.42s;
+                }
+
+                @keyframes join-exam-heartbeat {
+                    0%, 100% {
+                        transform: scale(1);
+                    }
+                    12% {
+                        transform: scale(1.035);
+                    }
+                    22% {
+                        transform: scale(0.988);
+                    }
+                    32% {
+                        transform: scale(1.055);
+                    }
+                    44% {
+                        transform: scale(1);
+                    }
+                }
+
+                @keyframes join-exam-wave-inner {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.94);
+                    }
+                    18% {
+                        opacity: 0.5;
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: scale(1.34);
+                    }
+                }
+
+                @keyframes join-exam-wave-outer {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.96);
+                    }
+                    20% {
+                        opacity: 0.34;
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: scale(1.5);
+                    }
+                }
+            `}</style>
         </div>
     );
 }
