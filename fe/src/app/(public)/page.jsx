@@ -46,7 +46,7 @@ const tabItems = [
     },
 ];
 
-function buildTimelineItems(dsDotThi = [], currentDotThiId) {
+function buildTimelineItems(dsDotThi = [], currentDotThiId, colorPrimary) {
     const now = dayjs();
 
     return [...dsDotThi]
@@ -56,40 +56,63 @@ function buildTimelineItems(dsDotThi = [], currentDotThiId) {
             const isFinished = dayjs(item.thoi_gian_ket_thuc).isBefore(now);
             const isUpcoming = dayjs(item.thoi_gian_bat_dau).isAfter(now);
 
-            let color = "blue";
+            let color = colorPrimary;
             let status = "Đang diễn ra";
 
             if (isFinished) {
                 color = "gray";
                 status = "Đã kết thúc";
             } else if (isUpcoming) {
-                color = "green";
+                color = colorPrimary;
                 status = "Sắp diễn ra";
             } else if (isCurrent) {
-                color = "red";
+                color = colorPrimary;
                 status = "Đang diễn ra";
             }
 
             return {
                 color,
-                content: (
-                    <div className="space-y-2 pb-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <Text className="!text-base !font-semibold !text-slate-900">
+                dot: (
+                    <span
+                        className={`timeline-highlight-dot ${isCurrent ? "timeline-highlight-dot--active" : ""} ${isFinished ? "timeline-highlight-dot--finished" : ""}`}
+                        style={{
+                            "--timeline-dot-color": isFinished ? "#94a3b8" : colorPrimary,
+                            "--timeline-dot-shadow": isCurrent
+                                ? `0 0 0 6px ${alphaColor(colorPrimary, 0.16)}`
+                                : "0 0 0 4px rgba(148,163,184,0.10)",
+                        }}
+                    />
+                ),
+                children: (
+                    <div
+                        className={`space-y-3 rounded-[22px] px-4 py-4 text-center transition-all duration-300 ${
+                            isCurrent
+                                ? "bg-white"
+                                : "bg-transparent"
+                        }`}
+                        style={isCurrent ? {boxShadow: `0 18px 40px ${alphaColor(colorPrimary, 0.12)}`} : undefined}
+                    >
+                        <div className="flex flex-col items-center gap-2">
+                            <Text
+                                className="!text-base !font-semibold !text-slate-900"
+                                style={isCurrent ? {color: colorPrimary} : undefined}
+                            >
                                 {item.ten}
                             </Text>
-                            <Tag color={isCurrent ? "red" : isFinished ? "default" : isUpcoming ? "green" : "blue"}>
+
+                            <Tag color={isFinished ? "default" : isCurrent ? "processing" : "error"} className="!rounded-full !px-3 !py-1 !text-sm">
                                 {status}
                             </Tag>
                         </div>
-                        {item.mo_ta && (
-                            <Paragraph className="!mb-0 !text-sm !leading-7 !text-slate-500">
-                                {item.mo_ta}
-                            </Paragraph>
-                        )}
-                        <Text className="!text-sm !text-slate-500">
-                            {dayjs(item.thoi_gian_bat_dau).format("DD/MM/YYYY HH:mm")} - {dayjs(item.thoi_gian_ket_thuc).format("DD/MM/YYYY HH:mm")}
-                        </Text>
+
+                        <div
+                            className="inline-flex rounded-full px-3 py-1"
+                    
+                        >
+                            <Text className="!text-sm !font-medium">
+                                {dayjs(item.thoi_gian_bat_dau).format("DD/MM/YYYY")} - {dayjs(item.thoi_gian_ket_thuc).format("DD/MM/YYYY")}
+                            </Text>
+                        </div>
                     </div>
                 )
             };
@@ -103,7 +126,7 @@ export default function Page() {
     const [thoiGianConLai, setThoiGianConLai] = useState(null);
     const [tongLuotThi, setTongLuotThi] = useState(SO_LUOT_THI_TOI_THIEU);
     const [tab, setTab] = useState("bai-viet");
-    const [timelineItems, setTimelineItems] = useState([]);
+    const [dsDotThi, setDsDotThi] = useState([]);
     const [isMobileViewport, setIsMobileViewport] = useState(false);
 
     const {token} = theme.useToken();
@@ -114,6 +137,10 @@ export default function Page() {
     const contestMeta = useMemo(
         () => parseCuocThiMeta(dotThi?.cuoc_thi?.mo_ta),
         [dotThi?.cuoc_thi?.mo_ta]
+    );
+    const timelineItems = useMemo(
+        () => buildTimelineItems(dsDotThi, dotThi?.id, colorPrimary),
+        [colorPrimary, dotThi?.id, dsDotThi]
     );
 
     const infoCards = [
@@ -195,9 +222,7 @@ export default function Page() {
                         });
 
                         applyIfActive(() => {
-                            setTimelineItems(
-                                buildTimelineItems(dsDotThi?.data || [], currentDotThi.id)
-                            );
+                            setDsDotThi(dsDotThi?.data || []);
                         });
                     } catch (error) {
                         console.error("Không thể tải timeline đợt thi", error);
@@ -325,7 +350,7 @@ export default function Page() {
                                         Thông tin cuộc thi
                                     </h3>
 
-                                    <Flex vertical gap={18} className="flex-1 !px-5 !py-5 !md:px-6 !md:py-6">
+                                    <Flex vertical gap={18} className="flex-1 !px-5 !py-5 !md:px-6 !md:py-6 justify-around">
                                     
                                         {infoCards.map((item) => (
                                             <div key={item.title} className="space-y-3">
@@ -403,14 +428,23 @@ export default function Page() {
                                 </Card>
 
                                 <Card
-                                    className="flex-1 rounded-[32px] border border-slate-200 shadow-sm"
-                                    styles={{body: {padding: 24, height: "100%"}}}
+                                    className="timeline-highlight-card flex-1 overflow-hidden rounded-[32px] border border-slate-200 shadow-sm"
+                                    style={{
+                                        "--timeline-card-bg-start": alphaColor(colorPrimary, 0.03),
+                                        "--timeline-card-bg-end": alphaColor(colorPrimary, 0.08),
+                                        "--timeline-line-start": alphaColor(colorPrimary, 0.18),
+                                        "--timeline-line-mid": alphaColor(colorPrimary, 0.55),
+                                        "--timeline-line-end": alphaColor(colorPrimary, 0.18),
+                                    }}
+                                    classNames={{
+                                        body: 'px-4 h-full'
+                                    }}
                                 >
                                      <Timeline
-                                     
-                                items={timelineItems}
-                                orientation="horizontal"
-                            />
+                                            items={timelineItems}
+                                            orientation="horizontal"
+                                            className="timeline-highlight"
+                                        />
                                 </Card>
 
                                
@@ -501,6 +535,46 @@ export default function Page() {
 
                 .join-exam-pulse__ring--outer {
                     animation: join-exam-wave-outer 2.8s ease-out infinite 0.42s;
+                }
+
+                .timeline-highlight-card {
+                    background:
+                        linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--timeline-card-bg-end) 100%);
+                }
+
+                .timeline-highlight .ant-timeline-item-head {
+                    border: none;
+                    background: transparent;
+                }
+
+                .timeline-highlight .ant-timeline-item-tail {
+                    inset-inline-start: calc(50% + 1px);
+                    background: linear-gradient(90deg, var(--timeline-line-start) 0%, var(--timeline-line-mid) 50%, var(--timeline-line-end) 100%);
+                    block-size: 4px;
+                    border-radius: 999px;
+                    transform: translateY(-50%);
+                }
+
+                .timeline-highlight .ant-timeline-item-last .ant-timeline-item-tail {
+                    display: none;
+                }
+
+                .timeline-highlight-dot {
+                    display: inline-flex;
+                    width: 16px;
+                    height: 16px;
+                    border-radius: 999px;
+                    background: var(--timeline-dot-color);
+                    box-shadow: var(--timeline-dot-shadow);
+                }
+
+                .timeline-highlight-dot--active {
+                    width: 18px;
+                    height: 18px;
+                }
+
+                .timeline-highlight-dot--finished {
+                    opacity: 0.9;
                 }
 
                 @keyframes join-exam-heartbeat {
