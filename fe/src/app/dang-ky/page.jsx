@@ -77,6 +77,7 @@ export default function DangKy() {
                     >
                         <Input
                             maxLength={10}
+                            inputMode="numeric"
                             onChange={(e) => {
                                 e.target.value =
                                     e.target.value.replace(/\D/g, "");
@@ -90,9 +91,18 @@ export default function DangKy() {
                         name="hoTen"
                         rules={[
                             { required: true, message: "Vui lòng nhập họ tên" },
+                            {
+                                validator: (_, value) => {
+                                    if (!value || String(value).trim()) {
+                                        return Promise.resolve();
+                                    }
+
+                                    return Promise.reject(new Error("Họ tên không được để trống"));
+                                },
+                            },
                         ]}
                     >
-                        <Input />
+                        <Input maxLength={120} />
                     </Form.Item>
 
                     <Form.Item
@@ -141,6 +151,15 @@ export default function DangKy() {
                                 rules={[
                                     { required: true, message: "Nhập mật khẩu" },
                                     { min: 6, message: "Ít nhất 6 ký tự" },
+                                    {
+                                        validator: (_, value) => {
+                                            if (!value || String(value).trim()) {
+                                                return Promise.resolve();
+                                            }
+
+                                            return Promise.reject(new Error("Mật khẩu không hợp lệ"));
+                                        },
+                                    },
                                 ]}
                             >
                                 <Input.Password />

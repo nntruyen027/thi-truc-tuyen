@@ -27,21 +27,33 @@ export default function Profile() {
 
     const handleLuuTen = async () => {
         try {
-            const data = await thayDoiThongTinCaNhan({hoTen, donViId: user?.don_vi?.id})
+            const normalizedHoTen = String(hoTen || "").trim()
+
+            if (!normalizedHoTen) {
+                message.error("Họ tên không được để trống")
+                return
+            }
+
+            const data = await thayDoiThongTinCaNhan({hoTen: normalizedHoTen, donViId: user?.don_vi?.id})
             setUser(data)
             setIsEditName(false)
         } catch (error) {
-            message.error(error)
+            message.error(error?.message || "Không thể cập nhật họ tên")
         }
     }
 
     const handleLuuDonVi = async () => {
         try {
+            if (!donViId) {
+                message.error("Vui lòng chọn đơn vị")
+                return
+            }
+
             const data = await thayDoiThongTinCaNhan({hoTen: user?.ho_ten, donViId: donViId})
             setUser(data)
             setIsEditDonVi(false)
         } catch (error) {
-            message.error(error)
+            message.error(error?.message || "Không thể cập nhật đơn vị")
         }
     }
 
@@ -59,7 +71,7 @@ export default function Profile() {
                     </Col>
                     {isEditName ? <Col xs={24} sm={16}>
                         <div className="flex flex-col gap-3 sm:flex-row">
-                            <Input value={hoTen} onChange={e => setHoTen(e.target.value)} size={'small'} placeholder="Nhập họ tên" />
+                            <Input value={hoTen} onChange={e => setHoTen(e.target.value)} size={'small'} placeholder="Nhập họ tên" maxLength={120} />
                             <Button type={'default'} onClick={handleLuuTen}><SaveOutlined /></Button>
                             <Button onClick={() => {
                                 setIsEditName(false)

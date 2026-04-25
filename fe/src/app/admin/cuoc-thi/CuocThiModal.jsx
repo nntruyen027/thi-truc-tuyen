@@ -75,7 +75,14 @@ export default function CuocThiModal({
             const payload = {
 
                 ...values,
-                mo_ta: stringifyCuocThiMeta(values),
+                ten: values.ten?.trim(),
+                mo_ta: stringifyCuocThiMeta({
+                    ...values,
+                    mo_ta_tom_tat: values.mo_ta_tom_tat?.trim(),
+                    doi_tuong_tham_gia: values.doi_tuong_tham_gia?.trim(),
+                    noi_dung_cuoc_thi: values.noi_dung_cuoc_thi?.trim(),
+                    hinh_thuc_du_thi: values.hinh_thuc_du_thi?.trim(),
+                }),
 
                 thoi_gian_bat_dau:
                     values.thoi_gian_bat_dau
@@ -86,6 +93,14 @@ export default function CuocThiModal({
                         ,
 
             };
+
+            if (values.thoi_gian_bat_dau?.valueOf() >= values.thoi_gian_ket_thuc?.valueOf()) {
+                throw new Error("Thời gian kết thúc phải sau thời gian bắt đầu");
+            }
+
+            if (values.cho_phep_xem_lai_dap_an && !values.cho_phep_xem_lich_su) {
+                throw new Error("Muốn cho xem lại đáp án thì phải bật công bố kết quả");
+            }
 
 
             if (data) {
@@ -172,10 +187,19 @@ export default function CuocThiModal({
                                     required: true,
                                     message:
                                         "Vui lòng nhập tên cuộc thi"
-                                }
+                                },
+                                {
+                                    validator: (_, value) => {
+                                        if (!value || value.trim()) {
+                                            return Promise.resolve();
+                                        }
+
+                                        return Promise.reject(new Error("Tên cuộc thi không được để trống"));
+                                    },
+                                },
                             ]}
                         >
-                            <Input />
+                            <Input maxLength={255} />
                         </Form.Item>
                     </Col>
 
@@ -228,7 +252,18 @@ export default function CuocThiModal({
                                 {
                                     required: true,
                                     message: "Vui lòng nhập thời gian bắt đầu"
-                                }
+                                },
+                                ({getFieldValue}) => ({
+                                    validator(_, value) {
+                                        const end = getFieldValue("thoi_gian_ket_thuc");
+
+                                        if (!value || !end || value.valueOf() < end.valueOf()) {
+                                            return Promise.resolve();
+                                        }
+
+                                        return Promise.reject(new Error("Thời gian bắt đầu phải trước thời gian kết thúc"));
+                                    },
+                                }),
                             ]}
                         >
                             <DatePicker
@@ -247,7 +282,18 @@ export default function CuocThiModal({
                                 {
                                     required: true,
                                     message: "Vui lòng nhập thời gian kết thúc"
-                                }
+                                },
+                                ({getFieldValue}) => ({
+                                    validator(_, value) {
+                                        const start = getFieldValue("thoi_gian_bat_dau");
+
+                                        if (!value || !start || value.valueOf() > start.valueOf()) {
+                                            return Promise.resolve();
+                                        }
+
+                                        return Promise.reject(new Error("Thời gian kết thúc phải sau thời gian bắt đầu"));
+                                    },
+                                }),
                             ]}
                         >
                             <DatePicker

@@ -67,10 +67,20 @@ export default function DangKy() {
                         name="username"
                         rules={[
                             { required: true, message: "Vui lòng nhập số điện thoại hoặc tên đăng nhập" },
+                            {
+                                validator: (_, value) => {
+                                    if (!value || String(value).trim()) {
+                                        return Promise.resolve();
+                                    }
+
+                                    return Promise.reject(new Error("Tên đăng nhập không hợp lệ"));
+                                },
+                            },
                         ]}
                     >
                         <Input
                             maxLength={10}
+                            inputMode="numeric"
                             onChange={(e) => {
                                 e.target.value =
                                     e.target.value.replace(/\D/g, "");
@@ -86,6 +96,15 @@ export default function DangKy() {
                                 rules={[
                                     { required: true, message: "Nhập mật khẩu" },
                                     { min: 5, message: "Ít nhất 5 ký tự" },
+                                    {
+                                        validator: (_, value) => {
+                                            if (!value || String(value).trim()) {
+                                                return Promise.resolve();
+                                            }
+
+                                            return Promise.reject(new Error("Mật khẩu không hợp lệ"));
+                                        },
+                                    },
                                 ]}
                             >
                                 <Input.Password />

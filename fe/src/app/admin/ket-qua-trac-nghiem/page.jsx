@@ -1,7 +1,7 @@
 'use client'
 
 import {useCallback, useEffect, useState} from "react";
-import {App, Col, Row, Select, Table} from "antd";
+import {App, Col, Row, Select, Table, Typography} from "antd";
 import {usePageInfoStore} from "~/store/page-info";
 import {xepHangTracNghiemTheoCuocThi, xepHangTracNghiemTheoDotThi} from "~/services/thi/thi";
 import {useCuocThiSelect} from "~/hook/useCuocThi";
@@ -29,6 +29,7 @@ function getSaiSo(record) {
 
 
 export default function NhomCauHoi() {
+    const {Text} = Typography;
 
     const setPageInfo = usePageInfoStore(state => state.setPageInfo);
     const { message } = App.useApp();
@@ -218,6 +219,10 @@ export default function NhomCauHoi() {
     return (
 
         <div className="admin-page space-y-4">
+
+                <Text className="!block !text-sm !text-slate-500">
+                    Chỉ xét giải các bài có điểm đạt từ tỷ lệ đạt của đợt thi trở lên.
+                </Text>
 
                 <Row gutter={[16,16]}>
                     <Col md={24} lg={10}>

@@ -118,14 +118,15 @@ const menuConfig = [
                 label: "Tài liệu công khai",
             },
             {
-                key: "/admin/bai-viet",
-                label: "Bài viết cuộc thi",
-            },
-            {
                 key: "/admin/giai-thuong",
                 label: "Giải thưởng cuộc thi",
             },
         ],
+    },
+    {
+        key: "/admin/bai-viet",
+        label: "Bài viết",
+        icon: <TableOutlined/>,
     },
 ];
 

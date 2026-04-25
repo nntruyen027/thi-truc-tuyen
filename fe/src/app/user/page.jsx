@@ -59,7 +59,11 @@ export default function Page() {
                             dot.data.id
                         );
 
-                    setData(ds || []);
+                    setData(
+                        [...(ds || [])].sort(
+                            (a, b) => (Number(b?.lan_thi) || 0) - (Number(a?.lan_thi) || 0)
+                        )
+                    );
                 }
             }
             finally {

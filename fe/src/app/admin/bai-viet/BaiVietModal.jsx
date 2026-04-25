@@ -1,16 +1,17 @@
 'use client'
 
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import {App, Button, DatePicker, Form, Image, Input, Modal} from "antd";
 import dayjs from "dayjs";
 import Editor from "~/app/components/common/Editor";
-import {getPublicFileUrl, uploadFile} from "~/services/file";
+import {getPublicFileUrl, uploadFile, xoaFile} from "~/services/file";
 
 export default function BaiVietModal({open, data, onClose, onSuccess}) {
     const [form] = Form.useForm();
     const {message} = App.useApp();
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const pendingUploadRef = useRef(null);
 
     const anhDaiDien = Form.useWatch("anhDaiDien", form);
 
@@ -31,11 +32,40 @@ export default function BaiVietModal({open, data, onClose, onSuccess}) {
         form.setFieldsValue(initialValues);
     }, [form, initialValues, open]);
 
+    const cleanupPendingUpload = async () => {
+        if (!pendingUploadRef.current?.id) {
+            return;
+        }
+
+        const deletingId = pendingUploadRef.current.id;
+        pendingUploadRef.current = null;
+
+        try {
+            await xoaFile(deletingId);
+        } catch (error) {
+            console.error("[bai-viet] cleanup upload failed", error);
+        }
+    };
+
     const handleUploadAnh = async (file) => {
         try {
             setUploading(true);
+            await cleanupPendingUpload();
             const res = await uploadFile(file);
-            const duongDan = res.duong_dan || res.url || "";
+            const duongDan = res.duongDan || res.duong_dan || res.url || "";
+
+            if (!duongDan) {
+                throw new Error("Upload thành công nhưng không nhận được đường dẫn ảnh");
+            }
+
+            pendingUploadRef.current =
+                data?.anhDaiDien === duongDan
+                    ? null
+                    : {
+                        id: res.id,
+                        duongDan,
+                    };
+
             form.setFieldValue("anhDaiDien", duongDan);
             message.success("Đã tải ảnh đại diện");
         } catch (e) {
@@ -51,22 +81,33 @@ export default function BaiVietModal({open, data, onClose, onSuccess}) {
         try {
             setSaving(true);
             const values = await form.validateFields();
+            const ngayDang = dayjs(values.ngayDang);
+
+            if (!ngayDang.isValid()) {
+                throw new Error("Ngày đăng không hợp lệ");
+            }
 
             await onSuccess({
                 ...data,
                 ...values,
-                ngayDang: values.ngayDang.toISOString(),
+                ngayDang: ngayDang.toISOString(),
             });
+            pendingUploadRef.current = null;
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleCancel = () => {
+        void cleanupPendingUpload();
+        onClose();
     };
 
     return (
         <Modal
             title={data ? "Cập nhật bài viết" : "Thêm bài viết"}
             open={open}
-            onCancel={onClose}
+            onCancel={handleCancel}
             onOk={handleSubmit}
             okText={data ? "Cập nhật" : "Tạo bài viết"}
             cancelText="Thoát"
@@ -151,4 +192,3 @@ export default function BaiVietModal({open, data, onClose, onSuccess}) {
         </Modal>
     );
 }
-

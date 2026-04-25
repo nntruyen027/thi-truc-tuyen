@@ -46,6 +46,17 @@ export function ensureUploadableFile(file) {
     return normalizedFile;
 }
 
+function normalizeUploadedFileResponse(payload = {}) {
+    const duongDan = payload.duongDan || payload.duong_dan || payload.url || "";
+
+    return {
+        ...payload,
+        duongDan,
+        duong_dan: payload.duong_dan || duongDan,
+        url: payload.url || duongDan,
+    };
+}
+
 export async function uploadFile(file, options = {}) {
     const normalizedFile = ensureUploadableFile(file);
     const access = useAuthStore.getState().access;
@@ -78,7 +89,7 @@ export async function uploadFile(file, options = {}) {
                 const payload = JSON.parse(xhr.responseText || "{}");
 
                 if (xhr.status >= 200 && xhr.status < 300 && payload.success) {
-                    resolve(payload.data);
+                    resolve(normalizeUploadedFileResponse(payload.data));
                     return;
                 }
 
@@ -102,6 +113,31 @@ export async function uploadFile(file, options = {}) {
 
         xhr.send(formData);
     });
+}
+
+export async function xoaFile(id) {
+    if (!id) {
+        return null;
+    }
+
+    const access = useAuthStore.getState().access;
+    const response = await fetch(`${API_BASE_URL}${BASE_PATH}/${id}`, {
+        method: "DELETE",
+        headers: {
+            ...(access ? {Authorization: `Bearer ${access}`} : {}),
+            ...(typeof window !== "undefined"
+                ? {"X-Workspace-Host": window.location.host}
+                : {}),
+        },
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok || payload.success === false) {
+        throw new Error(payload.message || "Không thể xóa file");
+    }
+
+    return payload.data || null;
 }
 
 

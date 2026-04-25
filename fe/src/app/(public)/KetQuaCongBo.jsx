@@ -139,6 +139,9 @@ export default function KetQuaCongBo({dotThi}) {
                     <Title level={3} className="!mb-0 !mt-1">
                         Bảng xếp hạng nổi bật
                     </Title>
+                    <Text className="!mt-2 !block !text-slate-500">
+                        Chỉ xét giải các bài đạt từ tỷ lệ đạt trở lên.
+                    </Text>
                 </div>
 
                 <Segmented
@@ -156,7 +159,7 @@ export default function KetQuaCongBo({dotThi}) {
                     <Spin size="large" />
                 </div>
             ) : !data.length ? (
-                <Empty description="Chưa có dữ liệu kết quả" />
+                <Empty description="Chưa có thí sinh đạt điều kiện xét giải" />
             ) : (
                 <div className="space-y-6">
                     <div className="grid gap-4 lg:grid-cols-3">

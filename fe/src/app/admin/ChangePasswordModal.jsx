@@ -76,6 +76,19 @@ export default function ChangePasswordModal() {
                         rules={[
                             {required: true, message: "Vui lòng nhập mật khẩu mới"},
                             {min: 6, message: "Ít nhất 6 ký tự"},
+                            ({getFieldValue}) => ({
+                                validator(_, value) {
+                                    if (!value || String(value).trim()) {
+                                        if (!value || getFieldValue("oldPassword") !== value) {
+                                            return Promise.resolve();
+                                        }
+
+                                        return Promise.reject(new Error("Mật khẩu mới không được trùng mật khẩu hiện tại"));
+                                    }
+
+                                    return Promise.reject(new Error("Mật khẩu không hợp lệ"));
+                                },
+                            }),
                         ]}
                     >
                         <Input.Password placeholder="Nhập mật khẩu mới" />

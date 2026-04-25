@@ -1,12 +1,12 @@
 'use client'
 
 import {useCallback, useEffect, useState} from "react";
-import {Button, Card, Upload} from "antd";
+import {App, Button, Card, Upload} from "antd";
 import {UploadOutlined} from "@ant-design/icons";
 
 import {usePageInfoStore} from "~/store/page-info";
 import {layCauHinh, suaCauHinh} from "~/services/cau-hinh";
-import {getPublicFileUrl, uploadFile} from "~/services/file";
+import {MAX_UPLOAD_SIZE_MB, ensureUploadableFile, getPublicFileUrl, uploadFile} from "~/services/file";
 
 
 export default function TaiLieuPage({
@@ -21,6 +21,8 @@ export default function TaiLieuPage({
 
     const [url, setUrl] =
         useState(null);
+    const {message} =
+        App.useApp();
 
     const load = useCallback(async () => {
 
@@ -65,6 +67,23 @@ export default function TaiLieuPage({
 
     const upload =
         async (file) => {
+            try {
+                const normalizedFile =
+                    ensureUploadableFile(file);
+
+                const fileName =
+                    String(normalizedFile.name || "").toLowerCase();
+                const mimeType =
+                    String(normalizedFile.type || "").toLowerCase();
+
+                if (!mimeType.includes("pdf") && !fileName.endsWith(".pdf")) {
+                    message.error("Chỉ cho phép tải lên file PDF");
+                    return Upload.LIST_IGNORE;
+                }
+            } catch (error) {
+                message.error(error?.message || `File vượt quá giới hạn ${MAX_UPLOAD_SIZE_MB}MB`);
+                return Upload.LIST_IGNORE;
+            }
 
             const res =
                 await uploadFile(
@@ -102,6 +121,7 @@ export default function TaiLieuPage({
             >
 
                 <Upload
+                    accept=".pdf,application/pdf"
                     showUploadList={false}
                     beforeUpload={upload}
                 >

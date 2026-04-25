@@ -70,6 +70,8 @@ export default function DotThiModal({
             const payload = {
 
                 ...values,
+                ten: values.ten?.trim(),
+                mo_ta: values.mo_ta?.trim(),
 
             };
 
@@ -205,9 +207,20 @@ export default function DotThiModal({
                 <Form.Item
                     name="ten"
                     label="Tên đợt thi"
-                    rules={[{ required: true }]}
+                    rules={[
+                        { required: true, message: "Vui lòng nhập tên đợt thi" },
+                        {
+                            validator: (_, value) => {
+                                if (!value || value.trim()) {
+                                    return Promise.resolve();
+                                }
+
+                                return Promise.reject(new Error("Tên đợt thi không được để trống"));
+                            },
+                        },
+                    ]}
                 >
-                    <Input />
+                    <Input maxLength={255} />
                 </Form.Item>
 
 
@@ -240,6 +253,7 @@ export default function DotThiModal({
                         >
                             <InputNumber
                                 min={1}
+                                precision={0}
                                 style={{ width: "100%" }}
                             />
                         </Form.Item>
@@ -260,6 +274,7 @@ export default function DotThiModal({
                         >
                             <InputNumber
                                 min={1}
+                                precision={0}
                                 style={{ width: "100%" }}
                             />
                         </Form.Item>
@@ -282,6 +297,7 @@ export default function DotThiModal({
                             <InputNumber
                                 min={0}
                                 max={100}
+                                precision={0}
                                 style={{ width: "100%" }}
                             />
                         </Form.Item>

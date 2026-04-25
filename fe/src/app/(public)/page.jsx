@@ -83,7 +83,7 @@ function buildTimelineItems(dsDotThi = [], currentDotThiId, colorPrimary) {
                         }}
                     />
                 ),
-                children: (
+                content: (
                     <div
                         className={`space-y-3 rounded-[22px] px-4 py-4 text-center transition-all duration-300 ${
                             isCurrent
@@ -113,12 +113,15 @@ function buildTimelineItems(dsDotThi = [], currentDotThiId, colorPrimary) {
                             </Tag>
                         </div>
 
-                        <div
-                            className="inline-flex rounded-full px-3 py-1"
-                    
-                        >
+                        <div className="inline-flex max-w-full flex-wrap items-center justify-center rounded-full px-3 py-1">
                             <Text className="!text-sm !font-medium">
-                                {dayjs(item.thoi_gian_bat_dau).format("DD/MM/YYYY")} - {dayjs(item.thoi_gian_ket_thuc).format("DD/MM/YYYY")}
+                                <span className="whitespace-nowrap">
+                                    {dayjs(item.thoi_gian_bat_dau).format("DD/MM/YYYY")}
+                                </span>
+                                <span className="px-1">-</span>
+                                <span className="whitespace-nowrap">
+                                    {dayjs(item.thoi_gian_ket_thuc).format("DD/MM/YYYY")}
+                                </span>
                             </Text>
                         </div>
                     </div>
