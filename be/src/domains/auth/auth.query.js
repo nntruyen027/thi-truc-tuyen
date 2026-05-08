@@ -19,9 +19,12 @@ function mapUser(row) {
         return null;
     }
 
+    const isSuperAdmin = row.role === "super_admin";
+    const workspaceId = isSuperAdmin ? null : row.workspace_id;
+
     return {
         id: row.id,
-        workspace_id: row.workspace_id,
+        workspace_id: workspaceId,
         username: row.username,
         password: row.password,
         ho_ten: row.ho_ten,
@@ -29,8 +32,8 @@ function mapUser(row) {
         role: row.role,
         avatar: null,
         created_at: row.created_at,
-        workspace: row.workspace_id ? {
-            id: row.workspace_id,
+        workspace: workspaceId ? {
+            id: workspaceId,
             code: row.workspace_code,
             ten: row.workspace_ten,
             slug: row.workspace_slug,
@@ -76,6 +79,17 @@ exports.getUserById = async (id) => {
 };
 
 exports.getUserByUsername = async (username, workspaceId = null) => {
+    if (!workspaceId) {
+        const superAdmin = await selectUserByCondition(and(
+            eq(users.username, username),
+            eq(users.role, "super_admin")
+        ));
+
+        if (superAdmin) {
+            return superAdmin;
+        }
+    }
+
     const scopedCondition = workspaceId
         ? and(eq(users.username, username), eq(users.workspaceId, Number(workspaceId)))
         : eq(users.username, username);
@@ -85,7 +99,6 @@ exports.getUserByUsername = async (username, workspaceId = null) => {
     if (scopedUser) {
         return scopedUser;
     }
-
     return selectUserByCondition(and(
         eq(users.username, username),
         eq(users.role, "super_admin")
@@ -93,6 +106,10 @@ exports.getUserByUsername = async (username, workspaceId = null) => {
 };
 
 exports.taoNguoiDung = async (username, pass, hoTen, donViId, workspaceId) => {
+    if (!workspaceId) {
+        throw "Không xác định được workspace cho tài khoản này.";
+    }
+
     const existing = await exports.getUserByUsername(username, workspaceId);
 
     if (existing) {
@@ -131,7 +148,7 @@ exports.saveRefresh = async (id, user, workspaceId, token, exp) => {
 exports.updatePassword = async (username, password, workspaceId = null) => {
     const condition = workspaceId
         ? and(eq(users.username, username), eq(users.workspaceId, Number(workspaceId)))
-        : eq(users.username, username);
+        : and(eq(users.username, username), eq(users.role, "super_admin"));
 
     const updated = await db
         .update(users)
@@ -147,7 +164,7 @@ exports.updatePassword = async (username, password, workspaceId = null) => {
 exports.capNhatThongTinNguoiDung = async (username, hoTen, donViId, workspaceId = null) => {
     const condition = workspaceId
         ? and(eq(users.username, username), eq(users.workspaceId, Number(workspaceId)))
-        : eq(users.username, username);
+        : and(eq(users.username, username), eq(users.role, "super_admin"));
 
     await db
         .update(users)

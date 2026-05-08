@@ -19,6 +19,7 @@ router.get("/",
             } = req.query
 
             const data = await query.layDsCuocThi(
+                requireWorkspaceId(req),
                 Number(size),
                 Number(page),
                 search,
@@ -72,6 +73,7 @@ router.get("/:id", async (req, res) => {
         const id = req.params.id;
 
         const data = await query.layCuocThiTheoId(
+            requireWorkspaceId(req),
             id
         )
 
@@ -98,6 +100,7 @@ router.post(
 
             const data =
                 await query.themCuocThi(
+                    requireWorkspaceId(req),
                     value
                 )
 
@@ -130,6 +133,7 @@ router.put(
 
             const data =
                 await query.suaCuocThi(
+                    requireWorkspaceId(req),
                     id,
                     value
                 )
@@ -163,6 +167,7 @@ router.delete(
 
             const data =
                 await query.xoaCuocThi(
+                    requireWorkspaceId(req),
                     id
                 )
 

@@ -10,7 +10,7 @@ export default function InnerLayout({ children }) {
     const router = useRouter();
     const pathname = usePathname();
 
-    const { user, setAuth, clearAuth } = useAuthStore();
+    const { setAuth, clearAuth } = useAuthStore();
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -32,23 +32,21 @@ export default function InnerLayout({ children }) {
                 return;
             }
 
-            if (!user) {
-                try {
-                    const me = await getMe();
+            try {
+                const me = await getMe();
 
-                    setAuth({
-                        access,
-                        user: me,
-                        refresh
-                    });
+                setAuth({
+                    access,
+                    user: me,
+                    refresh
+                });
 
-                } catch {
+            } catch {
 
-                    clearAuth();
+                clearAuth();
 
-                    if (!isPublic) {
-                        router.replace("/");
-                    }
+                if (!isPublic) {
+                    router.replace("/");
                 }
             }
 
@@ -56,7 +54,7 @@ export default function InnerLayout({ children }) {
         };
 
         void initAuth();
-    }, [clearAuth, pathname, router, setAuth, user]);
+    }, [clearAuth, pathname, router, setAuth]);
 
     if (loading) return null;
 

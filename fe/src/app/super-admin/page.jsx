@@ -3,7 +3,7 @@
 import {App, Button, Form, Input, Modal, Segmented, Select, Space, Table, Tag, Tooltip} from "antd";
 import {useEffect, useMemo, useState} from "react";
 import {EditOutlined} from "@ant-design/icons";
-import {capNhatWorkspace, layDanhSachWorkspace, taoWorkspace} from "~/services/workspace";
+import {capNhatWorkspace, layDanhSachWorkspace, layWorkspaceHienTai, taoWorkspace} from "~/services/workspace";
 import WorkspaceSettingsPanel from "~/app/admin/cai-dat-chung/WorkspaceSettingsPanel";
 
 export default function SuperAdminPage() {
@@ -15,6 +15,7 @@ export default function SuperAdminPage() {
     const [editing, setEditing] = useState(null);
     const [saving, setSaving] = useState(false);
     const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(undefined);
+    const [currentWorkspaceId, setCurrentWorkspaceId] = useState(undefined);
     const [mode, setMode] = useState("workspace");
 
     const workspaceOptions = useMemo(
@@ -33,11 +34,20 @@ export default function SuperAdminPage() {
     const load = async () => {
         setLoading(true);
         try {
-            const rows = await layDanhSachWorkspace();
+            const [rows, currentWorkspace] = await Promise.all([
+                layDanhSachWorkspace(),
+                layWorkspaceHienTai().catch(() => null),
+            ]);
+
             setData(rows || []);
+            setCurrentWorkspaceId(currentWorkspace?.id);
 
             if (!selectedWorkspaceId && rows?.length) {
-                setSelectedWorkspaceId(rows[0].id);
+                const preferredWorkspace =
+                    rows.find((item) => Number(item.id) === Number(currentWorkspace?.id))
+                    || rows[0];
+
+                setSelectedWorkspaceId(preferredWorkspace?.id);
             }
         } catch (error) {
             message.error(error?.message || "Không thể tải danh sách workspace");
@@ -210,7 +220,10 @@ export default function SuperAdminPage() {
                     </div>
 
                     {selectedWorkspaceId ? (
-                        <WorkspaceSettingsPanel workspaceId={selectedWorkspaceId} />
+                        <WorkspaceSettingsPanel
+                            workspaceId={selectedWorkspaceId}
+                            currentWorkspaceId={currentWorkspaceId}
+                        />
                     ) : (
                         <div className="rounded-[28px] border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">
                             Chọn một workspace để bắt đầu cấu hình tenant.

@@ -77,6 +77,9 @@ export async function uploadFile(file, options = {}) {
 
         const formData = new FormData();
         formData.append("file", normalizedFile);
+        if (options.workspaceId) {
+            formData.append("workspaceId", String(options.workspaceId));
+        }
 
         if (xhr.upload && typeof options.onUploadProgress === "function") {
             xhr.upload.onprogress = (event) => {

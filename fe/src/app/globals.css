@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --background: #fffdf4;
   --foreground: #171717;
   --workspace-primary-color: #1948be;
   --workspace-primary-rgb: 25, 72, 190;
@@ -18,7 +18,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #fffdf4;
     --foreground: #ededed;
   }
 }
@@ -26,7 +26,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
 }
 
 body.devtools-open {
@@ -49,7 +49,8 @@ body.copy-guard .ql-editor {
 }
 
 .public-font {
-  font-family: "Raleway", "Segoe UI", Arial, Helvetica, sans-serif;
+  font-family: "Aptos", "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+  letter-spacing: 0.01em;
 }
 
 .footer-rich p,
@@ -69,6 +70,24 @@ body.copy-guard .ql-editor {
   font-weight: 600;
 }
 
+.footer-rich--light a {
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.footer-rich--light strong,
+.footer-rich--light b,
+.footer-rich--light h1,
+.footer-rich--light h2,
+.footer-rich--light h3,
+.footer-rich--light h4,
+.footer-rich--light h5,
+.footer-rich--light h6 {
+  color: #ffffff;
+}
+
 .footer-rich ul,
 .footer-rich ol {
   padding-left: 1.1rem;
@@ -77,6 +96,95 @@ body.copy-guard .ql-editor {
 .footer-rich--dark a {
   color: #bfdbfe;
 }
+
+.footer-rich--muted,
+.footer-rich--muted p,
+.footer-rich--muted span,
+.footer-rich--muted div,
+.footer-rich--muted li {
+  color: #cbd5e1;
+}
+
+.footer-rich--muted a {
+  color: #e2e8f0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.footer-rich--muted strong,
+.footer-rich--muted b,
+.footer-rich--muted h1,
+.footer-rich--muted h2,
+.footer-rich--muted h3,
+.footer-rich--muted h4,
+.footer-rich--muted h5,
+.footer-rich--muted h6 {
+  color: #f1f5f9;
+}
+
+.prize-bronze-shine {
+  display: inline-block;
+  color: #f6d365;
+  -webkit-text-fill-color: transparent;
+  background-image: linear-gradient(
+    100deg,
+    #fffbe6 0%,
+    #f8dc7a 16%,
+    #f2b94b 30%,
+    #fff7cc 42%,
+    #ffffff 50%,
+    #d99a2b 62%,
+    #f0c35a 78%,
+    #fffbe6 100%
+  );
+  background-size: 240% auto;
+  background-position: 0% 50%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  line-height: 1.25;
+  padding-bottom: 0.12em;
+  overflow: visible;
+  text-shadow:
+    0 1px 0 rgba(255, 248, 214, 0.18),
+    0 0 14px rgba(255, 226, 124, 0.2),
+    0 8px 20px rgba(96, 52, 10, 0.2);
+  filter: drop-shadow(0 0 12px rgba(246, 211, 101, 0.2));
+  animation: prize-bronze-shift 2.8s linear infinite;
+  will-change: background-position, filter;
+}
+
+.prize-bronze-shine--featured {
+  background-image: linear-gradient(
+    100deg,
+    #fffef0 0%,
+    #fff1a8 14%,
+    #f8cf58 28%,
+    #fff9d9 40%,
+    #ffffff 50%,
+    #e0a531 62%,
+    #f8d876 78%,
+    #fffef0 100%
+  );
+  background-size: 260% auto;
+  animation-duration: 2.2s;
+  line-height: 1.2;
+  text-shadow:
+    0 1px 0 rgba(255, 248, 214, 0.22),
+    0 0 18px rgba(255, 228, 138, 0.24),
+    0 10px 24px rgba(96, 52, 10, 0.24);
+  filter: drop-shadow(0 0 18px rgba(246, 211, 101, 0.28));
+}
+
+@keyframes prize-bronze-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
 .hide-scrollbar::-webkit-scrollbar {
   display: none;
 }

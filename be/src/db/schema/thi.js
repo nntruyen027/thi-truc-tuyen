@@ -1,6 +1,5 @@
 const {
     boolean,
-    index,
     integer,
     pgSchema,
     real,
@@ -25,11 +24,7 @@ const cuocThi = thiSchema.table("cuoc_thi", {
     choPhepXemLaiDapAn: boolean("cho_phep_xem_lai_dap_an"),
     coTuLuan: boolean("co_tu_luan"),
     createdAt: timestamp("created_at").defaultNow(),
-}, (table) => ({
-    thoiGianRangeIdx: index("cuoc_thi_thoi_gian_range_idx").on(table.thoiGianBatDau, table.thoiGianKetThuc),
-    workspaceTenIdx: index("cuoc_thi_workspace_ten_idx").on(table.workspaceId, table.ten),
-    workspaceTimeIdx: index("cuoc_thi_workspace_thoi_gian_idx").on(table.workspaceId, table.thoiGianBatDau, table.thoiGianKetThuc),
-}));
+});
 
 const dotThi = thiSchema.table("dot_thi", {
     id: serial("id").primaryKey(),
@@ -47,13 +42,7 @@ const dotThi = thiSchema.table("dot_thi", {
     duDoan: boolean("du_doan").default(false),
     trangThai: boolean("trang_thai").default(false),
     createdAt: timestamp("created_at").defaultNow(),
-}, (table) => ({
-    cuocThiIdx: index("dot_thi_cuoc_thi_id_idx").on(table.cuocThiId),
-    thoiGianRangeIdx: index("dot_thi_thoi_gian_range_idx").on(table.thoiGianBatDau, table.thoiGianKetThuc),
-    workspaceCuocThiIdx: index("dot_thi_workspace_cuoc_thi_id_idx").on(table.workspaceId, table.cuocThiId),
-    workspaceCuocThiTenIdx: index("dot_thi_workspace_cuoc_thi_ten_idx").on(table.workspaceId, table.cuocThiId, table.ten),
-    workspaceTimeIdx: index("dot_thi_workspace_thoi_gian_idx").on(table.workspaceId, table.thoiGianBatDau, table.thoiGianKetThuc),
-}));
+});
 
 const tracNghiem = thiSchema.table("trac_nghiem", {
     id: serial("id").primaryKey(),
@@ -67,10 +56,7 @@ const tracNghiem = thiSchema.table("trac_nghiem", {
     cauD: text("caud"),
     dapAn: integer("dapan"),
     diem: integer("diem"),
-}, (table) => ({
-    linhVucNhomIdx: index("trac_nghiem_linh_vuc_nhom_idx").on(table.linhVucId, table.nhomId),
-    workspaceLinhVucNhomIdx: index("trac_nghiem_workspace_linh_vuc_nhom_idx").on(table.workspaceId, table.linhVucId, table.nhomId),
-}));
+});
 
 const tracNghiemDotThi = thiSchema.table("trac_nghiem_dot_thi", {
     id: serial("id").primaryKey(),
@@ -79,10 +65,7 @@ const tracNghiemDotThi = thiSchema.table("trac_nghiem_dot_thi", {
     linhVucId: integer("linh_vuc_id"),
     nhomId: integer("nhom_id"),
     soLuong: integer("so_luong"),
-}, (table) => ({
-    dotThiIdx: index("trac_nghiem_dot_thi_dot_thi_id_idx").on(table.dotThiId),
-    workspaceDotThiIdx: index("trac_nghiem_dot_thi_workspace_dot_thi_id_idx").on(table.workspaceId, table.dotThiId),
-}));
+});
 
 const tuLuanDotThi = thiSchema.table("tu_luan_dot_thi", {
     id: serial("id").primaryKey(),
@@ -90,10 +73,7 @@ const tuLuanDotThi = thiSchema.table("tu_luan_dot_thi", {
     dotThiId: integer("dot_thi_id"),
     cauHoi: text("cau_hoi"),
     goiY: text("goi_y").default(""),
-}, (table) => ({
-    dotThiIdx: index("tu_luan_dot_thi_dot_thi_id_idx").on(table.dotThiId),
-    workspaceDotThiIdx: index("tu_luan_dot_thi_workspace_dot_thi_id_idx").on(table.workspaceId, table.dotThiId),
-}));
+});
 
 const deThi = thiSchema.table("de_thi", {
     id: serial("id").primaryKey(),
@@ -103,19 +83,14 @@ const deThi = thiSchema.table("de_thi", {
     lanThi: integer("lan_thi"),
     thoiGianTao: timestamp("thoi_gian_tao").defaultNow(),
     trangThai: integer("trang_thai").default(0),
-}, (table) => ({
-    dotThiThiSinhIdx: index("de_thi_dot_thi_thi_sinh_idx").on(table.dotThiId, table.thiSinhId),
-    workspaceDotThiThiSinhIdx: index("de_thi_workspace_dot_thi_thi_sinh_idx").on(table.workspaceId, table.dotThiId, table.thiSinhId),
-}));
+});
 
 const deThiCauHoi = thiSchema.table("de_thi_cau_hoi", {
     id: serial("id").primaryKey(),
     deThiId: integer("de_thi_id"),
     cauHoiId: integer("cau_hoi_id"),
     thuTu: integer("thu_tu"),
-}, (table) => ({
-    deThiThuTuIdx: index("de_thi_cau_hoi_de_thi_thu_tu_idx").on(table.deThiId, table.thuTu),
-}));
+});
 
 const baiThi = thiSchema.table("bai_thi", {
     id: serial("id").primaryKey(),
@@ -131,12 +106,7 @@ const baiThi = thiSchema.table("bai_thi", {
     lanBatDau: timestamp("lan_bat_dau"),
     dangLam: boolean("dang_lam").default(false),
     soDuDoan: integer("so_du_doan"),
-}, (table) => ({
-    thiSinhTrangThaiIdx: index("bai_thi_thi_sinh_trang_thai_idx").on(table.thiSinhId, table.trangThai),
-    deThiIdx: index("bai_thi_de_thi_id_idx").on(table.deThiId),
-    thiSinhTrangThaiDeThiIdx: index("bai_thi_thi_sinh_trang_thai_de_thi_idx").on(table.thiSinhId, table.trangThai, table.deThiId),
-    workspaceThiSinhTrangThaiDeThiIdx: index("bai_thi_workspace_thi_sinh_trang_thai_de_thi_idx").on(table.workspaceId, table.thiSinhId, table.trangThai, table.deThiId),
-}));
+});
 
 const baiThiChiTiet = thiSchema.table(
     "bai_thi_chi_tiet",

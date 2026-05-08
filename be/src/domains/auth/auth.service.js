@@ -131,6 +131,10 @@ exports.register = async (
             salt
         )
 
+    if (!workspace?.id) {
+        throw "Không xác định được workspace hiện tại."
+    }
+
     return await query.taoNguoiDung(
         username,
         hash,

@@ -11,6 +11,7 @@ export default function BannerEditor({
     khoa,
     aspectRatio = "16/9",
     workspaceId = null,
+    disabled = false,
 }) {
     const {message} = App.useApp();
     const [image, setImage] = useState("");
@@ -23,7 +24,13 @@ export default function BannerEditor({
             try {
                 const res = await layCauHinh(khoa, {workspaceId});
 
-                if (!active || !res?.data?.gia_tri) {
+                if (!active) {
+                    return;
+                }
+
+                if (!res?.data?.gia_tri) {
+                    setImage("");
+                    setZoom(1);
                     return;
                 }
 
@@ -58,7 +65,7 @@ export default function BannerEditor({
 
     const handleUpload = async (file) => {
         try {
-            const res = await uploadFile(file);
+            const res = await uploadFile(file, {workspaceId});
             const duongDan = res?.duongDan || res?.duong_dan || res?.url || "";
 
             setImage(duongDan);
@@ -96,8 +103,9 @@ export default function BannerEditor({
                     showUploadList={false}
                     beforeUpload={handleUpload}
                     accept=".png,.jpg,.jpeg,.webp"
+                    disabled={disabled}
                 >
-                    <Button icon={<UploadOutlined/>}>
+                    <Button icon={<UploadOutlined/>} disabled={disabled}>
                         Tải ảnh
                     </Button>
                 </Upload>
@@ -145,6 +153,7 @@ export default function BannerEditor({
                     step={0.1}
                     value={zoom}
                     onChange={changeZoom}
+                    disabled={disabled || !image}
                 />
             </div>
         </Card>

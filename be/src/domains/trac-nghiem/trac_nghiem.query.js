@@ -51,6 +51,10 @@ function isMissingWorkspaceColumnError(error) {
     return message.includes("workspace_id") && message.includes("does not exist");
 }
 
+function hasWorkspaceColumn(table) {
+    return Boolean(table?.workspaceId);
+}
+
 async function ensureDanhMucThuocWorkspace(workspaceId, linhVucId, nhomId) {
     let linhVucRow;
     let nhomRow;
@@ -155,13 +159,22 @@ async function getById(workspaceId, id) {
 
 exports.layDsTracNghiem = async (workspaceId, size, page, search, sortField, sortType) => {
     const paging = normalizePagination({page, size});
-    const clauses = [eq(tracNghiem.workspaceId, Number(workspaceId))];
+    const clauses = [];
+
+    if (hasWorkspaceColumn(tracNghiem)) {
+        clauses.push(eq(tracNghiem.workspaceId, Number(workspaceId)));
+    }
 
     if (search?.trim()) {
         clauses.push(ilike(tracNghiem.cauHoi, `%${search.trim()}%`));
     }
 
-    const where = and(...clauses);
+    const where =
+        clauses.length === 0
+            ? undefined
+            : clauses.length === 1
+                ? clauses[0]
+                : and(...clauses);
 
     const sort = resolveSort({
         sortField,
@@ -215,8 +228,8 @@ exports.layDsTracNghiem = async (workspaceId, size, page, search, sortField, sor
 
     try {
         [rows, totalRows] = await Promise.all([
-            rowsQuery.where(where),
-            totalQuery.where(where),
+            where ? rowsQuery.where(where) : rowsQuery,
+            where ? totalQuery.where(where) : totalQuery,
         ]);
     } catch (error) {
         if (!isMissingWorkspaceColumnError(error)) {
@@ -290,20 +303,25 @@ exports.themTracNghiem = async (
 ) => {
     await ensureDanhMucThuocWorkspace(workspaceId, linh_vuc_id, nhom_id);
 
+    const values = {
+        linhVucId: linh_vuc_id,
+        nhomId: nhom_id,
+        cauHoi: cau_hoi,
+        cauA,
+        cauB,
+        cauC,
+        cauD,
+        dapAn,
+        diem,
+    };
+
+    if (hasWorkspaceColumn(tracNghiem)) {
+        values.workspaceId = Number(workspaceId);
+    }
+
     const [created] = await db
         .insert(tracNghiem)
-        .values({
-            workspaceId: Number(workspaceId),
-            linhVucId: linh_vuc_id,
-            nhomId: nhom_id,
-            cauHoi: cau_hoi,
-            cauA,
-            cauB,
-            cauC,
-            cauD,
-            dapAn,
-            diem,
-        })
+        .values(values)
         .returning({id: tracNghiem.id});
 
     return getById(workspaceId, created.id);
@@ -337,10 +355,14 @@ exports.suaTracNghiem = async (
             dapAn,
             diem,
         })
-        .where(and(
-            eq(tracNghiem.workspaceId, Number(workspaceId)),
-            eq(tracNghiem.id, Number(id))
-        ))
+        .where(
+            hasWorkspaceColumn(tracNghiem)
+                ? and(
+                    eq(tracNghiem.workspaceId, Number(workspaceId)),
+                    eq(tracNghiem.id, Number(id))
+                )
+                : eq(tracNghiem.id, Number(id))
+        )
         .returning({id: tracNghiem.id});
 
     if (!updated) {
@@ -353,10 +375,14 @@ exports.suaTracNghiem = async (
 exports.xoaTracNghiem = async (workspaceId, id) => {
     await db
         .delete(tracNghiem)
-        .where(and(
-            eq(tracNghiem.workspaceId, Number(workspaceId)),
-            eq(tracNghiem.id, Number(id))
-        ));
+        .where(
+            hasWorkspaceColumn(tracNghiem)
+                ? and(
+                    eq(tracNghiem.workspaceId, Number(workspaceId)),
+                    eq(tracNghiem.id, Number(id))
+                )
+                : eq(tracNghiem.id, Number(id))
+        );
 
     return true;
 };
@@ -369,20 +395,25 @@ exports.themTracNghiemImport = async (workspaceId, r) => {
         D: 4,
     }[String(r["Đáp án"] || "").toUpperCase()] || null;
 
+    const values = {
+        cauHoi: r["Câu hỏi"],
+        cauA: r["Câu a"],
+        cauB: r["Câu b"],
+        cauC: r["Câu c"],
+        cauD: r["Câu d"],
+        dapAn,
+        linhVucId: r["Lĩnh vực"],
+        nhomId: r["Nhóm"],
+        diem: r["Điểm mặc định"],
+    };
+
+    if (hasWorkspaceColumn(tracNghiem)) {
+        values.workspaceId = Number(workspaceId);
+    }
+
     await db
         .insert(tracNghiem)
-        .values({
-            workspaceId: Number(workspaceId),
-            cauHoi: r["Câu hỏi"],
-            cauA: r["Câu a"],
-            cauB: r["Câu b"],
-            cauC: r["Câu c"],
-            cauD: r["Câu d"],
-            dapAn,
-            linhVucId: r["Lĩnh vực"],
-            nhomId: r["Nhóm"],
-            diem: r["Điểm mặc định"],
-        });
+        .values(values);
 
     return {ok: true};
 };

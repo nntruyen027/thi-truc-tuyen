@@ -2,11 +2,13 @@
 
 import {useEffect, useState} from "react";
 import {Card, theme} from "antd";
+import {alphaColor, darkenColor} from "~/utils/workspaceTheme";
 
 export default function CountDown({time}) {
 
     const {token} = theme.useToken();
     const {colorPrimary} = token;
+    const titleBackground = darkenColor(colorPrimary, 0.18);
     const [t, setT] = useState(time);
 
     useEffect(() => {
@@ -101,23 +103,31 @@ export default function CountDown({time}) {
 
 
     return (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white text-center shadow-sm">
+        <div
+            className="overflow-hidden rounded-[10px]! border bg-white text-center shadow-[0_22px_50px_rgba(15,23,42,0.10)]"
+            style={{borderColor: alphaColor(colorPrimary, 0.14)}}
+        >
             <h3 style={{
-                background: colorPrimary,
+                background: titleBackground,
                 margin: '0'
             }} className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white md:text-base">
                 Thời gian còn lại của cuộc thi
             </h3>
 
             <div
-                className="grid grid-cols-2 gap-3 bg-slate-100 p-4 md:grid-cols-4"
+                className="grid grid-cols-2 gap-3 p-4 md:grid-cols-4"
+                style={{background: alphaColor(colorPrimary, 0.05)}}
             >
                 {blocks.map((block) => (
                     <Card
                         key={block.label}
                         styles={{body: {padding: 14}}}
-                        className="w-full rounded-2xl border-none text-center shadow-sm"
-                        style={{color: colorPrimary}}
+                        className="w-full rounded-[16px] text-center shadow-sm"
+                        style={{
+                            color: colorPrimary,
+                            borderColor: alphaColor(colorPrimary, 0.1),
+                            background: "#ffffff",
+                        }}
                     >
                         <div style={{fontFamily: "Roboto", fontSize: 40, lineHeight: 1}}>{block.value}</div>
                         <div className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">

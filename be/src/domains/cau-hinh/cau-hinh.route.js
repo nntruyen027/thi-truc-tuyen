@@ -5,6 +5,30 @@ const auth = require("../../core/middlewares/auth");
 const role = require("../../core/middlewares/role");
 const jwtUtil = require("../../core/utils/jwt");
 
+const FILE_SCOPED_KEYS = new Set([
+    "favicon",
+    "banner_desktop",
+    "banner_mobile",
+    "ke_hoach",
+    "the_le",
+    "document",
+]);
+
+const TENANT_SCOPED_KEYS = new Set([
+    "theme_settings",
+    "favicon",
+    "banner_desktop",
+    "banner_mobile",
+    "footer_meta",
+    "left_footer",
+    "right_footer",
+    "van-ban-ban-quyen",
+    "ke_hoach",
+    "the_le",
+    "document",
+    "giai_thuong_cuoc_thi",
+]);
+
 function attachOptionalUser(req) {
     const header = req.headers.authorization;
 
@@ -21,7 +45,7 @@ function attachOptionalUser(req) {
     }
 }
 
-function resolveConfigWorkspaceId(req) {
+function resolveConfigWorkspaceId(req, khoa = "") {
     const requestedWorkspaceId =
         req.query?.workspaceId
         || req.body?.workspaceId
@@ -29,6 +53,10 @@ function resolveConfigWorkspaceId(req) {
 
     if (req.user?.role === "super_admin" && requestedWorkspaceId) {
         return Number(requestedWorkspaceId);
+    }
+
+    if (TENANT_SCOPED_KEYS.has(khoa) && req.workspace?.id) {
+        return Number(req.workspace.id);
     }
 
     if (req.user?.workspace_id) {
@@ -42,6 +70,24 @@ function resolveConfigWorkspaceId(req) {
     return null;
 }
 
+function ensureSuperAdminMediaWorkspaceMatch(req, khoa, workspaceId) {
+    if (!FILE_SCOPED_KEYS.has(khoa)) {
+        return;
+    }
+
+    if (req.user?.role !== "super_admin") {
+        return;
+    }
+
+    if (!workspaceId || !req.workspace?.id) {
+        return;
+    }
+
+    if (Number(workspaceId) !== Number(req.workspace.id)) {
+        throw "Chỉ được cập nhật media cho workspace đang truy cập hiện tại. Hãy mở đúng domain của workspace rồi tải lại file.";
+    }
+}
+
 router.get("/:khoa", async (req, res) => {
     try {
         const { khoa } = req.params;
@@ -49,7 +95,7 @@ router.get("/:khoa", async (req, res) => {
 
         const data = await query.layCauHinh(
             khoa,
-            resolveConfigWorkspaceId(req)
+            resolveConfigWorkspaceId(req, khoa)
         );
 
         resUtil.ok(res, data);
@@ -62,11 +108,14 @@ router.post("/:khoa", auth, role(["admin"]), async (req, res) => {
     try {
         const { khoa } = req.params;
         const { giaTri } = req.body;
+        const workspaceId = resolveConfigWorkspaceId(req, khoa);
+
+        ensureSuperAdminMediaWorkspaceMatch(req, khoa, workspaceId);
 
         const data = await query.suaCauHinh(
             khoa,
             giaTri,
-            resolveConfigWorkspaceId(req)
+            workspaceId
         );
 
         resUtil.ok(res, data);

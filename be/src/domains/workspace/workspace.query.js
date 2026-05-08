@@ -1,6 +1,10 @@
 const { and, asc, eq, ne } = require("drizzle-orm");
 const db = require("../../db/client");
 const { workspaceDomains, workspaceSettings, workspaces } = require("../../db/schema");
+const {
+    extractWorkspaceHostname,
+    normalizeWorkspaceHost,
+} = require("../../core/utils/workspace");
 
 function mapWorkspace(row) {
     if (!row) {
@@ -80,7 +84,9 @@ exports.getWorkspaceByCode = async (code) => {
 };
 
 exports.getWorkspaceByHost = async (host) => {
-    const [row] = await db
+    const normalizedHost = normalizeWorkspaceHost(host);
+    const normalizedHostname = extractWorkspaceHostname(host);
+    const rows = await db
         .select({
             id: workspaces.id,
             code: workspaces.code,
@@ -94,26 +100,39 @@ exports.getWorkspaceByHost = async (host) => {
         })
         .from(workspaceDomains)
         .innerJoin(workspaces, eq(workspaceDomains.workspaceId, workspaces.id))
-        .where(eq(workspaceDomains.domain, host))
-        .limit(1);
+        .where(eq(workspaceDomains.isPrimary, true));
 
-    return mapWorkspace(row);
+    const exactMatched = rows.find((row) =>
+        normalizeWorkspaceHost(row.primary_domain) === normalizedHost
+    );
+
+    if (exactMatched) {
+        return mapWorkspace(exactMatched);
+    }
+
+    const hostnameMatched = rows.find((row) =>
+        extractWorkspaceHostname(row.primary_domain) === normalizedHostname
+    );
+
+    return mapWorkspace(hostnameMatched);
 };
 
 exports.ensureDomainAvailable = async (domain, excludeWorkspaceId = null) => {
-    const conditions = [eq(workspaceDomains.domain, domain)];
+    const normalizedDomain = normalizeWorkspaceHost(domain);
+    const conditions = [];
 
     if (excludeWorkspaceId) {
         conditions.push(ne(workspaceDomains.workspaceId, Number(excludeWorkspaceId)));
     }
 
-    const [row] = await db
-        .select({ id: workspaceDomains.id })
+    const rows = await db
+        .select({ id: workspaceDomains.id, domain: workspaceDomains.domain })
         .from(workspaceDomains)
-        .where(and(...conditions))
-        .limit(1);
+        .where(conditions.length ? and(...conditions) : undefined);
 
-    return !row;
+    return !rows.some((row) =>
+        normalizeWorkspaceHost(row.domain) === normalizedDomain
+    );
 };
 
 exports.ensureWorkspaceCodeAvailable = async (code, excludeId = null) => {
@@ -172,6 +191,7 @@ exports.listWorkspaces = async () => {
 };
 
 exports.createWorkspace = async ({ code, ten, slug, domain, status = "active" }) => {
+    const normalizedDomain = normalizeWorkspaceHost(domain);
     const [workspace] = await db
         .insert(workspaces)
         .values({
@@ -185,7 +205,7 @@ exports.createWorkspace = async ({ code, ten, slug, domain, status = "active" })
 
     await db.insert(workspaceDomains).values({
         workspaceId: workspace.id,
-        domain,
+        domain: normalizedDomain,
         isPrimary: true,
     });
 
@@ -193,6 +213,7 @@ exports.createWorkspace = async ({ code, ten, slug, domain, status = "active" })
 };
 
 exports.updateWorkspace = async (id, { ten, slug, status, domain }) => {
+    const normalizedDomain = normalizeWorkspaceHost(domain);
     await db
         .update(workspaces)
         .set({
@@ -215,12 +236,12 @@ exports.updateWorkspace = async (id, { ten, slug, status, domain }) => {
     if (existingDomain) {
         await db
             .update(workspaceDomains)
-            .set({ domain })
+            .set({ domain: normalizedDomain })
             .where(eq(workspaceDomains.id, existingDomain.id));
     } else {
         await db.insert(workspaceDomains).values({
             workspaceId: Number(id),
-            domain,
+            domain: normalizedDomain,
             isPrimary: true,
         });
     }

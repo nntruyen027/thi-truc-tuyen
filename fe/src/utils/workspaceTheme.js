@@ -58,6 +58,32 @@ export function alphaColor(value, alpha) {
     return `rgba(${hexToRgbString(value)}, ${alpha})`;
 }
 
+export function darkenColor(value, amount = 0.18) {
+    const color = normalizePrimaryColor(value).replace("#", "");
+    const ratio = Math.min(Math.max(Number(amount) || 0, 0), 1);
+
+    const channels = [
+        Number.parseInt(color.slice(0, 2), 16),
+        Number.parseInt(color.slice(2, 4), 16),
+        Number.parseInt(color.slice(4, 6), 16),
+    ].map((channel) => Math.max(0, Math.round(channel * (1 - ratio))));
+
+    return `#${channels.map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
+}
+
+export function lightenColor(value, amount = 0.18) {
+    const color = normalizePrimaryColor(value).replace("#", "");
+    const ratio = Math.min(Math.max(Number(amount) || 0, 0), 1);
+
+    const channels = [
+        Number.parseInt(color.slice(0, 2), 16),
+        Number.parseInt(color.slice(2, 4), 16),
+        Number.parseInt(color.slice(4, 6), 16),
+    ].map((channel) => Math.min(255, Math.round(channel + ((255 - channel) * ratio))));
+
+    return `#${channels.map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
+}
+
 export function parseMediaConfig(rawValue) {
     if (!rawValue) {
         return {

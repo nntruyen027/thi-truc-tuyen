@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import {layCauHinh} from "~/services/cau-hinh";
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import {getPublicFileUrl} from "~/services/file";
 import {layDotThiHienTai, layDotThi} from "~/services/thi/dot-thi";
-import {Button, Card, Col, Flex, Row, Tag, Timeline, Typography, theme} from "antd";
-import {LaptopOutlined, ProfileOutlined, TeamOutlined} from "@ant-design/icons";
+import {Button, Card, Col, Flex, QRCode, Row, Typography, theme} from "antd";
+import {CheckCircleFilled, ClockCircleFilled, LaptopOutlined, ProfileOutlined, TeamOutlined} from "@ant-design/icons";
 import dayjs from "dayjs";
 import {layLuotThiHienTai, layThoiGianConLaiCuaCuocThi} from "~/services/thi/cuoc-thi";
 import CountDown from "~/app/(public)/CountDown";
@@ -15,8 +15,7 @@ import KetQuaCongBo from "~/app/(public)/KetQuaCongBo";
 import Reveal from "~/app/components/common/Reveal";
 import {useAuthStore} from "~/store/auth";
 import {parseCuocThiMeta} from "~/utils/cuocThiMeta";
-import {alphaColor, parseMediaConfig} from "~/utils/workspaceTheme";
-import BaiVietCuocThi from "~/app/(public)/BaiVietCuocThi";
+import {alphaColor, darkenColor, lightenColor, parseMediaConfig} from "~/utils/workspaceTheme";
 import TaiLieuTongHop from "~/app/(public)/TaiLieuTongHop";
 import GiaiThuongCuocThi from "~/app/(public)/GiaiThuongCuocThi";
 
@@ -25,28 +24,32 @@ const SO_LUOT_THI_TOI_THIEU = 132;
 
 const tabItems = [
     {
-        key: "bai-viet",
-        label: "Bài viết",
+        key: "thong-tin",
+        title: "Thông tin",
+        subtitle: "Cuộc thi",
         image: "/schedule.png",
     },
     {
         key: "giai-thuong",
-        label: "Giải thưởng",
+        title: "Giải thưởng",
+        subtitle: "Cơ cấu trao giải",
         image: "/medal.png",
     },
     {
         key: "document",
-        label: "Tài liệu",
+        title: "Tài liệu",
+        subtitle: "Tham khảo cuộc thi",
         image: "/documentation.png",
     },
     {
         key: "ket-qua",
-        label: "Kết quả",
+        title: "Kết quả",
+        subtitle: "Công bố xếp hạng",
         image: "/medal.png",
     },
 ];
 
-function buildTimelineItems(dsDotThi = [], currentDotThiId, colorPrimary) {
+function buildTimelineStages(dsDotThi = [], currentDotThiId) {
     const now = dayjs();
 
     return [...dsDotThi]
@@ -56,78 +59,189 @@ function buildTimelineItems(dsDotThi = [], currentDotThiId, colorPrimary) {
             const isFinished = dayjs(item.thoi_gian_ket_thuc).isBefore(now);
             const isUpcoming = dayjs(item.thoi_gian_bat_dau).isAfter(now);
 
-            let color = colorPrimary;
             let status = "Đang diễn ra";
+            let tone = "active";
 
             if (isFinished) {
-                color = "gray";
                 status = "Đã kết thúc";
+                tone = "done";
             } else if (isUpcoming) {
-                color = colorPrimary;
                 status = "Sắp diễn ra";
+                tone = "upcoming";
             } else if (isCurrent) {
-                color = colorPrimary;
                 status = "Đang diễn ra";
+                tone = "current";
             }
 
             return {
-                color,
-                dot: (
-                    <span
-                        className={`timeline-highlight-dot ${isCurrent ? "timeline-highlight-dot--active" : ""} ${isFinished ? "timeline-highlight-dot--finished" : ""}`}
-                        style={{
-                            "--timeline-dot-color": isFinished ? "#94a3b8" : colorPrimary,
-                            "--timeline-dot-shadow": isCurrent
-                                ? `0 0 0 6px ${alphaColor(colorPrimary, 0.16)}`
-                                : "0 0 0 4px rgba(148,163,184,0.10)",
-                        }}
-                    />
-                ),
-                content: (
-                    <div
-                        className={`space-y-3 rounded-[22px] px-4 py-4 text-center transition-all duration-300 ${
-                            isCurrent
-                                ? "bg-white"
-                                : "bg-transparent"
-                        }`}
-                        style={isCurrent ? {boxShadow: `0 18px 40px ${alphaColor(colorPrimary, 0.12)}`} : undefined}
-                    >
-                        <div className="flex flex-col items-center gap-2">
-                            <Text
-                                className="!text-base !font-semibold !text-slate-900"
-                                style={isCurrent ? {color: colorPrimary} : undefined}
-                            >
-                                {item.ten}
-                            </Text>
-
-                            <Tag
-                                color={isFinished ? "default" : isUpcoming ? "error" : undefined}
-                                className="!rounded-full !px-3 !py-1 !text-sm"
-                                style={isCurrent ? {
-                                    color: colorPrimary,
-                                    borderColor: alphaColor(colorPrimary, 0.28),
-                                    backgroundColor: alphaColor(colorPrimary, 0.12),
-                                } : undefined}
-                            >
-                                {status}
-                            </Tag>
-                        </div>
-
-                        <div className="inline-flex max-w-full flex-wrap items-center justify-center rounded-full px-3 py-1">
-                            <Text className="!text-sm !font-medium">
-                                <span className="whitespace-nowrap">
-                                    {dayjs(item.thoi_gian_bat_dau).format("DD/MM/YYYY")}
-                                </span>
-                                <span className="px-1">-</span>
-                                <span className="whitespace-nowrap">
-                                    {dayjs(item.thoi_gian_ket_thuc).format("DD/MM/YYYY")}
-                                </span>
-                            </Text>
-                        </div>
-                    </div>
-                )
+                id: item.id,
+                ten: item.ten,
+                status,
+                tone,
+                isCurrent,
+                thoiGianBatDau: item.thoi_gian_bat_dau,
+                thoiGianKetThuc: item.thoi_gian_ket_thuc,
             };
         });
+}
+
+function formatLongVietnameseDate(value) {
+    if (!value) {
+        return "";
+    }
+
+    const date = dayjs(value);
+
+    if (!date.isValid()) {
+        return "";
+    }
+
+    return `ngày ${date.date()} tháng ${date.month() + 1} năm ${date.year()}`;
+}
+
+function ContestTimeline({items, colorPrimary}) {
+    if (!items.length) {
+        return null;
+    }
+
+    return (
+        <div
+            className="grid gap-4 md:gap-5"
+            style={{
+                gridTemplateColumns: items.length > 1 ? `repeat(${items.length}, minmax(0, 1fr))` : "minmax(0, 1fr)",
+            }}
+        >
+            {items.map((item, index) => {
+                const isDone = item.tone === "done";
+                const isCurrent = item.tone === "current";
+                const accentColor = isDone ? "#94a3b8" : colorPrimary;
+
+                return (
+                    <div key={item.id} className="relative min-w-0">
+                        {index > 0 ? (
+                            <div
+                                className="pointer-events-none absolute left-0 right-1/2 top-6 hidden h-[2px] md:block"
+                                style={{
+                                    background: `linear-gradient(90deg, ${alphaColor(colorPrimary, 0.08)} 0%, ${alphaColor(accentColor, 0.24)} 100%)`,
+                                }}
+                            />
+                        ) : null}
+
+                        {index < items.length - 1 ? (
+                            <div
+                                className="pointer-events-none absolute left-1/2 right-0 top-6 hidden h-[2px] md:block"
+                                style={{
+                                    background: `linear-gradient(90deg, ${alphaColor(accentColor, 0.24)} 0%, ${alphaColor(colorPrimary, 0.08)} 100%)`,
+                                }}
+                            />
+                        ) : null}
+
+                        <div className="flex items-start gap-4 md:flex-col md:items-stretch md:gap-3">
+                            <div className="relative z-[1] pt-1 md:flex md:w-full md:justify-center md:pt-0">
+                                <div
+                                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-4 bg-white text-lg md:h-12 md:w-12"
+                                    style={{
+                                        borderColor: isDone ? "#cbd5e1" : isCurrent ? colorPrimary : alphaColor(colorPrimary, 0.22),
+                                        color: isDone ? "#64748b" : colorPrimary,
+                                        boxShadow: isCurrent ? `0 10px 24px ${alphaColor(colorPrimary, 0.16)}` : undefined,
+                                    }}
+                                >
+                                    {isDone ? <CheckCircleFilled /> : <ClockCircleFilled />}
+                                </div>
+                            </div>
+
+                            <div
+                                className="relative min-h-[170px] min-w-0 flex-1 rounded-[24px] border bg-white px-4 py-4 transition-all duration-300 md:px-5"
+                                style={{
+                                    borderColor: isCurrent ? alphaColor(colorPrimary, 0.34) : alphaColor(accentColor, 0.14),
+                                    boxShadow: isCurrent ? `0 16px 32px ${alphaColor(colorPrimary, 0.12)}` : undefined,
+                                }}
+                            >
+                                <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div
+                                        className="text-sm font-semibold uppercase tracking-[0.14em]"
+                                        style={{color: isDone ? "#64748b" : colorPrimary}}
+                                    >
+                                        Đợt {index + 1}
+                                    </div>
+                                    <div
+                                        className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]"
+                                        style={{
+                                            background: isDone ? "rgba(148,163,184,0.12)" : alphaColor(colorPrimary, isCurrent ? 0.14 : 0.08),
+                                            color: isDone ? "#64748b" : colorPrimary,
+                                            border: `1px solid ${isDone ? "rgba(148,163,184,0.18)" : alphaColor(colorPrimary, isCurrent ? 0.2 : 0.12)}`,
+                                        }}
+                                    >
+                                        {item.status}
+                                    </div>
+                                </div>
+
+                                <div className="mt-4 space-y-3">
+                                    <div
+                                        className="text-lg font-bold md:text-xl"
+                                        style={{color: isDone ? "#334155" : isCurrent ? colorPrimary : "#0f172a"}}
+                                    >
+                                        {item.ten}
+                                    </div>
+
+                                    <div className="space-y-2 rounded-2xl border px-4 py-3 text-sm text-slate-600" style={{borderColor: alphaColor(accentColor, 0.12)}}>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <span className="font-medium text-slate-500">Bắt đầu</span>
+                                            <span className="font-semibold text-slate-900">
+                                                {dayjs(item.thoiGianBatDau).format("DD/MM/YYYY")}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <span className="font-medium text-slate-500">Kết thúc</span>
+                                            <span className="font-semibold text-slate-900">
+                                                {dayjs(item.thoiGianKetThuc).format("DD/MM/YYYY")}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
+function SectionDivider({colorPrimary}) {
+    return (
+        <div className="flex items-center justify-center py-1 md:py-1.5" aria-hidden="true">
+            <div className="flex w-full max-w-3xl items-center gap-4 md:gap-5">
+                <div
+                    className="h-px flex-1"
+                    style={{
+                        background: `linear-gradient(90deg, transparent 0%, ${alphaColor(colorPrimary, 0.24)} 100%)`,
+                    }}
+                />
+                <div
+                    className="flex h-10 w-10 items-center justify-center rounded-full border"
+                    style={{
+                        borderColor: alphaColor(colorPrimary, 0.22),
+                        background: `radial-gradient(circle, ${alphaColor(colorPrimary, 0.16)} 0%, ${alphaColor(colorPrimary, 0.06)} 55%, rgba(255,255,255,0.95) 100%)`,
+                        boxShadow: `0 8px 20px ${alphaColor(colorPrimary, 0.1)}`,
+                    }}
+                >
+                    <div
+                        className="h-2.5 w-2.5 rotate-45 rounded-[4px]"
+                        style={{
+                            background: `linear-gradient(135deg, ${lightenColor(colorPrimary, 0.22)} 0%, ${colorPrimary} 100%)`,
+                        }}
+                    />
+                </div>
+                <div
+                    className="h-px flex-1"
+                    style={{
+                        background: `linear-gradient(90deg, ${alphaColor(colorPrimary, 0.24)} 0%, transparent 100%)`,
+                    }}
+                />
+            </div>
+        </div>
+    );
 }
 
 export default function Page() {
@@ -136,12 +250,21 @@ export default function Page() {
     const [dotThi, setDotThi] = useState(null);
     const [thoiGianConLai, setThoiGianConLai] = useState(null);
     const [tongLuotThi, setTongLuotThi] = useState(SO_LUOT_THI_TOI_THIEU);
-    const [tab, setTab] = useState("bai-viet");
     const [dsDotThi, setDsDotThi] = useState([]);
     const [isMobileViewport, setIsMobileViewport] = useState(false);
+    const [activeSection, setActiveSection] = useState("thong-tin");
+    const [compactTicker, setCompactTicker] = useState(false);
+    const [qrValue, setQrValue] = useState("");
+    const sectionRefs = useRef({
+        "thong-tin": null,
+        "giai-thuong": null,
+        "document": null,
+        "ket-qua": null,
+    });
 
     const {token} = theme.useToken();
     const {colorPrimary} = token;
+    const deepPrimary = darkenColor(colorPrimary, 0.18);
     const route = useRouter();
     const user = useAuthStore((state) => state.user);
 
@@ -150,8 +273,8 @@ export default function Page() {
         [dotThi?.cuoc_thi?.mo_ta]
     );
     const timelineItems = useMemo(
-        () => buildTimelineItems(dsDotThi, dotThi?.id, colorPrimary),
-        [colorPrimary, dotThi?.id, dsDotThi]
+        () => buildTimelineStages(dsDotThi, dotThi?.id),
+        [dotThi?.id, dsDotThi]
     );
 
     const infoCards = [
@@ -216,6 +339,11 @@ export default function Page() {
                     setImage(val.duongDan || val.url || "");
                     setZoom(val.zoom || 1);
                 });
+            } else {
+                applyIfActive(() => {
+                    setImage(null);
+                    setZoom(1);
+                });
             }
 
             if (dotThiResult.status === "fulfilled" && dotThiResult.value?.data) {
@@ -250,7 +378,7 @@ export default function Page() {
             if (luotThiResult.status === "fulfilled") {
                 applyIfActive(() => {
                     setTongLuotThi(
-                        Math.max(Number(luotThiResult.value?.data || 0), SO_LUOT_THI_TOI_THIEU)
+                        Number(luotThiResult.value?.data || 0)
                     );
                 });
             }
@@ -268,6 +396,50 @@ export default function Page() {
             active = false;
             window.removeEventListener("resize", onResize);
         };
+    }, []);
+
+    useEffect(() => {
+        const updateTickerState = () => {
+            const stickyTrigger = isMobileViewport ? 220 : 260;
+            setCompactTicker(window.scrollY > stickyTrigger);
+
+            const offsets = tabItems.map((item) => {
+                const node = sectionRefs.current[item.key];
+
+                if (!node) {
+                    return null;
+                }
+
+                return {
+                    key: item.key,
+                    top: node.getBoundingClientRect().top + window.scrollY,
+                };
+            }).filter(Boolean);
+
+            const current =
+                [...offsets]
+                    .reverse()
+                    .find((item) => window.scrollY + 140 >= item.top);
+
+            if (current?.key) {
+                setActiveSection(current.key);
+            }
+        };
+
+        updateTickerState();
+        window.addEventListener("scroll", updateTickerState, { passive: true });
+
+        return () => {
+            window.removeEventListener("scroll", updateTickerState);
+        };
+    }, [isMobileViewport]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") {
+            return;
+        }
+
+        setQrValue(`${window.location.origin}/login`);
     }, []);
 
     const handleJoinExam = () => {
@@ -301,17 +473,43 @@ export default function Page() {
     };
 
     const hienThiTongLuotThi = useMemo(
-        () => Math.max(Number(tongLuotThi || 0), SO_LUOT_THI_TOI_THIEU),
+        () => Number(tongLuotThi || 0),
         [tongLuotThi]
     );
 
+    const thongTinDuThi = useMemo(() => {
+        const batDau = formatLongVietnameseDate(dotThi?.cuoc_thi?.thoi_gian_bat_dau);
+        const ketThuc = formatLongVietnameseDate(dotThi?.cuoc_thi?.thoi_gian_ket_thuc);
+
+        if (batDau && ketThuc) {
+            return `Cuộc thi diễn ra từ ${batDau} đến hết ${ketThuc}. Tập thể, cá nhân đoạt giải được thông báo sau khi cuộc thi kết thúc.`;
+        }
+
+        return "Tập thể, cá nhân đoạt giải được thông báo sau khi cuộc thi kết thúc.";
+    }, [dotThi?.cuoc_thi?.thoi_gian_bat_dau, dotThi?.cuoc_thi?.thoi_gian_ket_thuc]);
+
+    const scrollToSection = (key) => {
+        const node = sectionRefs.current[key];
+
+        if (!node) {
+            return;
+        }
+
+        const top = node.getBoundingClientRect().top + window.scrollY - 96;
+
+        window.scrollTo({
+            top,
+            behavior: "smooth",
+        });
+    };
+
     return (
-        <div className="w-full">
+        <div className="w-full bg-[#fffdf4]">
             <Reveal animation="soft">
                 <div className="">
                     <div className="w-full">
                         <div
-                            className="relative w-full overflow-hidden bg-slate-200 shadow-sm"
+                            className="relative w-full overflow-hidden bg-[#fdf7df] shadow-sm"
                             style={{
                                 aspectRatio: isMobileViewport ? "16/9" : "16/3"
                             }}
@@ -345,17 +543,107 @@ export default function Page() {
 
             </Reveal>
 
-            <div className="mx-auto w-full px-4 py-6 sm:px-8 md:px-10 lg:px-14 xl:px-20 2xl:px-50">
+            <div
+                className={`sticky z-30 border-b transition-all duration-300 ${
+                    compactTicker
+                        ? "top-0 backdrop-blur-xl"
+                        : "top-0"
+                }`}
+                style={{
+                    background: compactTicker
+                        ? "rgba(255,255,255,0.92)"
+                        : null,
+                    borderColor: alphaColor(colorPrimary, compactTicker ? 0.18 : 0),
+                    boxShadow: compactTicker
+                        ? `0 14px 30px ${alphaColor(colorPrimary, 0.12)}`
+                        : null,
+                }}
+            >
+                <div className="mx-auto w-full px-4 sm:px-8 md:px-10 lg:px-14 xl:px-20 2xl:px-50">
+                    <Reveal delay={80} className="h-full w-full">
+                        <div
+                            className={`grid grid-cols-2 gap-2.5 py-2 transition-all duration-300 md:grid-cols-4 ${
+                                compactTicker ? "md:py-1.5" : "md:py-2.5"
+                            }`}
+                        >
+                            {tabItems.map((item) => {
+                                const isActive = activeSection === item.key;
+
+                                return (
+                                    <button
+                                        key={item.key}
+                                        type="button"
+                                        onClick={() => scrollToSection(item.key)}
+                                        className={`flex gap-3 rounded-2xl border transition duration-300 ${
+                                            compactTicker
+                                                ? "min-h-0 items-center justify-center px-3 py-2 text-center"
+                                                : "min-h-20 items-center justify-start px-4 py-3 text-left"
+                                        } ${
+                                            isActive
+                                                ? "shadow-sm"
+                                                : "hover:-translate-y-0.5 hover:shadow-sm"
+                                        }`}
+                                        style={isActive
+                                            ? {
+                                                borderColor: colorPrimary,
+                                                backgroundColor: alphaColor(colorPrimary, 0.12),
+                                                color: colorPrimary,
+                                            }
+                                            : {
+                                                borderColor: alphaColor(colorPrimary, 0.16),
+                                                backgroundColor: compactTicker ? "rgba(255,255,255,0.88)" : "#f8fafc",
+                                                color: "#334155",
+                                            }}
+                                    >
+                                        <Image
+                                            src={item.image}
+                                            width={compactTicker ? 24 : 40}
+                                            height={compactTicker ? 24 : 40}
+                                            alt=""
+                                        />
+                                        {compactTicker ? (
+                                            <span className="text-sm font-semibold">
+                                                {item.title}
+                                            </span>
+                                        ) : (
+                                            <div className="flex min-w-0 flex-col text-left">
+                                                <span
+                                                    className="text-[11px] font-semibold uppercase tracking-[0.22em]"
+                                                    style={{color: isActive ? colorPrimary : "#64748b"}}
+                                                >
+                                                    {item.title}
+                                                </span>
+                                                <span className="mt-1 text-sm font-bold md:text-base">
+                                                    {item.subtitle}
+                                                </span>
+                                            </div>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </Reveal>
+                </div>
+            </div>
+
+            <div className="mx-auto w-full px-4 py-4 sm:px-8 md:px-10 lg:px-14 xl:px-20 2xl:px-50">
                 <Row gutter={[20, 20]} align="stretch">
+                    <Col
+                        span={24}
+                        ref={(node) => {
+                            sectionRefs.current["thong-tin"] = node;
+                        }}
+                    />
                     <Col xs={24} xl={12} className="flex">
                         <Reveal delay={90} className="h-full w-full">
                             <Card
-                                className="h-full overflow-hidden rounded-2xl border-0 shadow-[0_22px_50px_rgba(15,23,42,0.10)]"
+                                className="h-full overflow-hidden rounded-[28px] border shadow-[0_22px_50px_rgba(15,23,42,0.10)]"
+                                style={{borderColor: alphaColor(colorPrimary, 0.14)}}
                                 styles={{body: {padding: 0, height: "100%"}}}
                             >
-                                <Flex vertical className="h-full bg-slate-100">
+                                <Flex vertical className="h-full" style={{background: alphaColor(colorPrimary, 0.05)}}>
                                     <h3 style={{
-                                        background: colorPrimary,
+                                        background: deepPrimary,
                                         margin: '0'
                                     }} className="px-4 text-center py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white md:text-base">
                                         Thông tin cuộc thi
@@ -374,10 +662,16 @@ export default function Page() {
                                                     <div className="flex h-16 w-16 shrink-0 items-center 
                                                     justify-center rounded-full border-[3px] 
                                                     border-white bg-white text-[1.7rem] md:h-18 md:w-18"
-                                                    style={{color: colorPrimary}}>
+                                                    style={{
+                                                        color: colorPrimary,
+                                                        borderColor: alphaColor(colorPrimary, 0.12),
+                                                    }}>
                                                         {item.icon}
                                                     </div>
-                                                    <div className="flex-1 rounded-[24px] bg-white px-5 py-4">
+                                                    <div
+                                                        className="flex-1 rounded-[24px] bg-white px-5 py-4"
+                                                        style={{border: `1px solid ${alphaColor(colorPrimary, 0.1)}`}}
+                                                    >
                                                         <Paragraph className="!mb-0 !text-sm !leading-7 !text-slate-700 md:!text-base">
                                                             {item.value}
                                                         </Paragraph>
@@ -393,7 +687,7 @@ export default function Page() {
 
                     <Col xs={24} xl={12} className="flex">
                         <Reveal delay={110} className="h-full w-full">
-                            <Flex vertical gap={16} className="h-full w-full">
+                            <Flex vertical gap={12} className="h-full w-full">
                                 {thoiGianConLai && (
                                     <Reveal delay={70}>
                                         <CountDown time={thoiGianConLai}/>
@@ -401,116 +695,154 @@ export default function Page() {
                                 )}
 
                                 <Card
-                                    className="flex-1 rounded-[32px] border border-slate-200 shadow-sm"
-                                    styles={{body: {padding: 24, height: "100%"}}}
+                                    className="flex-1 overflow-hidden rounded-[28px] border shadow-[0_22px_50px_rgba(15,23,42,0.10)]"
+                                    style={{borderColor: alphaColor(colorPrimary, 0.14)}}
+                                    styles={{body: {padding: 0, height: "100%"}}}
                                 >
-                                    <Flex vertical justify="space-around" gap={24} className="h-full text-center">
-                                        <div className="flex justify-center">
-                                            <div className="join-exam-pulse relative inline-flex items-center justify-center">
-                                                <span
-                                                    className="join-exam-pulse__ring join-exam-pulse__ring--outer"
-                                                    style={{"--pulse-color": alphaColor(colorPrimary, 0.22)}}
-                                                />
-                                                <span
-                                                    className="join-exam-pulse__ring join-exam-pulse__ring--inner"
-                                                    style={{"--pulse-color": alphaColor(colorPrimary, 0.34)}}
-                                                />
-                                            <Button
-                                                type="primary"
-                                                size="large"
-                                                className="join-exam-pulse__button !h-14 w-full !rounded-2xl !text-lg !font-bold sm:!w-auto sm:min-w-[15rem]"
-                                                onClick={handleJoinExam}
-                                            >
-                                                THAM GIA THI
-                                            </Button>
-                                            </div>
-                                        </div>
-                                        <Text style={{
-                                                    color: colorPrimary
-                                                }} className="!mb-0  uppercase !text-2xl">
-                                            Đã có  
-                                                <span className="font-bold text-7xl"> {Intl.NumberFormat("vi-VN").format(hienThiTongLuotThi)} </span> 
-                                            lượt thi.
-                                        </Text>
-                                        
+                                    <Flex vertical className="h-full" style={{background: alphaColor(colorPrimary, 0.05)}}>
+                                        <div className="flex-1 space-y-5 px-6 py-6 text-center md:px-7">
+                                            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-6">
+                                                <div className="join-exam-pulse relative inline-flex items-center justify-center">
+                                                    <span
+                                                        className="join-exam-pulse__ring join-exam-pulse__ring--outer"
+                                                        style={{"--pulse-color": alphaColor(colorPrimary, 0.22)}}
+                                                    />
+                                                    <span
+                                                        className="join-exam-pulse__ring join-exam-pulse__ring--inner"
+                                                        style={{"--pulse-color": alphaColor(colorPrimary, 0.34)}}
+                                                    />
+                                                    <Button
+                                                        type="primary"
+                                                        size="large"
+                                                        className="join-exam-pulse__button !h-14 w-full !rounded-2xl !px-8 !text-lg !font-bold sm:!min-w-[15rem]"
+                                                        onClick={handleJoinExam}
+                                                    >
+                                                        THAM GIA THI
+                                                    </Button>
+                                                </div>
 
-            
+                                                <div
+                                                    className="flex items-center gap-3 rounded-[24px] border bg-white px-4 py-3"
+                                                    style={{borderColor: alphaColor(colorPrimary, 0.12)}}
+                                                >
+                                                    <QRCode
+                                                        value={qrValue || " "}
+                                                        size={88}
+                                                        bordered={false}
+                                                        color={colorPrimary}
+                                                        bgColor="transparent"
+                                                    />
+                                                    <div className="text-left">
+                                                        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                                                            Quét để tham gia
+                                                        </div>
+                                                        <div className="mt-1 text-sm font-medium text-slate-700">
+                                                            Mở nhanh trên điện thoại
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="p-4 x-5 px-6" style={{borderColor: alphaColor(colorPrimary, 0.1)}}>
+                                                <span className="text-xl font-semibold text-slate-900 md:text-2xl">
+                                                    {thongTinDuThi}
+                                                </span>
+                                            </div>
+
+                                            {hienThiTongLuotThi > SO_LUOT_THI_TOI_THIEU ? (
+                                                <div className="text-center">
+                                                    <Text style={{color: colorPrimary}} className="!mb-0 !block uppercase !text-base !font-semibold !tracking-[0.12em] md:!text-lg">
+                                                        Đã có
+                                                    </Text>
+                                                    <div className="mt-1 flex flex-wrap items-end justify-center gap-x-3 gap-y-1">
+                                                        <span className="text-5xl font-bold leading-none md:text-6xl" style={{color: colorPrimary}}>
+                                                            {Intl.NumberFormat("vi-VN").format(hienThiTongLuotThi)}
+                                                        </span>
+                                                        <span className="pb-1 text-lg font-semibold uppercase text-slate-700 md:text-xl">
+                                                            lượt thi
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ) : null}
+                                        </div>
                                     </Flex>
                                 </Card>
 
-                                <Card
-                                    className="timeline-highlight-card flex-1 overflow-hidden rounded-[32px] border border-slate-200 shadow-sm"
-                                    style={{
-                                        "--timeline-card-bg-start": alphaColor(colorPrimary, 0.03),
-                                        "--timeline-card-bg-end": alphaColor(colorPrimary, 0.08),
-                                        "--timeline-line-start": alphaColor(colorPrimary, 0.18),
-                                        "--timeline-line-mid": alphaColor(colorPrimary, 0.55),
-                                        "--timeline-line-end": alphaColor(colorPrimary, 0.18),
-                                    }}
-                                    classNames={{
-                                        body: 'px-4 h-full'
-                                    }}
-                                >
-                                     <Timeline
-                                            items={timelineItems}
-                                            orientation="horizontal"
-                                            className="timeline-highlight"
-                                        />
-                                </Card>
-
-                               
                             </Flex>
                         </Reveal>
                     </Col>
 
-                
                     <Col span={24}>
-                    <Reveal delay={110} className="h-full w-full">
-                        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-                                            {tabItems.map((item) => (
-                                                <button
-                                                    key={item.key}
-                                                    type="button"
-                                                    onClick={() => setTab(item.key)}
-                                                    className={`flex min-h-28 flex-col items-center justify-center gap-3 rounded-2xl border px-3 py-4 text-center transition duration-300 ${
-                                                        tab === item.key
-                                                            ? "shadow-sm"
-                                                            : "border-slate-200 bg-slate-50 text-slate-700 hover:-translate-y-0.5"
-                                                    }`}
-                                                    style={tab === item.key
-                                                        ? {
-                                                            borderColor: colorPrimary,
-                                                            backgroundColor: alphaColor(colorPrimary, 0.1),
-                                                            color: colorPrimary,
-                                                        }
-                                                        : undefined}
-                                                >
-                                                    <Image src={item.image} width={40} height={40} alt="" />
-                                                    <span className="text-sm font-semibold md:text-base">{item.label}</span>
-                                                </button>
-                                            ))}
-                                        </div>
-                    </Reveal>
+                        <Reveal delay={130}>
+                            <ContestTimeline items={timelineItems} colorPrimary={colorPrimary} />
+                        </Reveal>
                     </Col>
 
                     <Col span={24}>
-                        <Reveal key={tab} delay={140}>
-                            {tab === "bai-viet" && (
-                                <BaiVietCuocThi/>
-                            )}
+                        <div className="space-y-5">
+                            <SectionDivider colorPrimary={colorPrimary} />
 
-                            {tab === "giai-thuong" && (
-                                <GiaiThuongCuocThi/>
-                            )}
+                            <Reveal delay={160}>
+                                <section
+                                    ref={(node) => {
+                                        sectionRefs.current["giai-thuong"] = node;
+                                    }}
+                                    className="scroll-mt-24 space-y-3"
+                                >
+                                    <div className="space-y-1.5">
+                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em]" style={{color: colorPrimary}}>
+                                            Cơ cấu giải thưởng
+                                        </Text>
+                                        <div className="text-3xl font-bold text-slate-900">
+                                            Giải thưởng
+                                        </div>
+                                    </div>
+                                    <GiaiThuongCuocThi/>
+                                </section>
+                            </Reveal>
 
-                            {tab === "ket-qua" && (
-                                <KetQuaCongBo dotThi={dotThi} />
-                            )}
+                            <SectionDivider colorPrimary={colorPrimary} />
 
-                            {tab === "document" && (
-                                <TaiLieuTongHop/>
-                            )}
-                        </Reveal>
+                            <Reveal delay={180}>
+                                <section
+                                    ref={(node) => {
+                                        sectionRefs.current["document"] = node;
+                                    }}
+                                    className="scroll-mt-24 space-y-3"
+                                >
+                                    <div className="space-y-1.5">
+                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em]" style={{color: colorPrimary}}>
+                                            Tài liệu phục vụ
+                                        </Text>
+                                        <div className="text-3xl font-bold text-slate-900">
+                                            Tài liệu
+                                        </div>
+                                    </div>
+                                    <TaiLieuTongHop/>
+                                </section>
+                            </Reveal>
+
+                            <SectionDivider colorPrimary={colorPrimary} />
+
+                            <Reveal delay={200}>
+                                <section
+                                    ref={(node) => {
+                                        sectionRefs.current["ket-qua"] = node;
+                                    }}
+                                    className="scroll-mt-24 space-y-3"
+                                >
+                                    <div className="space-y-1.5">
+                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em]" style={{color: colorPrimary}}>
+                                            Công bố thành tích
+                                        </Text>
+                                        <div className="text-3xl font-bold text-slate-900">
+                                            Kết quả
+                                        </div>
+                                    </div>
+                                    <KetQuaCongBo dotThi={dotThi} />
+                                </section>
+                            </Reveal>
+                        </div>
                     </Col>
                 </Row>
             </div>
@@ -546,46 +878,6 @@ export default function Page() {
 
                 .join-exam-pulse__ring--outer {
                     animation: join-exam-wave-outer 2.8s ease-out infinite 0.42s;
-                }
-
-                .timeline-highlight-card {
-                    background:
-                        linear-gradient(180deg, rgba(255,255,255,0.98) 0%, var(--timeline-card-bg-end) 100%);
-                }
-
-                .timeline-highlight .ant-timeline-item-head {
-                    border: none;
-                    background: transparent;
-                }
-
-                .timeline-highlight .ant-timeline-item-tail {
-                    inset-inline-start: calc(50% + 1px);
-                    background: linear-gradient(90deg, var(--timeline-line-start) 0%, var(--timeline-line-mid) 50%, var(--timeline-line-end) 100%);
-                    block-size: 4px;
-                    border-radius: 999px;
-                    transform: translateY(-50%);
-                }
-
-                .timeline-highlight .ant-timeline-item-last .ant-timeline-item-tail {
-                    display: none;
-                }
-
-                .timeline-highlight-dot {
-                    display: inline-flex;
-                    width: 16px;
-                    height: 16px;
-                    border-radius: 999px;
-                    background: var(--timeline-dot-color);
-                    box-shadow: var(--timeline-dot-shadow);
-                }
-
-                .timeline-highlight-dot--active {
-                    width: 18px;
-                    height: 18px;
-                }
-
-                .timeline-highlight-dot--finished {
-                    opacity: 0.9;
                 }
 
                 @keyframes join-exam-heartbeat {

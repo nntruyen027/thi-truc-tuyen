@@ -1,4 +1,4 @@
-const { and, count, eq, sql } = require("drizzle-orm");
+const { and, count, eq, ne, sql } = require("drizzle-orm");
 const db = require("../../db/client");
 const { donVi, users, workspaces } = require("../../db/schema");
 const { buildPagedResult, normalizePagination } = require("../../core/utils/drizzle");
@@ -20,9 +20,12 @@ function mapUser(row) {
         return null;
     }
 
+    const isSuperAdmin = row.role === "super_admin";
+    const workspaceId = isSuperAdmin ? null : row.workspace_id;
+
     return {
         id: row.id,
-        workspace_id: row.workspace_id,
+        workspace_id: workspaceId,
         username: row.username,
         password: row.password,
         ho_ten: row.ho_ten,
@@ -30,8 +33,8 @@ function mapUser(row) {
         role: row.role,
         avatar: null,
         created_at: row.created_at,
-        workspace: row.workspace_id ? {
-            id: row.workspace_id,
+        workspace: workspaceId ? {
+            id: workspaceId,
             code: row.workspace_code,
             ten: row.workspace_ten,
             slug: row.workspace_slug,
@@ -85,6 +88,7 @@ exports.getUsers = async (search, page, size, scope = {}) => {
         conditions.push(eq(users.workspaceId, Number(scope.workspaceId)));
     } else if (scope.workspaceId) {
         conditions.push(eq(users.workspaceId, Number(scope.workspaceId)));
+        conditions.push(ne(users.role, "super_admin"));
     }
 
     if (searchCondition) {
@@ -156,6 +160,7 @@ exports.getUserById = async (id, scope = {}) => {
         conditions.push(eq(users.workspaceId, Number(scope.workspaceId)));
     } else if (scope.workspaceId) {
         conditions.push(eq(users.workspaceId, Number(scope.workspaceId)));
+        conditions.push(ne(users.role, "super_admin"));
     }
 
     return selectUserByCondition(and(...conditions));
@@ -168,6 +173,7 @@ exports.getUserByUsername = async (username, scope = {}) => {
         conditions.push(eq(users.workspaceId, Number(scope.workspaceId)));
     } else if (scope.workspaceId) {
         conditions.push(eq(users.workspaceId, Number(scope.workspaceId)));
+        conditions.push(ne(users.role, "super_admin"));
     }
 
     return selectUserByCondition(and(...conditions));
@@ -208,7 +214,7 @@ exports.updateUser = async ({
     await db
         .update(users)
         .set({
-            ...(workspaceId ? {workspaceId} : {}),
+            workspaceId,
             username,
             hoTen,
             donViId,
@@ -239,7 +245,13 @@ exports.updateRole = async (id, role, scope = {}) => {
 
     await db
         .update(users)
-        .set({role})
+        .set({
+            role,
+            workspaceId:
+                role === "super_admin"
+                    ? null
+                    : (scope.workspaceId ? Number(scope.workspaceId) : null),
+        })
         .where(and(...conditions));
 };
 

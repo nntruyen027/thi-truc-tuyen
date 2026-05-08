@@ -9,7 +9,7 @@ import {layCauHinh, suaCauHinh} from "~/services/cau-hinh";
 import {getPublicFileUrl, uploadFile} from "~/services/file";
 import {parseMediaConfig} from "~/utils/workspaceTheme";
 
-export default function FaviconEditor({workspaceId = null}) {
+export default function FaviconEditor({workspaceId = null, disabled = false}) {
     const {message} = App.useApp();
     const [image, setImage] = useState("");
 
@@ -20,7 +20,12 @@ export default function FaviconEditor({workspaceId = null}) {
             const res =
                 await layCauHinh("favicon", {workspaceId});
 
-            if (!active || !res.data?.gia_tri) {
+            if (!active) {
+                return;
+            }
+
+            if (!res.data?.gia_tri) {
+                setImage("");
                 return;
             }
 
@@ -45,7 +50,7 @@ export default function FaviconEditor({workspaceId = null}) {
 
     const handleUpload = async (file) => {
         const res =
-            await uploadFile(file);
+            await uploadFile(file, {workspaceId});
 
         const duongDan =
             res?.duongDan || res?.duong_dan || res?.url;
@@ -64,8 +69,9 @@ export default function FaviconEditor({workspaceId = null}) {
                 showUploadList={false}
                 beforeUpload={handleUpload}
                 accept=".png,.jpg,.jpeg,.ico,.svg,.webp"
+                disabled={disabled}
             >
-                <Button icon={<UploadOutlined />}>
+                <Button icon={<UploadOutlined />} disabled={disabled}>
                     Tải favicon
                 </Button>
             </Upload>

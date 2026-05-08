@@ -9,9 +9,19 @@ function normalizeWorkspaceHost(value) {
         .toLowerCase();
 
     const withoutProtocol = host.replace(/^https?:\/\//, "");
-    const hostname = withoutProtocol.split("/")[0].split(":")[0];
+    const normalizedHost = withoutProtocol.split("/")[0];
 
-    return hostname;
+    return normalizedHost;
+}
+
+function extractWorkspaceHostname(value) {
+    const normalizedHost = normalizeWorkspaceHost(value);
+
+    if (!normalizedHost) {
+        return "";
+    }
+
+    return normalizedHost.split(":")[0];
 }
 
 function resolveWorkspaceHost(req) {
@@ -24,6 +34,7 @@ function resolveWorkspaceHost(req) {
 }
 
 module.exports = {
+    extractWorkspaceHostname,
     normalizeWorkspaceHost,
     resolveWorkspaceHost,
 };

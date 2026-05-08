@@ -20,6 +20,20 @@ const { requireWorkspaceId } = require("../../core/utils/workspace-scope");
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
 
+const ensureSuperAdminUploadWorkspaceMatch = (req, workspaceId) => {
+    if (req.user?.role !== "super_admin") {
+        return;
+    }
+
+    if (!workspaceId || !req.workspace?.id) {
+        return;
+    }
+
+    if (Number(workspaceId) !== Number(req.workspace.id)) {
+        throw new Error("Chỉ được tải media lên cho workspace đang truy cập hiện tại. Hãy mở đúng domain của workspace rồi tải lại file.");
+    }
+};
+
 const isRawBinaryRequest = (req) => {
     const contentType = String(req.headers["content-type"] || "").toLowerCase();
 
@@ -131,11 +145,14 @@ router.post(
                 throw new Error("Không tìm thấy file tải lên");
             }
 
+            const workspaceId = requireWorkspaceId(req);
+            ensureSuperAdminUploadWorkspaceMatch(req, workspaceId);
+
             const data =
                 await service.createFile({
                     file: uploadedFile,
                     userId: req.user.id,
-                    workspaceId: requireWorkspaceId(req),
+                    workspaceId,
                 });
 
             resUtil.ok(res, data);

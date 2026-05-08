@@ -18,7 +18,11 @@ module.exports = (req, res, next) => {
             token
         )
 
-        if (!req.user.workspace_id && req.workspace?.id) {
+        if (
+            req.user.role !== "super_admin"
+            && !req.user.workspace_id
+            && req.workspace?.id
+        ) {
             req.user.workspace_id = req.workspace.id
         }
 
