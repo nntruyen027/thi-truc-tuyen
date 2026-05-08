@@ -131,19 +131,7 @@ export default function KetQuaCongBo({dotThi}) {
 
     return (
         <Card className="rounded-3xl border border-slate-200 shadow-sm" styles={{body: {padding: 24}}}>
-            <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                    <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em] !text-blue-700">
-                        Công bố kết quả
-                    </Text>
-                    <Title level={3} className="!mb-0 !mt-1">
-                        Bảng xếp hạng nổi bật
-                    </Title>
-                    <Text className="!mt-2 !block !text-slate-500">
-                        Chỉ xét giải các bài đạt từ tỷ lệ đạt trở lên.
-                    </Text>
-                </div>
-
+            <div className="mb-5 flex justify-end">
                 <Segmented
                     value={scope}
                     onChange={setScope}

@@ -13,8 +13,8 @@ export default function AuthShell({title, subtitle, children}) {
                 backgroundPosition: "center",
             }}
         >
-            <div className="w-full max-w-xl rounded-[28px] border border-white/20 bg-white/95 p-5 shadow-2xl backdrop-blur md:p-8">
-                <div className="mb-4">
+            <div className="w-full max-w-xl rounded-[28px] border border-white/20 bg-white/95 p-5 shadow-2xl backdrop-blur md:p-6">
+                <div className="mb-3">
                     <Link
                         href="/"
                         className="inline-flex items-center rounded-full border bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition"
@@ -26,13 +26,13 @@ export default function AuthShell({title, subtitle, children}) {
                         Về trang chủ
                     </Link>
                 </div>
-                <div className="mb-6 text-center">
+                <div className="mb-4 text-center">
                     <h1 className="text-2xl font-bold uppercase tracking-[0.08em] md:text-3xl" style={{color: "var(--workspace-primary-color)"}}>
                         {title}
                     </h1>
 
                     {subtitle && (
-                        <p className="mx-auto mt-2 max-w-lg text-sm text-slate-600 md:text-base">
+                        <p className="mx-auto mt-1 max-w-lg text-sm text-slate-600 md:text-base">
                             {subtitle}
                         </p>
                     )}

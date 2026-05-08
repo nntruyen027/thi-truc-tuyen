@@ -51,7 +51,6 @@ export default function DangKy() {
 
         <AuthShell
             title="Đăng nhập"
-            subtitle="Đăng nhập để tham gia thi hoặc truy cập khu vực quản trị."
         >
 
                 <Form

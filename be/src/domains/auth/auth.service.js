@@ -116,6 +116,7 @@ exports.register = async (
     password,
     repeatPass,
     donViId,
+    extraProfile,
     workspace
 ) => {
     if (!repeatPass || repeatPass !== password)
@@ -136,11 +137,14 @@ exports.register = async (
     }
 
     return await query.taoNguoiDung(
-        username,
-        hash,
-        hoTen,
-        donViId,
-        workspace?.id || null
+        {
+            username,
+            pass: hash,
+            hoTen,
+            donViId,
+            workspaceId: workspace?.id || null,
+            ...extraProfile,
+        }
     )
 
 }
@@ -202,9 +206,9 @@ exports.changePassword = async (
 }
 
 
-exports.capNhatThongTinNguoiDung = async (username, hoTen, donViId, workspaceId = null) => {
+exports.capNhatThongTinNguoiDung = async (username, profile, workspaceId = null) => {
     return toSessionUser(
-        await query.capNhatThongTinNguoiDung(username, hoTen, donViId, workspaceId)
+        await query.capNhatThongTinNguoiDung(username, profile, workspaceId)
     )
 }
 

@@ -1,5 +1,11 @@
 const DEFAULT_PRIMARY_COLOR = "#1948be";
 
+function toFiniteNumber(value, fallback) {
+    const parsed = Number(value);
+
+    return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 export function normalizePrimaryColor(value) {
     const normalized = String(value || "").trim();
 
@@ -90,6 +96,8 @@ export function parseMediaConfig(rawValue) {
             duongDan: "",
             url: "",
             zoom: 1,
+            positionX: 50,
+            positionY: 50,
         };
     }
 
@@ -101,6 +109,8 @@ export function parseMediaConfig(rawValue) {
                 duongDan: parsed,
                 url: parsed,
                 zoom: 1,
+                positionX: 50,
+                positionY: 50,
             };
         }
 
@@ -113,13 +123,17 @@ export function parseMediaConfig(rawValue) {
         return {
             duongDan,
             url: parsed?.url || duongDan,
-            zoom: Number(parsed?.zoom) || 1,
+            zoom: toFiniteNumber(parsed?.zoom, 1),
+            positionX: toFiniteNumber(parsed?.positionX, 50),
+            positionY: toFiniteNumber(parsed?.positionY, 50),
         };
     } catch {
         return {
             duongDan: rawValue,
             url: rawValue,
             zoom: 1,
+            positionX: 50,
+            positionY: 50,
         };
     }
 }

@@ -111,6 +111,11 @@ router.post(
                 hoTen,
                 password,
                 donViId,
+                diaChiDong1,
+                xaPhuong,
+                tinhThanh,
+                ngheNghiep,
+                doiTuong,
                 role: userRole,
             } = req.body
 
@@ -139,6 +144,11 @@ router.post(
                     password: hash,
                     workspaceId: assignedWorkspaceId,
                     donViId: donViId || null,
+                    diaChiDong1: diaChiDong1 || null,
+                    xaPhuong: xaPhuong || null,
+                    tinhThanh: tinhThanh || null,
+                    ngheNghiep: ngheNghiep || null,
+                    doiTuong: doiTuong || null,
                     role: nextRole,
                 })
 
@@ -163,6 +173,11 @@ router.put(
                 username,
                 hoTen,
                 donViId,
+                diaChiDong1,
+                xaPhuong,
+                tinhThanh,
+                ngheNghiep,
+                doiTuong,
                 role: userRole,
                 password,
             } = req.body
@@ -205,6 +220,11 @@ router.put(
                 username,
                 hoTen,
                 donViId: donViId || null,
+                diaChiDong1: diaChiDong1 || null,
+                xaPhuong: xaPhuong || null,
+                tinhThanh: tinhThanh || null,
+                ngheNghiep: ngheNghiep || null,
+                doiTuong: doiTuong || null,
                 role: nextRole,
                 password: hash,
             })

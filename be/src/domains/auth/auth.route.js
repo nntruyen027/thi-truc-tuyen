@@ -5,6 +5,8 @@ const service =
     require("./auth.service")
 const validation =
     require("./auth.validation")
+const cauHinhQuery = require("../cau-hinh/cau-hinh.query");
+const { parseUserProfileFieldConfig } = require("./auth.profile-fields");
 
 const authMiddleware = require("../../core/middlewares/auth")
 const resUtil = require("../../core/utils/response");
@@ -102,7 +104,14 @@ router.post(
                 password,
                 repeatPassword,
                 donViId,
+                diaChiDong1,
+                xaPhuong,
+                tinhThanh,
+                ngheNghiep,
+                doiTuong,
             } = req.body
+            const fieldConfig =
+                await cauHinhQuery.layCauHinh("user_profile_fields", req.workspace?.id || null);
             const validated =
                 validation.validateRegisterPayload({
                     username,
@@ -110,7 +119,12 @@ router.post(
                     password,
                     repeatPassword,
                     donViId,
-                })
+                    diaChiDong1,
+                    xaPhuong,
+                    tinhThanh,
+                    ngheNghiep,
+                    doiTuong,
+                }, parseUserProfileFieldConfig(fieldConfig?.gia_tri))
 
             const result =
                 await service.register(
@@ -119,6 +133,13 @@ router.post(
                     validated.password,
                     validated.repeatPassword,
                     validated.donViId,
+                    {
+                        diaChiDong1: validated.diaChiDong1,
+                        xaPhuong: validated.xaPhuong,
+                        tinhThanh: validated.tinhThanh,
+                        ngheNghiep: validated.ngheNghiep,
+                        doiTuong: validated.doiTuong,
+                    },
                     req.workspace
                 )
 
@@ -149,7 +170,7 @@ router.put("/profile", authMiddleware, async (req, res) => {
             validation.validateProfilePayload(req.body || {});
 
 
-        const user = await service.capNhatThongTinNguoiDung(req.user.username, validated.hoTen, validated.donViId, req.user.workspace_id)
+        const user = await service.capNhatThongTinNguoiDung(req.user.username, validated, req.user.workspace_id)
 
         resUtil.ok(res, user)
 

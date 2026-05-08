@@ -1,59 +1,119 @@
 'use client'
-import {Button, Card, Col, Input, Row, Select, theme} from "antd";
+
+import {App, Button, Card, Col, Form, Input, Row, Select, theme} from "antd";
+import {useEffect, useMemo, useState} from "react";
 import {useAuthStore} from "~/store/auth";
-import {CloseOutlined, SaveOutlined} from "@ant-design/icons";
-import {useEffect, useState} from "react";
-import useApp from "antd/es/app/useApp";
 import {thayDoiThongTinCaNhan} from "~/services/auth";
 import {useDonViSelect} from "~/hook/useDonVi";
+import {layCauHinh} from "~/services/cau-hinh";
+import {
+    DEFAULT_USER_PROFILE_FIELDS,
+    DOI_TUONG_OPTIONS,
+    NGHE_NGHIEP_OPTIONS,
+    parseUserProfileFieldConfig,
+    TINH_THANH_OPTIONS,
+    USER_PROFILE_FIELD_KEYS,
+} from "~/constants/userProfileFields";
 
 export default function Profile() {
     const {user, setUser} = useAuthStore()
     const {token} = theme.useToken()
-    const [isEditName, setIsEditName] = useState(false)
-    const [isEditDonVi, setIsEditDonVi] = useState(false)
-    const [hoTen, setHoTen] = useState(user?.ho_ten || '')
-    const [donViId, setDonViId] = useState(user?.don_vi?.id)
-    const {message} = useApp()
-
+    const {message} = App.useApp()
+    const [form] = Form.useForm()
+    const [loading, setLoading] = useState(false)
+    const [configLoading, setConfigLoading] = useState(true)
+    const [enabledFields, setEnabledFields] = useState(DEFAULT_USER_PROFILE_FIELDS)
     const { dsDonVi, loading: donViLoading, setSearchDonVi, loadMore } = useDonViSelect();
 
+    useEffect(() => {
+        let active = true
+
+        const loadConfig = async () => {
+            try {
+                setConfigLoading(true)
+                const res = await layCauHinh("user_profile_fields")
+
+                if (!active) {
+                    return
+                }
+
+                setEnabledFields(parseUserProfileFieldConfig(res?.data?.gia_tri))
+            } catch {
+                if (active) {
+                    setEnabledFields(DEFAULT_USER_PROFILE_FIELDS)
+                }
+            } finally {
+                if (active) {
+                    setConfigLoading(false)
+                }
+            }
+        }
+
+        void loadConfig()
+
+        return () => {
+            active = false
+        }
+    }, [])
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setHoTen(user?.ho_ten)
-        setDonViId(user?.don_vi?.id)
-    }, [user])
+        form.setFieldsValue({
+            username: user?.so_dien_thoai || user?.username || "",
+            hoTen: user?.ho_ten || "",
+            diaChiDong1: user?.dia_chi_dong_1 || "",
+            xaPhuong: user?.xa_phuong || "",
+            tinhThanh: user?.tinh_thanh || "Cần Thơ",
+            ngheNghiep: user?.nghe_nghiep || undefined,
+            doiTuong: user?.doi_tuong || undefined,
+            donViId: user?.don_vi?.id || user?.don_vi_id || undefined,
+        })
+    }, [form, user])
 
-    const handleLuuTen = async () => {
+    const showField = useMemo(
+        () => (key) => enabledFields.includes(key),
+        [enabledFields]
+    )
+
+    const handleSubmit = async (values) => {
         try {
-            const normalizedHoTen = String(hoTen || "").trim()
+            setLoading(true)
+            const payload = {}
 
-            if (!normalizedHoTen) {
-                message.error("Họ tên không được để trống")
-                return
+            if (showField(USER_PROFILE_FIELD_KEYS.hoTen)) {
+                payload.hoTen = values.hoTen?.trim()
             }
 
-            const data = await thayDoiThongTinCaNhan({hoTen: normalizedHoTen, donViId: user?.don_vi?.id})
-            setUser(data)
-            setIsEditName(false)
-        } catch (error) {
-            message.error(error?.message || "Không thể cập nhật họ tên")
-        }
-    }
-
-    const handleLuuDonVi = async () => {
-        try {
-            if (!donViId) {
-                message.error("Vui lòng chọn đơn vị")
-                return
+            if (showField(USER_PROFILE_FIELD_KEYS.diaChiDong1)) {
+                payload.diaChiDong1 = values.diaChiDong1?.trim()
             }
 
-            const data = await thayDoiThongTinCaNhan({hoTen: user?.ho_ten, donViId: donViId})
+            if (showField(USER_PROFILE_FIELD_KEYS.xaPhuong)) {
+                payload.xaPhuong = values.xaPhuong?.trim()
+            }
+
+            if (showField(USER_PROFILE_FIELD_KEYS.tinhThanh)) {
+                payload.tinhThanh = values.tinhThanh
+            }
+
+            if (showField(USER_PROFILE_FIELD_KEYS.ngheNghiep)) {
+                payload.ngheNghiep = values.ngheNghiep
+            }
+
+            if (showField(USER_PROFILE_FIELD_KEYS.doiTuong)) {
+                payload.doiTuong = values.doiTuong
+            }
+
+            if (showField(USER_PROFILE_FIELD_KEYS.donViId)) {
+                payload.donViId = values.donViId || null
+            }
+
+            const data = await thayDoiThongTinCaNhan(payload)
             setUser(data)
-            setIsEditDonVi(false)
+            message.success("Đã cập nhật hồ sơ")
         } catch (error) {
-            message.error(error?.message || "Không thể cập nhật đơn vị")
+            message.error(error?.message || "Không thể cập nhật hồ sơ")
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -61,86 +121,133 @@ export default function Profile() {
         <div className="mb-5">
             <div className="text-xs font-semibold uppercase tracking-[0.2em]" style={{color: token.colorPrimary}}>Thông tin tài khoản</div>
             <div className="mt-1 text-2xl font-bold text-slate-900">Hồ sơ thí sinh</div>
-            <div className="mt-2 text-sm text-slate-500">Bạn có thể chỉnh sửa nhanh họ tên và đơn vị ngay trên trang này.</div>
+            <div className="mt-2 text-sm text-slate-500">Cập nhật các thông tin mà workspace hiện tại đang yêu cầu thu thập.</div>
         </div>
-        <Row gutter={[16, 16]}>
-            <Col xs={24} xl={12}>
-                <Row gutter={[16, 16]}>
-                    <Col xs={24} sm={8}>
-                        <span className={'text-base font-bold text-slate-700 sm:text-lg'}>Họ tên thí sinh:</span>
+
+        <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+            disabled={configLoading}
+        >
+            <Row gutter={[16, 0]}>
+                <Col xs={24} md={12}>
+                    <Form.Item label="Số điện thoại">
+                        <Input value={user?.so_dien_thoai || user?.username || ""} disabled />
+                    </Form.Item>
+                </Col>
+
+                {showField(USER_PROFILE_FIELD_KEYS.hoTen) ? (
+                    <Col xs={24} md={12}>
+                        <Form.Item
+                            label="Họ và tên"
+                            name="hoTen"
+                            rules={[{required: true, message: "Vui lòng nhập họ và tên"}]}
+                        >
+                            <Input maxLength={120} />
+                        </Form.Item>
                     </Col>
-                    {isEditName ? <Col xs={24} sm={16}>
-                        <div className="flex flex-col gap-3 sm:flex-row">
-                            <Input value={hoTen} onChange={e => setHoTen(e.target.value)} size={'small'} placeholder="Nhập họ tên" maxLength={120} />
-                            <Button type={'default'} onClick={handleLuuTen}><SaveOutlined /></Button>
-                            <Button onClick={() => {
-                                setIsEditName(false)
-                                setHoTen(user?.ho_ten || '')
-                            }} danger><CloseOutlined/></Button>
-                        </div>
+                ) : null}
+            </Row>
 
-                    </Col> : <Col xs={24} sm={16}>
-                        <button type="button" onClick={() => setIsEditName(true)} className={'text-left text-base font-semibold text-slate-900 transition sm:text-lg'} style={{textDecorationColor: token.colorPrimary}}>{user?.ho_ten || "Chưa cập nhật"}</button>
-                    </Col>}
-                </Row>
+            {showField(USER_PROFILE_FIELD_KEYS.diaChiDong1) ? (
+                <Form.Item
+                    label="Địa chỉ"
+                    name="diaChiDong1"
+                    rules={[{required: true, message: "Vui lòng nhập số nhà, đường, ấp/khu vực"}]}
+                    extra="Dòng 1: Số nhà, đường, ấp/khu vực"
+                >
+                    <Input maxLength={500} />
+                </Form.Item>
+            ) : null}
 
-
-
-            </Col>
-            <Col xs={24} xl={12}>
-                <Row gutter={[16, 16]}>
-                    <Col xs={24} sm={8}>
-                        <span className={'text-base font-bold text-slate-700 sm:text-lg'}>Đơn vị:</span>
+            <Row gutter={[16, 0]}>
+                {showField(USER_PROFILE_FIELD_KEYS.xaPhuong) ? (
+                    <Col xs={24} md={12}>
+                        <Form.Item
+                            label="Xã/Phường"
+                            name="xaPhuong"
+                            rules={[{required: true, message: "Vui lòng nhập xã/phường"}]}
+                        >
+                            <Input maxLength={255} />
+                        </Form.Item>
                     </Col>
-                    {
-                        isEditDonVi ? <Col xs={24} sm={16}>
-                            <div className="flex flex-col gap-3 sm:flex-row">
-                                <Select
-                                    value={donViId}
-                                    onChange={e => setDonViId(e)}
-                                    style={{ width: '100%' }}
-                                    showSearch
-                                    allowClear
-                                    placeholder="Chọn đơn vị"
-                                    loading={donViLoading}
-                                    filterOption={false}
-                                    options={dsDonVi.map((item) => ({
-                                        label: item.ten,
-                                        value: item.id,
-                                    }))}
-                                    onSearch={setSearchDonVi}
-                                    onPopupScroll={(e) => {
+                ) : null}
 
-                                        const target = e.target;
+                {showField(USER_PROFILE_FIELD_KEYS.tinhThanh) ? (
+                    <Col xs={24} md={12}>
+                        <Form.Item
+                            label="Tỉnh/Thành phố"
+                            name="tinhThanh"
+                            rules={[{required: true, message: "Vui lòng chọn tỉnh/thành phố"}]}
+                        >
+                            <Select options={TINH_THANH_OPTIONS} />
+                        </Form.Item>
+                    </Col>
+                ) : null}
+            </Row>
 
-                                        if (
-                                            target.scrollTop +
-                                            target.offsetHeight >=
-                                            target.scrollHeight - 10
-                                        ) {
+            <Row gutter={[16, 0]}>
+                {showField(USER_PROFILE_FIELD_KEYS.ngheNghiep) ? (
+                    <Col xs={24} md={12}>
+                        <Form.Item
+                            label="Nghề nghiệp"
+                            name="ngheNghiep"
+                            rules={[{required: true, message: "Vui lòng chọn nghề nghiệp"}]}
+                        >
+                            <Select options={NGHE_NGHIEP_OPTIONS} />
+                        </Form.Item>
+                    </Col>
+                ) : null}
 
-                                            loadMore();
+                {showField(USER_PROFILE_FIELD_KEYS.doiTuong) ? (
+                    <Col xs={24} md={12}>
+                        <Form.Item
+                            label="Đối tượng"
+                            name="doiTuong"
+                            rules={[{required: true, message: "Vui lòng chọn đối tượng"}]}
+                        >
+                            <Select options={DOI_TUONG_OPTIONS} />
+                        </Form.Item>
+                    </Col>
+                ) : null}
+            </Row>
 
-                                        }
+            {showField(USER_PROFILE_FIELD_KEYS.donViId) ? (
+                <Form.Item
+                    label="Đăng ký dự thi cho địa phương, đơn vị"
+                    name="donViId"
+                    rules={[{required: true, message: "Vui lòng chọn địa phương, đơn vị"}]}
+                >
+                    <Select
+                        showSearch
+                        allowClear
+                        placeholder="Chọn địa phương, đơn vị"
+                        loading={donViLoading}
+                        filterOption={false}
+                        options={dsDonVi.map((item) => ({
+                            label: item.ten,
+                            value: item.id,
+                        }))}
+                        onSearch={setSearchDonVi}
+                        onPopupScroll={(e) => {
+                            const target = e.target
 
-                                    }}
-                                />
-                                <Button type={'default'} onClick={handleLuuDonVi}><SaveOutlined /></Button>
-                                <Button onClick={() => {
-                                    setIsEditDonVi(false)
-                                    setDonViId(user?.don_vi?.id)
-                                }} danger><CloseOutlined/></Button>
-                            </div>
+                            if (
+                                target.scrollTop +
+                                target.offsetHeight >=
+                                target.scrollHeight - 10
+                            ) {
+                                loadMore()
+                            }
+                        }}
+                    />
+                </Form.Item>
+            ) : null}
 
-                        </Col> : <Col xs={24} sm={16}>
-                            <button type="button" onClick={() => setIsEditDonVi(true)} className={'text-left text-base font-semibold text-slate-900 transition sm:text-lg'} style={{textDecorationColor: token.colorPrimary}}>{user?.don_vi?.ten || "Chưa cập nhật"}</button>
-                        </Col>
-                    }
-                </Row>
-
-
-
-            </Col>
-        </Row>
+            <Button type="primary" htmlType="submit" loading={loading || configLoading}>
+                Cập nhật hồ sơ
+            </Button>
+        </Form>
     </Card>
 }

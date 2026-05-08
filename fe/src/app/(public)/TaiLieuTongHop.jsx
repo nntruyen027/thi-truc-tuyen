@@ -1,12 +1,11 @@
 'use client';
 
-import {useEffect, useMemo, useState} from "react";
-import {Button, Card, Col, Empty, Row, Space, Typography, theme} from "antd";
+import {useEffect, useState} from "react";
+import {Button, Card, Empty, Space, Typography} from "antd";
 import {
     DownloadOutlined,
     EyeOutlined,
     FilePdfOutlined,
-    FolderOpenOutlined,
 } from "@ant-design/icons";
 import {layCauHinh} from "~/services/cau-hinh";
 import {getPublicFileUrl} from "~/services/file";
@@ -38,7 +37,6 @@ function normalizeTaiLieu(item = {}, fallback = {}) {
 export default function TaiLieuTongHop() {
     const [loading, setLoading] = useState(true);
     const [taiLieu, setTaiLieu] = useState([]);
-    const {token} = theme.useToken();
 
     useEffect(() => {
         let active = true;
@@ -117,17 +115,6 @@ export default function TaiLieuTongHop() {
         };
     }, []);
 
-    const groupedTaiLieu = useMemo(() => {
-        return taiLieu.reduce((acc, item) => {
-            if (!acc[item.nhom]) {
-                acc[item.nhom] = [];
-            }
-
-            acc[item.nhom].push(item);
-            return acc;
-        }, {});
-    }, [taiLieu]);
-
     if (!loading && !taiLieu.length) {
         return (
             <Card
@@ -145,86 +132,59 @@ export default function TaiLieuTongHop() {
             styles={{body: {padding: 24}}}
             loading={loading}
         >
-           
-            <Space orientation="vertical" size={20} className="!flex">
-                {Object.entries(groupedTaiLieu).map(([nhom, items]) => (
-                    <div key={nhom} className="space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div
-                                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-lg"
-                                style={{color: token.colorPrimary}}
-                            >
-                                <FolderOpenOutlined/>
+            <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white">
+                {taiLieu.map((item, index) => {
+                    const fileUrl = getPublicFileUrl(item.url);
+                    const isLast = index === taiLieu.length - 1;
+
+                    return (
+                        <div
+                            key={item.id}
+                            className={`flex flex-col gap-4 px-5 py-5 md:flex-row md:items-center md:justify-between md:gap-6 ${
+                                isLast ? "" : "border-b border-slate-200"
+                            }`}
+                        >
+                            <div className="flex min-w-0 items-start gap-4">
+                                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-lg text-red-500">
+                                    <FilePdfOutlined/>
+                                </div>
+                                <div className="min-w-0">
+                                    <Title level={5} className="!mb-1 !text-base !font-bold !text-slate-900">
+                                        {item.tieuDe}
+                                    </Title>
+                                    <Paragraph className="!mb-0 !text-sm !leading-7 !text-slate-500">
+                                        {item.moTa || "Tài liệu phục vụ cuộc thi."}
+                                    </Paragraph>
+                                </div>
                             </div>
-                            <div>
-                                <Text className="!block !text-xs !font-semibold !uppercase !tracking-[0.18em] !text-slate-400">
-                                    Nhóm tài liệu
-                                </Text>
-                                <Title level={4} className="!mb-0 !text-lg !font-bold !text-slate-900">
-                                    {nhom}
-                                </Title>
-                            </div>
+
+                            <Space wrap size={10} className="md:!shrink-0">
+                                <Button
+                                    type="link"
+                                    icon={<EyeOutlined/>}
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="!px-0 !font-semibold"
+                                >
+                                    Xem tài liệu
+                                </Button>
+
+                                <Button
+                                    icon={<DownloadOutlined/>}
+                                    href={fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    download
+                                    className="!rounded-full"
+                                >
+                                    Tải xuống
+                                </Button>
+                            </Space>
                         </div>
-
-                        <Row gutter={[16, 16]}>
-                            {items.map((item) => {
-                                const fileUrl = getPublicFileUrl(item.url);
-
-                                return (
-                                    <Col xs={24} md={12} xl={8} key={item.id}>
-                                        <Card
-                                            className="h-full rounded-[28px] border border-slate-200 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-                                            styles={{body: {padding: 20, height: "100%"}}}
-                                        >
-                                            <div className="flex h-full flex-col gap-4">
-                                                <div className="flex items-start gap-3">
-                                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-xl text-red-500">
-                                                        <FilePdfOutlined/>
-                                                    </div>
-                                                    <div className="min-w-0 flex-1">
-                                                        <Title level={5} className="!mb-1 !text-base !font-bold !text-slate-900">
-                                                            {item.tieuDe}
-                                                        </Title>
-                                                        <Text className="!text-sm !text-slate-400">
-                                                            File PDF
-                                                        </Text>
-                                                    </div>
-                                                </div>
-
-                                                <Paragraph className="!mb-0 flex-1 !text-sm !leading-7 !text-slate-500">
-                                                    {item.moTa || "Tài liệu phục vụ cuộc thi."}
-                                                </Paragraph>
-
-                                                <Space wrap>
-                                                    <Button
-                                                        type="primary"
-                                                        icon={<EyeOutlined/>}
-                                                        href={fileUrl}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                    >
-                                                        Mở tài liệu
-                                                    </Button>
-
-                                                    <Button
-                                                        icon={<DownloadOutlined/>}
-                                                        href={fileUrl}
-                                                        target="_blank"
-                                                        rel="noreferrer"
-                                                        download
-                                                    >
-                                                        Tải xuống
-                                                    </Button>
-                                                </Space>
-                                            </div>
-                                        </Card>
-                                    </Col>
-                                );
-                            })}
-                        </Row>
-                    </div>
-                ))}
-            </Space>
+                    );
+                })}
+            </div>
         </Card>
     );
 }

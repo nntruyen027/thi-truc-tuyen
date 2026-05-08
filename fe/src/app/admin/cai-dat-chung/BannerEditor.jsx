@@ -1,5 +1,4 @@
-import Image from "next/image";
-import {App, Button, Card, Slider, Typography, Upload} from "antd";
+import {App, Button, Card, Flex, Slider, Typography, Upload} from "antd";
 import {useEffect, useState} from "react";
 import {UploadOutlined} from "@ant-design/icons";
 import {layCauHinh, suaCauHinh} from "~/services/cau-hinh";
@@ -16,6 +15,8 @@ export default function BannerEditor({
     const {message} = App.useApp();
     const [image, setImage] = useState("");
     const [zoom, setZoom] = useState(1);
+    const [positionX, setPositionX] = useState(50);
+    const [positionY, setPositionY] = useState(50);
 
     useEffect(() => {
         let active = true;
@@ -31,6 +32,8 @@ export default function BannerEditor({
                 if (!res?.data?.gia_tri) {
                     setImage("");
                     setZoom(1);
+                    setPositionX(50);
+                    setPositionY(50);
                     return;
                 }
 
@@ -38,6 +41,8 @@ export default function BannerEditor({
 
                 setImage(value.duongDan || value.url || "");
                 setZoom(value.zoom || 1);
+                setPositionX(value.positionX || 50);
+                setPositionY(value.positionY || 50);
             } catch (error) {
                 if (active) {
                     message.error(error?.message || "Không thể tải banner.");
@@ -52,12 +57,19 @@ export default function BannerEditor({
         };
     }, [khoa, message, workspaceId]);
 
-    const save = async (duongDan, nextZoom) => {
+    const save = async (
+        duongDan,
+        nextZoom,
+        nextPositionX = positionX,
+        nextPositionY = positionY,
+    ) => {
         await suaCauHinh(
             khoa,
             JSON.stringify({
                 duongDan,
                 zoom: nextZoom,
+                positionX: nextPositionX,
+                positionY: nextPositionY,
             }),
             {workspaceId}
         );
@@ -69,7 +81,7 @@ export default function BannerEditor({
             const duongDan = res?.duongDan || res?.duong_dan || res?.url || "";
 
             setImage(duongDan);
-            await save(duongDan, zoom);
+            await save(duongDan, zoom, positionX, positionY);
             message.success("Đã cập nhật banner");
         } catch (error) {
             message.error(error?.message || "Không thể tải banner.");
@@ -78,17 +90,57 @@ export default function BannerEditor({
         return false;
     };
 
-    const changeZoom = async (nextZoom) => {
+    const changeZoom = (nextZoom) => {
         setZoom(nextZoom);
+    };
+
+    const saveZoom = async (nextZoom) => {
+        if (!image) {
+            return;
+        }
+
+        try {
+            await save(image, nextZoom, positionX, positionY);
+        } catch (error) {
+            message.error(error?.message || "Không thể cập nhật zoom banner.");
+        }
+    };
+
+    const changePosition = (axis, nextValue) => {
+        if (axis === "x") {
+            setPositionX(nextValue);
+        } else {
+            setPositionY(nextValue);
+        }
+    };
+
+    const savePosition = async (axis, nextValue) => {
+        if (!image) {
+            return;
+        }
+
+        const nextPositionX = axis === "x" ? nextValue : positionX;
+        const nextPositionY = axis === "y" ? nextValue : positionY;
+
+        try {
+            await save(image, zoom, nextPositionX, nextPositionY);
+        } catch (error) {
+            message.error(error?.message || "Không thể cập nhật vị trí banner.");
+        }
+    };
+
+    const applyPreset = async (nextPositionX, nextPositionY) => {
+        setPositionX(nextPositionX);
+        setPositionY(nextPositionY);
 
         if (!image) {
             return;
         }
 
         try {
-            await save(image, nextZoom);
+            await save(image, zoom, nextPositionX, nextPositionY);
         } catch (error) {
-            message.error(error?.message || "Không thể cập nhật zoom banner.");
+            message.error(error?.message || "Không thể cập nhật vị trí banner.");
         }
     };
 
@@ -131,7 +183,7 @@ export default function BannerEditor({
                             width: `${100 * zoom}%`,
                             height: `${100 * zoom}%`,
                             objectFit: "cover",
-                            objectPosition: "center",
+                            objectPosition: `${positionX}% ${positionY}%`,
                             position: "absolute",
                             left: "50%",
                             top: "50%",
@@ -153,8 +205,58 @@ export default function BannerEditor({
                     step={0.1}
                     value={zoom}
                     onChange={changeZoom}
+                    onChangeComplete={saveZoom}
                     disabled={disabled || !image}
                 />
+            </div>
+
+            <div className="mt-4">
+                Vị trí ngang
+                <Slider
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={positionX}
+                    onChange={(value) => changePosition("x", value)}
+                    onChangeComplete={(value) => savePosition("x", value)}
+                    disabled={disabled || !image}
+                />
+            </div>
+
+            <div className="mt-2">
+                Vị trí dọc
+                <Slider
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={positionY}
+                    onChange={(value) => changePosition("y", value)}
+                    onChangeComplete={(value) => savePosition("y", value)}
+                    disabled={disabled || !image}
+                />
+            </div>
+
+            <div className="mt-4">
+                <Typography.Text type="secondary">
+                    Căn nhanh vùng hiển thị
+                </Typography.Text>
+                <Flex gap={8} wrap className="mt-2">
+                    <Button size="small" disabled={disabled || !image} onClick={() => applyPreset(50, 50)}>
+                        Căn giữa
+                    </Button>
+                    <Button size="small" disabled={disabled || !image} onClick={() => applyPreset(50, 30)}>
+                        Ưu tiên phía trên
+                    </Button>
+                    <Button size="small" disabled={disabled || !image} onClick={() => applyPreset(50, 70)}>
+                        Ưu tiên phía dưới
+                    </Button>
+                    <Button size="small" disabled={disabled || !image} onClick={() => applyPreset(35, 50)}>
+                        Lệch trái nhẹ
+                    </Button>
+                    <Button size="small" disabled={disabled || !image} onClick={() => applyPreset(65, 50)}>
+                        Lệch phải nhẹ
+                    </Button>
+                </Flex>
             </div>
         </Card>
     );

@@ -7,6 +7,7 @@ import BanQuyen from "~/app/admin/cai-dat-chung/VanBanBanQuyen";
 import FaviconEditor from "~/app/admin/cai-dat-chung/FaviconEditor";
 import FooterMetaEditor from "~/app/admin/cai-dat-chung/FooterMetaEditor";
 import ColorThemeEditor from "~/app/admin/cai-dat-chung/ColorThemeEditor";
+import UserProfileFieldsEditor from "~/app/admin/cai-dat-chung/UserProfileFieldsEditor";
 
 export default function WorkspaceSettingsPanel({
     workspaceId = null,
@@ -40,9 +41,9 @@ export default function WorkspaceSettingsPanel({
 
             <Col md={24} lg={12}>
                 <BannerEditor
-                    title="Banner Desktop (16:3)"
+                    title="Banner Desktop (16:4)"
                     khoa="banner_desktop"
-                    aspectRatio="16/3"
+                    aspectRatio="16/4"
                     workspaceId={workspaceId}
                     disabled={!canEditMedia}
                 />
@@ -60,6 +61,10 @@ export default function WorkspaceSettingsPanel({
 
             <Col md={24} lg={12}>
                 <FooterMetaEditor workspaceId={workspaceId} />
+            </Col>
+
+            <Col md={24} lg={12}>
+                <UserProfileFieldsEditor workspaceId={workspaceId} />
             </Col>
 
             <Col md={24} lg={12}>

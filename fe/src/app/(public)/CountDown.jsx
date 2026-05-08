@@ -129,8 +129,20 @@ export default function CountDown({time}) {
                             background: "#ffffff",
                         }}
                     >
-                        <div style={{fontFamily: "Roboto", fontSize: 40, lineHeight: 1}}>{block.value}</div>
-                        <div className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
+                        <div
+                            style={{
+                                fontFamily: '"Aptos", "Segoe UI", Inter, "Helvetica Neue", Arial, sans-serif',
+                                fontSize: 56,
+                                fontWeight: 700,
+                                lineHeight: 1,
+                                letterSpacing: "-0.02em",
+                                fontVariantNumeric: "tabular-nums lining-nums",
+                                fontFeatureSettings: '"tnum" 1, "lnum" 1',
+                            }}
+                        >
+                            {block.value}
+                        </div>
+                        <div className="mt-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-slate-500">
                             {block.label}
                         </div>
                     </Card>

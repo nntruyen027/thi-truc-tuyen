@@ -26,8 +26,14 @@ function mapUser(row) {
         id: row.id,
         workspace_id: workspaceId,
         username: row.username,
+        so_dien_thoai: row.username,
         password: row.password,
         ho_ten: row.ho_ten,
+        dia_chi_dong_1: row.dia_chi_dong_1 || null,
+        xa_phuong: row.xa_phuong || null,
+        tinh_thanh: row.tinh_thanh || null,
+        nghe_nghiep: row.nghe_nghiep || null,
+        doi_tuong: row.doi_tuong || null,
         don_vi_id: row.don_vi_id,
         role: row.role,
         avatar: null,
@@ -51,6 +57,11 @@ async function selectUserByCondition(condition) {
             username: users.username,
             password: users.password,
             ho_ten: users.hoTen,
+            dia_chi_dong_1: users.diaChiDong1,
+            xa_phuong: users.xaPhuong,
+            tinh_thanh: users.tinhThanh,
+            nghe_nghiep: users.ngheNghiep,
+            doi_tuong: users.doiTuong,
             don_vi_id: users.donViId,
             role: users.role,
             created_at: users.createdAt,
@@ -105,7 +116,18 @@ exports.getUserByUsername = async (username, workspaceId = null) => {
     ));
 };
 
-exports.taoNguoiDung = async (username, pass, hoTen, donViId, workspaceId) => {
+exports.taoNguoiDung = async ({
+    username,
+    pass,
+    hoTen,
+    diaChiDong1 = null,
+    xaPhuong = null,
+    tinhThanh = null,
+    ngheNghiep = null,
+    doiTuong = null,
+    donViId = null,
+    workspaceId,
+}) => {
     if (!workspaceId) {
         throw "Không xác định được workspace cho tài khoản này.";
     }
@@ -123,6 +145,11 @@ exports.taoNguoiDung = async (username, pass, hoTen, donViId, workspaceId) => {
             username,
             password: pass,
             hoTen,
+            diaChiDong1,
+            xaPhuong,
+            tinhThanh,
+            ngheNghiep,
+            doiTuong,
             donViId,
             role: "user",
         })
@@ -161,17 +188,44 @@ exports.updatePassword = async (username, password, workspaceId = null) => {
     return updated.length > 0;
 };
 
-exports.capNhatThongTinNguoiDung = async (username, hoTen, donViId, workspaceId = null) => {
+exports.capNhatThongTinNguoiDung = async (username, profile = {}, workspaceId = null) => {
     const condition = workspaceId
         ? and(eq(users.username, username), eq(users.workspaceId, Number(workspaceId)))
         : and(eq(users.username, username), eq(users.role, "super_admin"));
 
+    const nextData = {};
+
+    if (profile.hoTen !== undefined) {
+        nextData.hoTen = profile.hoTen;
+    }
+
+    if (profile.diaChiDong1 !== undefined) {
+        nextData.diaChiDong1 = profile.diaChiDong1;
+    }
+
+    if (profile.xaPhuong !== undefined) {
+        nextData.xaPhuong = profile.xaPhuong;
+    }
+
+    if (profile.tinhThanh !== undefined) {
+        nextData.tinhThanh = profile.tinhThanh;
+    }
+
+    if (profile.ngheNghiep !== undefined) {
+        nextData.ngheNghiep = profile.ngheNghiep;
+    }
+
+    if (profile.doiTuong !== undefined) {
+        nextData.doiTuong = profile.doiTuong;
+    }
+
+    if (profile.donViId !== undefined) {
+        nextData.donViId = profile.donViId;
+    }
+
     await db
         .update(users)
-        .set({
-            hoTen,
-            donViId,
-        })
+        .set(nextData)
         .where(condition);
 
     return exports.getUserByUsername(username, workspaceId);

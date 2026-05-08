@@ -16,6 +16,7 @@ const FILE_SCOPED_KEYS = new Set([
 
 const TENANT_SCOPED_KEYS = new Set([
     "theme_settings",
+    "user_profile_fields",
     "favicon",
     "banner_desktop",
     "banner_mobile",

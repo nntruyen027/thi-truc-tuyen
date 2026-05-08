@@ -47,9 +47,9 @@ export async function getMe() {
     return res.data.data;
 }
 
-export async function dangKy({username, password, repeatPassword, hoTen, donViId}) {
+export async function dangKy(payload) {
     try {
-        const res = await api.post("/auth/register", {username, password, repeatPassword, hoTen, donViId});
+        const res = await api.post("/auth/register", payload);
         return res.data;
     }
     catch (e) {
@@ -71,14 +71,13 @@ export async function thayDoiMatKhau({oldPassword,
     }
 }
 
-export async function thayDoiThongTinCaNhan({hoTen, donViId}) {
+export async function thayDoiThongTinCaNhan(payload) {
     try {
-        const res = await api.put("/auth/profile", {hoTen, donViId});
+        const res = await api.put("/auth/profile", payload);
         return res.data.data;
     }
     catch (e) {
         throw new Error(e?.response?.data?.message)
     }
 }
-
 
