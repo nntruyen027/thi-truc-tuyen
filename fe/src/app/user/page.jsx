@@ -53,7 +53,7 @@ export default function Page() {
 
                 setDotThi(dot.data || null);
 
-                if (dot?.data?.id) {
+                if (dot?.data?.id && !dot.data.la_sap_dien_ra) {
                     const ds =
                         await lichSuThi(
                             dot.data.id
@@ -93,6 +93,9 @@ export default function Page() {
 
 
     function actionBtn(row) {
+        if (!dotThi?.id || dotThi?.la_sap_dien_ra) {
+            return null;
+        }
 
         if (row.trang_thai === 0) {
 
@@ -274,6 +277,7 @@ export default function Page() {
                                 type="primary"
                                 size="large"
                                 className="!h-12 !rounded-2xl !px-6 !font-semibold"
+                                disabled={!dotThi?.id || dotThi?.la_sap_dien_ra}
                                 onClick={() =>
                                     router.push(
                                         "/user/thi"
@@ -309,7 +313,7 @@ export default function Page() {
                     >
                         <div className="space-y-3">
                             <Text className="!text-xs !font-semibold !uppercase !tracking-[0.24em]" style={{color: token.colorPrimary}}>
-                                Đợt thi hiện tại
+                                {dotThi?.la_sap_dien_ra ? "Đợt thi sắp diễn ra" : "Đợt thi hiện tại"}
                             </Text>
                             <Title level={3} className="!mb-0 !text-slate-900">
                                 {dotThi?.ten || "Chưa có đợt thi"}

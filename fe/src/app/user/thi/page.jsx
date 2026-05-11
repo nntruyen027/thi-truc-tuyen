@@ -94,6 +94,10 @@ export default function Thi() {
                     throw new Error("Hiện không có đợt thi đang diễn ra.")
                 }
 
+                if (dotData.la_sap_dien_ra) {
+                    throw new Error("Đợt thi chưa bắt đầu. Vui lòng quay lại khi tới giờ.")
+                }
+
                 setDotThi(dotData)
 
                 const data =
