@@ -185,7 +185,6 @@ exports.layThoiGianConLaiCuaCuocThi = async (workspaceId) => {
     const now = new Date();
     let row;
     let attemptedWorkspaceQuery = false;
-    let demNguoc = true;
     let mocThoiGian = "ket_thuc";
 
     if (hasWorkspaceColumn(cuocThi)) {
@@ -217,7 +216,6 @@ exports.layThoiGianConLaiCuaCuocThi = async (workspaceId) => {
                     .limit(1);
 
                 if (row) {
-                    demNguoc = false;
                     mocThoiGian = "bat_dau";
                 }
             }
@@ -274,7 +272,6 @@ exports.layThoiGianConLaiCuaCuocThi = async (workspaceId) => {
                 .limit(1);
 
             if (row) {
-                demNguoc = false;
                 mocThoiGian = "bat_dau";
             }
         }
@@ -314,7 +311,7 @@ exports.layThoiGianConLaiCuaCuocThi = async (workspaceId) => {
         gio,
         phut,
         giay,
-        dem_nguoc: demNguoc,
+        dem_nguoc: true,
         moc_thoi_gian: mocThoiGian,
     };
 };
