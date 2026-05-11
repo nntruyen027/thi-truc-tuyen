@@ -7,7 +7,7 @@ export const tabItems = [
         key: "thong-tin",
         title: "Thông tin",
         subtitle: "Cuộc thi",
-        image: "/schedule.png",
+        image: "/documents.png",
     },
     {
         key: "giai-thuong",
@@ -25,7 +25,7 @@ export const tabItems = [
         key: "ket-qua",
         title: "Kết quả",
         subtitle: "Công bố xếp hạng",
-        image: "/medal.png",
+        image: "/laurel.png",
     },
 ];
 

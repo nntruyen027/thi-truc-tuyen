@@ -287,7 +287,7 @@ export default function Page() {
                 onSelect={scrollToSection}
             />
 
-            <div className="mx-auto w-full px-4 py-4 sm:px-8 md:px-10 lg:px-14 xl:px-20 2xl:px-50">
+            <div className="mx-auto w-full px-4 py-4 sm:px-10 md:px-10 lg:px-30 xl:px-50 2xl:px-70">
                 <Row gutter={[20, 20]} align="stretch">
                     <PublicContestOverview
                         colorPrimary={colorPrimary}

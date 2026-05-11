@@ -111,13 +111,13 @@ export default function Footer() {
 
     return (
         <Layout.Footer
-            className="mt-14 overflow-hidden px-4 py-0! text-white sm:px-6 lg:px-8"
+            className="text-white! py-0! overflow-hidden mx-auto w-full px-4 sm:px-10 md:px-10 lg:px-30 xl:px-50 2xl:px-70"
             style={{
                 background: "var(--workspace-primary-color)",
             }}
         >
             <div className="mx-auto w-full max-w-7xl">
-                <div className="px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
+                <div className="py-8 lg:py-10">
                     <div className="grid gap-8 lg:grid-cols-3 lg:gap-10">
                         <div className="space-y-4">
                         

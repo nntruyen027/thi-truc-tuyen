@@ -112,7 +112,7 @@ function PrizeCard({item, index, primaryColor, accentTone, featured = false}) {
                         color:  "#ffffff",
                     }}
                 >
-                    {featured ? <CrownOutlined /> : <TrophyOutlined />}
+                    {featured ? <img src="./award.png" alt="Award" /> : <TrophyOutlined />}
                 </div>
                     <Title
                         level={featured ? 2 : 4}
