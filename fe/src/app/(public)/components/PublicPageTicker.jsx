@@ -31,7 +31,7 @@ export default function PublicPageTicker({
             <div className="mx-auto w-full px-4 sm:px-10 md:px-10 lg:px-30 xl:px-50 2xl:px-70">
                 <Reveal delay={80} className="h-full w-full">
                     <div
-                        className={`grid grid-cols-2 gap-4 py-2 transition-all duration-300 md:grid-cols-4 ${
+                        className={`flex gap-3 overflow-x-auto py-2 transition-all duration-300 md:grid md:grid-cols-4 md:overflow-visible ${
                             compactTicker ? "md:py-1.5" : "md:py-2.5"
                         }`}
                     >
@@ -43,14 +43,14 @@ export default function PublicPageTicker({
                                     key={item.key}
                                     type="button"
                                     onClick={() => onSelect(item.key)}
-                                    className={`flex flex-col hover:cursor-pointer gap-1 rounded-2xl border transition duration-300 ${
+                                    className={`min-w-[9.5rem] shrink-0 flex flex-col gap-1 rounded-2xl border transition duration-300 hover:cursor-pointer md:min-w-0 ${
                                         compactTicker
                                             ? "min-h-0 items-center justify-center px-3 py-2 text-center"
                                             : "min-h-20 items-center justify-start px-4 py-3 text-left"
                                     } ${
                                         isActive
                                             ? "shadow-sm"
-                                            : "hover:-translate-y-2 hover:shadow-sm"
+                                            : "md:hover:-translate-y-2 hover:shadow-sm"
                                     }`}
                                     style={isActive
                                         ? {
