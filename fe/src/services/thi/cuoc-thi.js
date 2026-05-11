@@ -1,4 +1,5 @@
 import api from "~/services/api";
+import { ensureUploadableFile } from "~/services/file";
 
 const BASE_PATH = "/cuoc-thi";
 
@@ -81,5 +82,42 @@ export async function xoaCuocThi(id) {
     }
     catch (e) {
         throw new Error(e?.response?.data?.message);
+    }
+}
+
+export async function taiTemplateImportCuocThi() {
+    try {
+        const res = await api.get(`${BASE_PATH}/import/template`, {
+            responseType: "blob",
+        });
+
+        return res.data;
+    }
+    catch (e) {
+        throw new Error(e?.response?.data?.message || "Không thể tải file mẫu");
+    }
+}
+
+export async function importDuLieuCuocThi(file) {
+    const normalizedFile = ensureUploadableFile(file);
+    const form = new FormData();
+
+    form.append("file", normalizedFile);
+
+    try {
+        const res = await api.post(
+            `${BASE_PATH}/import/workbook`,
+            form,
+            {
+                timeout: 10 * 60 * 1000,
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity,
+            }
+        );
+
+        return res.data.data;
+    }
+    catch (e) {
+        throw new Error(e?.response?.data?.message || e?.message);
     }
 }

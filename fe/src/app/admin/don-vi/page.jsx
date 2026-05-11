@@ -1,14 +1,15 @@
 'use client'
 
 import {useCallback, useEffect, useState} from "react";
-import {App, Button, Dropdown, Input, Modal, Table} from "antd";
+import {App, Button, Dropdown, Input, Modal, Table, Upload} from "antd";
 
 import {useDebounce} from "~/hook/data";
 import {usePageInfoStore} from "~/store/page-info";
 
 import {getDonVi, xoaDonVi} from "~/services/dm_chung/don_vi";
+import {importDanhMuc, taiTemplateDanhMuc} from "~/services/dm_chung/import";
 import DonViModal from "~/app/admin/don-vi/DonViModal";
-import {DeleteOutlined, EditOutlined, EllipsisOutlined} from "@ant-design/icons";
+import {DeleteOutlined, DownloadOutlined, EditOutlined, EllipsisOutlined, UploadOutlined} from "@ant-design/icons";
 
 
 export default function DonVi() {
@@ -80,6 +81,84 @@ export default function DonVi() {
         }
 
     }, [message]);
+
+    const hienThiKetQuaImport = (summary = {}) => {
+        const errors = Array.isArray(summary.errors) ? summary.errors : [];
+
+        Modal.info({
+            title: "Kết quả import đơn vị",
+            width: 680,
+            okText: "Đã hiểu",
+            content: (
+                <div className="space-y-4 pt-2">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="grid gap-3 sm:grid-cols-2 text-sm text-slate-700">
+                            <div>Đã tạo mới: <b>{summary.created || 0}</b></div>
+                            <div>Bỏ qua do trùng: <b>{summary.skipped || 0}</b></div>
+                        </div>
+                    </div>
+                    {errors.length ? (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                            <div className="text-sm font-semibold text-amber-900">
+                                Dòng cần kiểm tra lại: {errors.length}
+                            </div>
+                            <div className="mt-2 max-h-64 space-y-2 overflow-auto text-sm text-amber-900">
+                                {errors.slice(0, 20).map((error, index) => (
+                                    <div key={`${error.row}-${index}`}>
+                                        Dòng {error.row}: {error.message}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ) : null}
+                </div>
+            ),
+        });
+    };
+
+    const handleImportFile = (file) => {
+        Modal.confirm({
+            title: "Nhập danh sách đơn vị?",
+            content: file.name,
+            okText: "Nhập dữ liệu",
+            cancelText: "Hủy",
+            onOk: async () => {
+                try {
+                    const summary = await importDanhMuc("don_vi", file);
+                    message.success("Đã xử lý file import");
+                    hienThiKetQuaImport(summary);
+                    fetchData(
+                        pagination.current,
+                        pagination.pageSize,
+                        debouncedSearch,
+                        sorter.sortField,
+                        sorter.sortType
+                    );
+                } catch (e) {
+                    message.error(e.message);
+                }
+            }
+        });
+
+        return false;
+    };
+
+    const handleDownloadTemplate = async () => {
+        try {
+            const blob = await taiTemplateDanhMuc("don_vi");
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.download = "mau-import-don-vi.xlsx";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            message.error(e.message);
+        }
+    };
 
     const handleDelete = (id) => {
         setDeletingId(id);
@@ -202,6 +281,29 @@ export default function DonVi() {
 
     ];
 
+    const importMenu = [
+        {
+            key: "download-template",
+            label: "Tải file mẫu",
+            icon: <DownloadOutlined />,
+            onClick: handleDownloadTemplate,
+        },
+        {
+            key: "upload-workbook",
+            label: (
+                <Upload
+                    showUploadList={false}
+                    beforeUpload={handleImportFile}
+                    accept=".xlsx"
+                    maxCount={1}
+                >
+                    Nhập file Excel
+                </Upload>
+            ),
+            icon: <UploadOutlined />,
+        },
+    ];
+
 
     return (
 
@@ -219,6 +321,12 @@ export default function DonVi() {
                 />
 
                 <div className="admin-toolbar__actions">
+                    <Dropdown menu={{items: importMenu}}>
+                        <Button>
+                            Import đơn vị
+                        </Button>
+                    </Dropdown>
+
                     <Button
                         type="primary"
                         onClick={() => {

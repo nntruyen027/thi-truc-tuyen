@@ -195,6 +195,7 @@ exports.layThoiGianConLaiCuaCuocThi = async (workspaceId) => {
                 .from(cuocThi)
                 .where(and(
                     eq(cuocThi.workspaceId, Number(workspaceId)),
+                    eq(cuocThi.trangThai, true),
                     lte(cuocThi.thoiGianBatDau, now),
                     gte(cuocThi.thoiGianKetThuc, now),
                 ))
@@ -223,6 +224,7 @@ exports.layThoiGianConLaiCuaCuocThi = async (workspaceId) => {
             })
             .from(cuocThi)
             .where(and(
+                eq(cuocThi.trangThai, true),
                 lte(cuocThi.thoiGianBatDau, now),
                 gte(cuocThi.thoiGianKetThuc, now),
             ))
@@ -282,6 +284,7 @@ exports.layTongLuotThiCuaCuocThiHienTai = async (workspaceId) => {
                 .from(cuocThi)
                 .where(and(
                     eq(cuocThi.workspaceId, Number(workspaceId)),
+                    eq(cuocThi.trangThai, true),
                     lte(cuocThi.thoiGianBatDau, now),
                     gte(cuocThi.thoiGianKetThuc, now),
                 ))
@@ -304,6 +307,7 @@ exports.layTongLuotThiCuaCuocThiHienTai = async (workspaceId) => {
                 .innerJoin(dotThi, and(
                     eq(dotThi.id, deThi.dotThiId),
                     eq(dotThi.workspaceId, Number(workspaceId)),
+                    eq(dotThi.trangThai, true),
                     eq(dotThi.cuocThiId, Number(activeContest.id))
                 ))
                 .where(eq(baiThi.workspaceId, Number(workspaceId)));
@@ -324,6 +328,7 @@ exports.layTongLuotThiCuaCuocThiHienTai = async (workspaceId) => {
         .select({ id: cuocThi.id })
         .from(cuocThi)
         .where(and(
+            eq(cuocThi.trangThai, true),
             lte(cuocThi.thoiGianBatDau, now),
             gte(cuocThi.thoiGianKetThuc, now),
         ))
@@ -342,6 +347,7 @@ exports.layTongLuotThiCuaCuocThiHienTai = async (workspaceId) => {
         .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
         .innerJoin(dotThi, and(
             eq(dotThi.id, deThi.dotThiId),
+            eq(dotThi.trangThai, true),
             eq(dotThi.cuocThiId, Number(activeContest.id))
         ));
 

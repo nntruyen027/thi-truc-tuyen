@@ -1,13 +1,26 @@
 'use client'
 
 import {useCallback, useEffect, useState} from "react";
-import {App, Button, Dropdown, Input, Modal, Switch, Table, Tag} from "antd";
+import {App, Button, Dropdown, Input, Modal, Switch, Table, Tag, Upload} from "antd";
 
 import {useDebounce} from "~/hook/data";
 import {usePageInfoStore} from "~/store/page-info";
 
-import {layCuocThi, suaCuocThi, xoaCuocThi} from "~/services/thi/cuoc-thi";
-import {DeleteOutlined, DiffOutlined, EditOutlined, EllipsisOutlined} from "@ant-design/icons";
+import {
+    importDuLieuCuocThi,
+    layCuocThi,
+    suaCuocThi,
+    taiTemplateImportCuocThi,
+    xoaCuocThi
+} from "~/services/thi/cuoc-thi";
+import {
+    DeleteOutlined,
+    DiffOutlined,
+    DownloadOutlined,
+    EditOutlined,
+    EllipsisOutlined,
+    UploadOutlined
+} from "@ant-design/icons";
 import CuocThiModal from "./CuocThiModal";
 import dayjs from "dayjs";
 import {useRouter} from "next/navigation";
@@ -84,6 +97,106 @@ export default function CuocThi() {
         }
 
     }, [message]);
+
+    const hienThiKetQuaImport = (summary = {}) => {
+        const created = summary.created || {};
+        const skipped = summary.skipped || {};
+        const errors = Array.isArray(summary.errors) ? summary.errors : [];
+
+        Modal.info({
+            title: "Kết quả import dữ liệu",
+            width: 720,
+            okText: "Đã hiểu",
+            content: (
+                <div className="space-y-4 pt-2">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <div>
+                                <div className="text-sm font-semibold text-slate-900">Đã tạo mới</div>
+                                <div className="mt-2 space-y-1 text-sm text-slate-600">
+                                    <div>Cuộc thi: {created.cuoc_thi || 0}</div>
+                                    <div>Đợt thi: {created.dot_thi || 0}</div>
+                                </div>
+                            </div>
+                            <div>
+                                <div className="text-sm font-semibold text-slate-900">Bỏ qua do trùng</div>
+                                <div className="mt-2 space-y-1 text-sm text-slate-600">
+                                    <div>Cuộc thi: {skipped.cuoc_thi || 0}</div>
+                                    <div>Đợt thi: {skipped.dot_thi || 0}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {errors.length ? (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                            <div className="text-sm font-semibold text-amber-900">
+                                Dòng cần kiểm tra lại: {errors.length}
+                            </div>
+                            <div className="mt-2 max-h-64 space-y-2 overflow-auto text-sm text-amber-900">
+                                {errors.slice(0, 20).map((error, index) => (
+                                    <div key={`${error.sheet}-${error.row}-${index}`}>
+                                        Sheet {error.sheet}, dòng {error.row}: {error.message}
+                                    </div>
+                                ))}
+                                {errors.length > 20 ? (
+                                    <div className="font-medium">
+                                        Còn {errors.length - 20} dòng lỗi khác. Hãy sửa file rồi import lại.
+                                    </div>
+                                ) : null}
+                            </div>
+                        </div>
+                    ) : null}
+                </div>
+            ),
+        });
+    };
+
+    const handleImportFile = (file) => {
+        Modal.confirm({
+            title: "Nhập dữ liệu từ Excel?",
+            content: file.name,
+            okText: "Nhập dữ liệu",
+            cancelText: "Hủy",
+            width: 560,
+            onOk: async () => {
+                try {
+                    const summary = await importDuLieuCuocThi(file);
+
+                    message.success("Đã xử lý file import");
+                    hienThiKetQuaImport(summary);
+                    fetchData(
+                        pagination.current,
+                        pagination.pageSize,
+                        debouncedSearch,
+                        sorter.sortField,
+                        sorter.sortType
+                    );
+                } catch (e) {
+                    message.error(e.message);
+                }
+            }
+        });
+
+        return false;
+    };
+
+    const handleDownloadTemplate = async () => {
+        try {
+            const blob = await taiTemplateImportCuocThi();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.download = "mau-import-cuoc-thi.xlsx";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            message.error(e.message);
+        }
+    };
 
     const handleDelete = (id) => {
         setDeletingId(id);
@@ -280,6 +393,29 @@ export default function CuocThi() {
 
     ];
 
+    const importMenu = [
+        {
+            key: "download-template",
+            label: "Tải file mẫu",
+            icon: <DownloadOutlined />,
+            onClick: handleDownloadTemplate,
+        },
+        {
+            key: "upload-workbook",
+            label: (
+                <Upload
+                    showUploadList={false}
+                    beforeUpload={handleImportFile}
+                    accept=".xlsx"
+                    maxCount={1}
+                >
+                    Nhập file Excel
+                </Upload>
+            ),
+            icon: <UploadOutlined />,
+        },
+    ];
+
 
     return (
 
@@ -297,6 +433,12 @@ export default function CuocThi() {
                 />
 
                 <div className="admin-toolbar__actions">
+                    <Dropdown menu={{items: importMenu}}>
+                        <Button>
+                            Import dữ liệu
+                        </Button>
+                    </Dropdown>
+
                     <Button
                         type="primary"
                         onClick={() => {

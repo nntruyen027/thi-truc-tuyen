@@ -13,6 +13,11 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
     const access = useAuthStore.getState().access; // ✅ ĐÚNG
 
+    if (typeof FormData !== "undefined" && config.data instanceof FormData) {
+        config.headers = config.headers || {};
+        delete config.headers["Content-Type"];
+    }
+
     if (typeof window !== "undefined") {
         config.headers = config.headers || {};
         config.headers["X-Workspace-Host"] = window.location.host;

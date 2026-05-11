@@ -1,4 +1,4 @@
-const { and, count, desc, eq, gte, ilike, lte } = require("drizzle-orm");
+const { and, count, desc, eq, gte, ilike, lte, ne } = require("drizzle-orm");
 const db = require("../../db/client");
 const { cuocThi, dotThi, tracNghiemDotThi, tuLuanDotThi } = require("../../db/schema");
 const {
@@ -75,6 +75,28 @@ function isMissingWorkspaceColumnError(error) {
 
 function hasWorkspaceColumn(table) {
     return Boolean(table?.workspaceId);
+}
+
+function buildDotThiDuplicateCondition({
+    workspaceId,
+    cuocThiId,
+    ten,
+    excludeId = null,
+}) {
+    const conditions = [
+        eq(dotThi.cuocThiId, Number(cuocThiId)),
+        eq(dotThi.ten, ten),
+    ];
+
+    if (hasWorkspaceColumn(dotThi)) {
+        conditions.unshift(eq(dotThi.workspaceId, Number(workspaceId)));
+    }
+
+    if (excludeId !== null && excludeId !== undefined) {
+        conditions.push(ne(dotThi.id, Number(excludeId)));
+    }
+
+    return and(...conditions);
 }
 
 async function getDotThiWithCuocThi(workspaceId, id) {
@@ -387,6 +409,8 @@ exports.layDotThiHienTai = async (workspaceId) => {
                 ))
                 .where(and(
                     eq(dotThi.workspaceId, Number(workspaceId)),
+                    eq(dotThi.trangThai, true),
+                    eq(cuocThi.trangThai, true),
                     lte(dotThi.thoiGianBatDau, now),
                     gte(dotThi.thoiGianKetThuc, now)
                 ))
@@ -430,6 +454,8 @@ exports.layDotThiHienTai = async (workspaceId) => {
             .from(dotThi)
             .leftJoin(cuocThi, eq(dotThi.cuocThiId, cuocThi.id))
             .where(and(
+                eq(dotThi.trangThai, true),
+                eq(cuocThi.trangThai, true),
                 lte(dotThi.thoiGianBatDau, now),
                 gte(dotThi.thoiGianKetThuc, now)
             ))
@@ -462,12 +488,11 @@ exports.themDotThi = async (
     du_doan,
     trang_thai
 ) => {
-    const existingCondition = hasWorkspaceColumn(dotThi)
-        ? and(
-            eq(dotThi.workspaceId, Number(workspaceId)),
-            eq(dotThi.ten, ten)
-        )
-        : eq(dotThi.ten, ten);
+    const existingCondition = buildDotThiDuplicateCondition({
+        workspaceId,
+        cuocThiId,
+        ten,
+    });
     const foundContestCondition = hasWorkspaceColumn(cuocThi)
         ? and(
             eq(cuocThi.workspaceId, Number(workspaceId)),
@@ -537,6 +562,29 @@ exports.suaDotThi = async (
     du_doan,
     trang_thai
 ) => {
+    const currentDotThi = await getDotThiWithCuocThi(workspaceId, id);
+
+    if (!currentDotThi) {
+        throw "Đợt thi không tồn tại";
+    }
+
+    const existingCondition = buildDotThiDuplicateCondition({
+        workspaceId,
+        cuocThiId: currentDotThi.cuoc_thi_id,
+        ten,
+        excludeId: id,
+    });
+
+    const existing = await db
+        .select({id: dotThi.id})
+        .from(dotThi)
+        .where(existingCondition)
+        .limit(1);
+
+    if (existing.length) {
+        throw `Đợt thi ${ten} đã tồn tại`;
+    }
+
     const [updated] = await db
         .update(dotThi)
         .set({
