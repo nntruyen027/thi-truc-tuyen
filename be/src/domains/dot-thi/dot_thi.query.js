@@ -370,6 +370,7 @@ exports.layDotThiHienTai = async (workspaceId) => {
 
     let row;
     let attemptedWorkspaceQuery = false;
+    let laSapDienRa = false;
 
     if (hasWorkspaceColumn(dotThi) && hasWorkspaceColumn(cuocThi)) {
         attemptedWorkspaceQuery = true;
@@ -416,6 +417,51 @@ exports.layDotThiHienTai = async (workspaceId) => {
                 ))
                 .orderBy(desc(dotThi.thoiGianBatDau))
                 .limit(1);
+
+            if (!row) {
+                [row] = await db
+                    .select({
+                        id: dotThi.id,
+                        cuocThiId: dotThi.cuocThiId,
+                        ten: dotThi.ten,
+                        moTa: dotThi.moTa,
+                        soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
+                        thoiGianThi: dotThi.thoiGianThi,
+                        tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
+                        thoiGianBatDau: dotThi.thoiGianBatDau,
+                        thoiGianKetThuc: dotThi.thoiGianKetThuc,
+                        coTronCauHoi: dotThi.coTronCauHoi,
+                        choPhepLuuBai: dotThi.choPhepLuuBai,
+                        duDoan: dotThi.duDoan,
+                        trangThai: dotThi.trangThai,
+                        createdAt: dotThi.createdAt,
+                        cuoc_thi_id: cuocThi.id,
+                        cuoc_thi_ten: cuocThi.ten,
+                        cuoc_thi_mo_ta: cuocThi.moTa,
+                        cuoc_thi_thoi_gian_bat_dau: cuocThi.thoiGianBatDau,
+                        cuoc_thi_thoi_gian_ket_thuc: cuocThi.thoiGianKetThuc,
+                        cuoc_thi_trang_thai: cuocThi.trangThai,
+                        cuoc_thi_cho_phep_xem_lich_su: cuocThi.choPhepXemLichSu,
+                        cuoc_thi_cho_phep_xem_lai_dap_an: cuocThi.choPhepXemLaiDapAn,
+                        cuoc_thi_co_tu_luan: cuocThi.coTuLuan,
+                        cuoc_thi_created_at: cuocThi.createdAt,
+                    })
+                    .from(dotThi)
+                    .leftJoin(cuocThi, and(
+                        eq(dotThi.cuocThiId, cuocThi.id),
+                        eq(cuocThi.workspaceId, Number(workspaceId))
+                    ))
+                    .where(and(
+                        eq(dotThi.workspaceId, Number(workspaceId)),
+                        eq(dotThi.trangThai, true),
+                        eq(cuocThi.trangThai, true),
+                        gte(dotThi.thoiGianBatDau, now)
+                    ))
+                    .orderBy(dotThi.thoiGianBatDau)
+                    .limit(1);
+
+                laSapDienRa = Boolean(row);
+            }
         } catch (error) {
             if (!isMissingWorkspaceColumnError(error)) {
                 throw error;
@@ -461,6 +507,47 @@ exports.layDotThiHienTai = async (workspaceId) => {
             ))
             .orderBy(desc(dotThi.thoiGianBatDau))
             .limit(1);
+
+        if (!row) {
+            [row] = await db
+                .select({
+                    id: dotThi.id,
+                    cuocThiId: dotThi.cuocThiId,
+                    ten: dotThi.ten,
+                    moTa: dotThi.moTa,
+                    soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
+                    thoiGianThi: dotThi.thoiGianThi,
+                    tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
+                    thoiGianBatDau: dotThi.thoiGianBatDau,
+                    thoiGianKetThuc: dotThi.thoiGianKetThuc,
+                    coTronCauHoi: dotThi.coTronCauHoi,
+                    choPhepLuuBai: dotThi.choPhepLuuBai,
+                    duDoan: dotThi.duDoan,
+                    trangThai: dotThi.trangThai,
+                    createdAt: dotThi.createdAt,
+                    cuoc_thi_id: cuocThi.id,
+                    cuoc_thi_ten: cuocThi.ten,
+                    cuoc_thi_mo_ta: cuocThi.moTa,
+                    cuoc_thi_thoi_gian_bat_dau: cuocThi.thoiGianBatDau,
+                    cuoc_thi_thoi_gian_ket_thuc: cuocThi.thoiGianKetThuc,
+                    cuoc_thi_trang_thai: cuocThi.trangThai,
+                    cuoc_thi_cho_phep_xem_lich_su: cuocThi.choPhepXemLichSu,
+                    cuoc_thi_cho_phep_xem_lai_dap_an: cuocThi.choPhepXemLaiDapAn,
+                    cuoc_thi_co_tu_luan: cuocThi.coTuLuan,
+                    cuoc_thi_created_at: cuocThi.createdAt,
+                })
+                .from(dotThi)
+                .leftJoin(cuocThi, eq(dotThi.cuocThiId, cuocThi.id))
+                .where(and(
+                    eq(dotThi.trangThai, true),
+                    eq(cuocThi.trangThai, true),
+                    gte(dotThi.thoiGianBatDau, now)
+                ))
+                .orderBy(dotThi.thoiGianBatDau)
+                .limit(1);
+
+            laSapDienRa = Boolean(row);
+        }
     }
 
     if (!row) {
@@ -469,6 +556,7 @@ exports.layDotThiHienTai = async (workspaceId) => {
 
     return {
         ...mapDotThi(row),
+        la_sap_dien_ra: laSapDienRa,
         cuoc_thi: mapCuocThi(row),
     };
 };

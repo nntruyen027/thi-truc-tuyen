@@ -185,6 +185,8 @@ exports.layThoiGianConLaiCuaCuocThi = async (workspaceId) => {
     const now = new Date();
     let row;
     let attemptedWorkspaceQuery = false;
+    let demNguoc = true;
+    let mocThoiGian = "ket_thuc";
 
     if (hasWorkspaceColumn(cuocThi)) {
         attemptedWorkspaceQuery = true;
@@ -201,6 +203,24 @@ exports.layThoiGianConLaiCuaCuocThi = async (workspaceId) => {
                 ))
                 .orderBy(asc(cuocThi.thoiGianKetThuc))
                 .limit(1);
+
+            if (!row) {
+                [row] = await db
+                    .select()
+                    .from(cuocThi)
+                    .where(and(
+                        eq(cuocThi.workspaceId, Number(workspaceId)),
+                        eq(cuocThi.trangThai, true),
+                        gte(cuocThi.thoiGianBatDau, now),
+                    ))
+                    .orderBy(asc(cuocThi.thoiGianBatDau))
+                    .limit(1);
+
+                if (row) {
+                    demNguoc = false;
+                    mocThoiGian = "bat_dau";
+                }
+            }
         } catch (error) {
             if (!isMissingWorkspaceColumnError(error)) {
                 throw error;
@@ -230,15 +250,47 @@ exports.layThoiGianConLaiCuaCuocThi = async (workspaceId) => {
             ))
             .orderBy(asc(cuocThi.thoiGianKetThuc))
             .limit(1);
+
+        if (!row) {
+            [row] = await db
+                .select({
+                    id: cuocThi.id,
+                    ten: cuocThi.ten,
+                    moTa: cuocThi.moTa,
+                    thoiGianBatDau: cuocThi.thoiGianBatDau,
+                    thoiGianKetThuc: cuocThi.thoiGianKetThuc,
+                    trangThai: cuocThi.trangThai,
+                    choPhepXemLichSu: cuocThi.choPhepXemLichSu,
+                    choPhepXemLaiDapAn: cuocThi.choPhepXemLaiDapAn,
+                    coTuLuan: cuocThi.coTuLuan,
+                    createdAt: cuocThi.createdAt,
+                })
+                .from(cuocThi)
+                .where(and(
+                    eq(cuocThi.trangThai, true),
+                    gte(cuocThi.thoiGianBatDau, now),
+                ))
+                .orderBy(asc(cuocThi.thoiGianBatDau))
+                .limit(1);
+
+            if (row) {
+                demNguoc = false;
+                mocThoiGian = "bat_dau";
+            }
+        }
     }
 
     const active = row || null;
 
-    if (!active?.thoiGianKetThuc) {
+    const targetTime = mocThoiGian === "bat_dau"
+        ? active?.thoiGianBatDau
+        : active?.thoiGianKetThuc;
+
+    if (!targetTime) {
         return null;
     }
 
-    let seconds = Math.max(0, Math.floor((active.thoiGianKetThuc.getTime() - now.getTime()) / 1000));
+    let seconds = Math.max(0, Math.floor((targetTime.getTime() - now.getTime()) / 1000));
 
     const thang = Math.floor(seconds / (30 * 24 * 3600));
     seconds %= 30 * 24 * 3600;
@@ -262,6 +314,8 @@ exports.layThoiGianConLaiCuaCuocThi = async (workspaceId) => {
         gio,
         phut,
         giay,
+        dem_nguoc: demNguoc,
+        moc_thoi_gian: mocThoiGian,
     };
 };
 

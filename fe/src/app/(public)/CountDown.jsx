@@ -12,6 +12,13 @@ export default function CountDown({time}) {
     const [t, setT] = useState(time);
 
     useEffect(() => {
+        setT(time);
+    }, [time]);
+
+    useEffect(() => {
+        if (!t?.dem_nguoc) {
+            return undefined;
+        }
 
         const timer = setInterval(() => {
 
@@ -83,7 +90,7 @@ export default function CountDown({time}) {
 
         return () => clearInterval(timer);
 
-    }, []);
+    }, [t?.dem_nguoc]);
 
 
     if (!t) return null;
@@ -111,7 +118,9 @@ export default function CountDown({time}) {
                 background: titleBackground,
                 margin: '0'
             }} className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white md:text-base">
-                Thời gian còn lại của cuộc thi
+                {t?.dem_nguoc === false
+                    ? "Cuộc thi sắp diễn ra"
+                    : "Thời gian còn lại của cuộc thi"}
             </h3>
 
             <div
