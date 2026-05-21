@@ -6,6 +6,7 @@ export const PUBLIC_ROUTES = [
     "/",
     "/demo1",
     "/demo2",
+    "/demo3",
     "/login",
     "/dang-ky",
     "/quen-mat-khau",
