@@ -208,6 +208,16 @@ export default function TracNghiem() {
             width: 600,
         },
         {
+            title: "Loại câu hỏi",
+            dataIndex: "loai_cau_hoi",
+            width: 180,
+            render: (value) => ({
+                chon_mot: "Trắc nghiệm chọn 1",
+                chon_nhieu: "Trắc nghiệm chọn nhiều",
+                dien_tu: "Điền từ",
+            }[value] || "Trắc nghiệm chọn 1"),
+        },
+        {
             title: "Lĩnh vực",
             dataIndex: "linh_vuc",
             sorter: true,

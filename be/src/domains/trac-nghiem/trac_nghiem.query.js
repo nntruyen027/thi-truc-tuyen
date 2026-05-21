@@ -7,6 +7,43 @@ const {
     resolveSort,
 } = require("../../core/utils/drizzle");
 
+const LOAI_CAU_HOI = {
+    CHON_MOT: "chon_mot",
+    CHON_NHIEU: "chon_nhieu",
+    DIEN_TU: "dien_tu",
+};
+
+function normalizeLoaiCauHoi(value) {
+    const normalized = String(value || LOAI_CAU_HOI.CHON_MOT).trim().toLowerCase();
+
+    if (Object.values(LOAI_CAU_HOI).includes(normalized)) {
+        return normalized;
+    }
+
+    return LOAI_CAU_HOI.CHON_MOT;
+}
+
+function normalizeDapAnNhieu(value) {
+    const items =
+        Array.isArray(value)
+            ? value
+            : String(value || "")
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean);
+
+    return [...new Set(
+        items
+            .map((item) => Number(item))
+            .filter((item) => Number.isInteger(item) && item >= 1 && item <= 4)
+    )].sort((left, right) => left - right);
+}
+
+function serializeDapAnNhieu(value) {
+    const normalized = normalizeDapAnNhieu(value);
+    return normalized.length ? normalized.join(",") : null;
+}
+
 function mapNested(row) {
     return {
         linh_vuc: row.linh_vuc_id
@@ -35,12 +72,17 @@ function mapRow(row) {
         id: row.id,
         linh_vuc_id: row.linhVucId ?? row.linh_vuc_id,
         nhom_id: row.nhomId ?? row.nhom_id,
+        loai_cau_hoi: row.loaiCauHoi ?? row.loai_cau_hoi ?? LOAI_CAU_HOI.CHON_MOT,
         cau_hoi: row.cauHoi ?? row.cau_hoi,
         cauA: row.cauA,
         cauB: row.cauB,
         cauC: row.cauC,
         cauD: row.cauD,
         dapAn: row.dapAn,
+        dapAnNhieu: normalizeDapAnNhieu(row.dapAnNhieu ?? row.dap_an_nhieu),
+        dapan_nhieu: normalizeDapAnNhieu(row.dapAnNhieu ?? row.dap_an_nhieu),
+        dapAnText: row.dapAnText ?? row.dap_an_text ?? "",
+        dapan_text: row.dapAnText ?? row.dap_an_text ?? "",
         diem: row.diem,
         ...mapNested(row),
     };
@@ -95,12 +137,15 @@ async function getById(workspaceId, id) {
                 id: tracNghiem.id,
                 linhVucId: tracNghiem.linhVucId,
                 nhomId: tracNghiem.nhomId,
+                loaiCauHoi: tracNghiem.loaiCauHoi,
                 cauHoi: tracNghiem.cauHoi,
                 cauA: tracNghiem.cauA,
                 cauB: tracNghiem.cauB,
                 cauC: tracNghiem.cauC,
                 cauD: tracNghiem.cauD,
                 dapAn: tracNghiem.dapAn,
+                dapAnNhieu: tracNghiem.dapAnNhieu,
+                dapAnText: tracNghiem.dapAnText,
                 diem: tracNghiem.diem,
                 linh_vuc_id: linhVuc.id,
                 linh_vuc_ten: linhVuc.ten,
@@ -133,12 +178,15 @@ async function getById(workspaceId, id) {
                 id: tracNghiem.id,
                 linhVucId: tracNghiem.linhVucId,
                 nhomId: tracNghiem.nhomId,
+                loaiCauHoi: tracNghiem.loaiCauHoi,
                 cauHoi: tracNghiem.cauHoi,
                 cauA: tracNghiem.cauA,
                 cauB: tracNghiem.cauB,
                 cauC: tracNghiem.cauC,
                 cauD: tracNghiem.cauD,
                 dapAn: tracNghiem.dapAn,
+                dapAnNhieu: tracNghiem.dapAnNhieu,
+                dapAnText: tracNghiem.dapAnText,
                 diem: tracNghiem.diem,
                 linh_vuc_id: linhVuc.id,
                 linh_vuc_ten: linhVuc.ten,
@@ -192,12 +240,15 @@ exports.layDsTracNghiem = async (workspaceId, size, page, search, sortField, sor
             id: tracNghiem.id,
             linhVucId: tracNghiem.linhVucId,
             nhomId: tracNghiem.nhomId,
+            loaiCauHoi: tracNghiem.loaiCauHoi,
             cauHoi: tracNghiem.cauHoi,
             cauA: tracNghiem.cauA,
             cauB: tracNghiem.cauB,
             cauC: tracNghiem.cauC,
             cauD: tracNghiem.cauD,
             dapAn: tracNghiem.dapAn,
+            dapAnNhieu: tracNghiem.dapAnNhieu,
+            dapAnText: tracNghiem.dapAnText,
             diem: tracNghiem.diem,
             linh_vuc_id: linhVuc.id,
             linh_vuc_ten: linhVuc.ten,
@@ -254,12 +305,15 @@ exports.layDsTracNghiem = async (workspaceId, size, page, search, sortField, sor
                 id: tracNghiem.id,
                 linhVucId: tracNghiem.linhVucId,
                 nhomId: tracNghiem.nhomId,
+                loaiCauHoi: tracNghiem.loaiCauHoi,
                 cauHoi: tracNghiem.cauHoi,
                 cauA: tracNghiem.cauA,
                 cauB: tracNghiem.cauB,
                 cauC: tracNghiem.cauC,
                 cauD: tracNghiem.cauD,
                 dapAn: tracNghiem.dapAn,
+                dapAnNhieu: tracNghiem.dapAnNhieu,
+                dapAnText: tracNghiem.dapAnText,
                 diem: tracNghiem.diem,
                 linh_vuc_id: linhVuc.id,
                 linh_vuc_ten: linhVuc.ten,
@@ -293,25 +347,32 @@ exports.themTracNghiem = async (
     workspaceId,
     linh_vuc_id,
     nhom_id,
+    loai_cau_hoi,
     cau_hoi,
     cauA,
     cauB,
     cauC,
     cauD,
     dapAn,
+    dapAnNhieu,
+    dapAnText,
     diem
 ) => {
     await ensureDanhMucThuocWorkspace(workspaceId, linh_vuc_id, nhom_id);
 
+    const loaiCauHoi = normalizeLoaiCauHoi(loai_cau_hoi);
     const values = {
         linhVucId: linh_vuc_id,
         nhomId: nhom_id,
+        loaiCauHoi,
         cauHoi: cau_hoi,
-        cauA,
-        cauB,
-        cauC,
-        cauD,
-        dapAn,
+        cauA: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? null : cauA,
+        cauB: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? null : cauB,
+        cauC: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? null : cauC,
+        cauD: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? null : cauD,
+        dapAn: loaiCauHoi === LOAI_CAU_HOI.CHON_MOT ? dapAn : null,
+        dapAnNhieu: loaiCauHoi === LOAI_CAU_HOI.CHON_NHIEU ? serializeDapAnNhieu(dapAnNhieu) : null,
+        dapAnText: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? String(dapAnText || "").trim() : null,
         diem,
     };
 
@@ -332,27 +393,34 @@ exports.suaTracNghiem = async (
     id,
     linh_vuc_id,
     nhom_id,
+    loai_cau_hoi,
     cau_hoi,
     cauA,
     cauB,
     cauC,
     cauD,
     dapAn,
+    dapAnNhieu,
+    dapAnText,
     diem
 ) => {
     await ensureDanhMucThuocWorkspace(workspaceId, linh_vuc_id, nhom_id);
 
+    const loaiCauHoi = normalizeLoaiCauHoi(loai_cau_hoi);
     const [updated] = await db
         .update(tracNghiem)
         .set({
             linhVucId: linh_vuc_id,
             nhomId: nhom_id,
+            loaiCauHoi,
             cauHoi: cau_hoi,
-            cauA,
-            cauB,
-            cauC,
-            cauD,
-            dapAn,
+            cauA: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? null : cauA,
+            cauB: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? null : cauB,
+            cauC: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? null : cauC,
+            cauD: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? null : cauD,
+            dapAn: loaiCauHoi === LOAI_CAU_HOI.CHON_MOT ? dapAn : null,
+            dapAnNhieu: loaiCauHoi === LOAI_CAU_HOI.CHON_NHIEU ? serializeDapAnNhieu(dapAnNhieu) : null,
+            dapAnText: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? String(dapAnText || "").trim() : null,
             diem,
         })
         .where(
@@ -388,6 +456,7 @@ exports.xoaTracNghiem = async (workspaceId, id) => {
 };
 
 exports.themTracNghiemImport = async (workspaceId, r) => {
+    const loaiCauHoi = normalizeLoaiCauHoi(r["Loại câu hỏi"] || r["loai_cau_hoi"]);
     const dapAn = {
         A: 1,
         B: 2,
@@ -396,12 +465,15 @@ exports.themTracNghiemImport = async (workspaceId, r) => {
     }[String(r["Đáp án"] || "").toUpperCase()] || null;
 
     const values = {
+        loaiCauHoi,
         cauHoi: r["Câu hỏi"],
-        cauA: r["Câu a"],
-        cauB: r["Câu b"],
-        cauC: r["Câu c"],
-        cauD: r["Câu d"],
-        dapAn,
+        cauA: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? null : r["Câu a"],
+        cauB: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? null : r["Câu b"],
+        cauC: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? null : r["Câu c"],
+        cauD: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? null : r["Câu d"],
+        dapAn: loaiCauHoi === LOAI_CAU_HOI.CHON_MOT ? dapAn : null,
+        dapAnNhieu: loaiCauHoi === LOAI_CAU_HOI.CHON_NHIEU ? serializeDapAnNhieu(r["Đáp án nhiều"] || r["dap_an_nhieu"]) : null,
+        dapAnText: loaiCauHoi === LOAI_CAU_HOI.DIEN_TU ? String(r["Đáp án điền từ"] || r["dap_an_text"] || "").trim() : null,
         linhVucId: r["Lĩnh vực"],
         nhomId: r["Nhóm"],
         diem: r["Điểm mặc định"],

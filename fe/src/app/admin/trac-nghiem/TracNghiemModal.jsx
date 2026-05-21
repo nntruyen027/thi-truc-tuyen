@@ -1,6 +1,6 @@
 'use client';
 
-import {App, Card, Col, Form, Input, InputNumber, Modal, Row, Select} from "antd";
+import {App, Card, Checkbox, Col, Form, Input, InputNumber, Modal, Row, Select} from "antd";
 import {useEffect} from "react";
 
 import {suaTracNghiem, themTracNghiem} from "~/services/thi/trac_nghiem";
@@ -17,8 +17,19 @@ export default function TracNghiemModal({
 
     const { message } = App.useApp();
     const [form] = Form.useForm();
-    const { dsLinhVuc, loading: linhVucLoading, setSearchLinhVuc } = useLinhVucSelect();
-    const { dsNhomCauHoi, loading: nhomLoading, setSearchNhomCauHoi } = useNhomCauHoiSelect();
+    const {
+        dsLinhVuc,
+        loading: linhVucLoading,
+        setSearchLinhVuc,
+        loadMore: loadMoreLinhVuc
+    } = useLinhVucSelect();
+    const {
+        dsNhomCauHoi,
+        loading: nhomLoading,
+        setSearchNhomCauHoi,
+        loadMore: loadMoreNhomCauHoi
+    } = useNhomCauHoiSelect();
+    const loaiCauHoi = Form.useWatch("loai_cau_hoi", form) || "chon_mot";
 
 
 
@@ -32,17 +43,21 @@ export default function TracNghiemModal({
 
                 form.setFieldsValue({
                     ...data,
-                    cauA: data?.caua,
-                    cauB: data?.caub,
-                    cauC: data?.cauc,
-                    cauD: data?.caud,
-                    dapAn: data?.dapan,
+                    loai_cau_hoi: data?.loai_cau_hoi || "chon_mot",
+                    cauA: data?.cauA ?? data?.caua,
+                    cauB: data?.cauB ?? data?.caub,
+                    cauC: data?.cauC ?? data?.cauc,
+                    cauD: data?.cauD ?? data?.caud,
+                    dapAn: data?.dapAn ?? data?.dapan,
+                    dapAnNhieu: data?.dapAnNhieu || data?.dapan_nhieu || [],
+                    dapAnText: data?.dapAnText || data?.dapan_text || "",
                 });
 
             } else {
 
                 form.setFieldsValue({
-                    diem: 1
+                    diem: 1,
+                    loai_cau_hoi: "chon_mot",
                 });
 
             }
@@ -65,11 +80,22 @@ export default function TracNghiemModal({
             const values =
                 await form.validateFields();
 
+            const payload = {
+                ...values,
+                cauA: values.loai_cau_hoi === "dien_tu" ? null : values.cauA,
+                cauB: values.loai_cau_hoi === "dien_tu" ? null : values.cauB,
+                cauC: values.loai_cau_hoi === "dien_tu" ? null : values.cauC,
+                cauD: values.loai_cau_hoi === "dien_tu" ? null : values.cauD,
+                dapAn: values.loai_cau_hoi === "chon_mot" ? values.dapAn : null,
+                dapAnNhieu: values.loai_cau_hoi === "chon_nhieu" ? values.dapAnNhieu : [],
+                dapAnText: values.loai_cau_hoi === "dien_tu" ? values.dapAnText : "",
+            };
+
             if (data) {
 
                 await suaTracNghiem(
                     data.id,
-                    values
+                    payload
                 );
 
                 message.success(
@@ -79,7 +105,7 @@ export default function TracNghiemModal({
             } else {
 
                 await themTracNghiem(
-                    values
+                    payload
                 );
 
                 message.success(
@@ -173,7 +199,7 @@ export default function TracNghiemModal({
                                 target.scrollHeight - 10
                             ) {
 
-                                loadMore();
+                                loadMoreLinhVuc();
 
                             }
 
@@ -208,11 +234,27 @@ export default function TracNghiemModal({
                                 target.scrollHeight - 10
                             ) {
 
-                                loadMore();
+                                loadMoreNhomCauHoi();
 
                             }
 
                         }}
+                    />
+                </Form.Item>
+
+                <Form.Item
+                    label="Loại câu hỏi"
+                    name="loai_cau_hoi"
+                    rules={[
+                        { required: true, message: "Vui lòng chọn loại câu hỏi" },
+                    ]}
+                >
+                    <Select
+                        options={[
+                            { value: "chon_mot", label: "Trắc nghiệm chọn 1" },
+                            { value: "chon_nhieu", label: "Trắc nghiệm chọn nhiều" },
+                            { value: "dien_tu", label: "Điền từ" },
+                        ]}
                     />
                 </Form.Item>
 
@@ -231,86 +273,130 @@ export default function TracNghiemModal({
                 </Form.Item>
 
                 <Card title={'Đáp án'}>
-                    <Form.Item
-                        name="cauA"
-                        label="A"
-                        rules={[
-                            {
-                                required: true,
-                                message:
-                                    "Vui lòng nhập đáp án A"
-                            }
-                        ]}
-                    >
-                        <Input.TextArea  />
-                    </Form.Item>
-                    <Form.Item
-                    name="cauB"
-                    label="B"
-                    rules={[
-                        {
-                            required: true,
-                            message:
-                                "Vui lòng nhập đáp án B"
-                        }
-                    ]}
-                >
-                    <Input.TextArea  />
-                </Form.Item>
-                    <Form.Item
-                        name="cauC"
-                        label="C"
-                        rules={[
-                            {
-                                required: true,
-                                message:
-                                    "Vui lòng nhập đáp án C"
-                            }
-                        ]}
-                    >
-                        <Input.TextArea  />
-                    </Form.Item>
-                    <Form.Item
-                        name="cauD"
-                        label="D"
-                        rules={[
-                            {
-                                required: true,
-                                message:
-                                    "Vui lòng nhập đáp án D"
-                            }
-                        ]}
-                    >
-                        <Input.TextArea  />
-                    </Form.Item>
-                    <Row gutter={16}>
-                        <Col md={24} lg={12}>
+                    {loaiCauHoi !== "dien_tu" && (
+                        <>
                             <Form.Item
-                                name="dapAn"
-                                label="Đáp án đúng"
+                                name="cauA"
+                                label="A"
                                 rules={[
                                     {
                                         required: true,
                                         message:
-                                            "Vui lòng nhập đáp án đúng"
+                                            "Vui lòng nhập đáp án A"
                                     }
                                 ]}
                             >
-                                <Select options={[{
-                                    value: 1, label: 'Đáp án A'
-                                }, {
-                                    value: 2, label: 'Đáp án B'
-                                }, {
-                                    value: 3, label: 'Đáp án C'
-                                }, {
-                                    value: 4, label: 'Đáp án D'
-                                }]}/>
+                                <Input.TextArea  />
                             </Form.Item>
-                        </Col>
-                        <Col md={24} lg={12}>
+                            <Form.Item
+                                name="cauB"
+                                label="B"
+                                rules={[
+                                    {
+                                        required: true,
+                                        message:
+                                            "Vui lòng nhập đáp án B"
+                                    }
+                                ]}
+                            >
+                                <Input.TextArea  />
+                            </Form.Item>
+                            <Form.Item
+                                name="cauC"
+                                label="C"
+                                rules={[
+                                    {
+                                        required: true,
+                                        message:
+                                            "Vui lòng nhập đáp án C"
+                                    }
+                                ]}
+                            >
+                                <Input.TextArea  />
+                            </Form.Item>
+                            <Form.Item
+                                name="cauD"
+                                label="D"
+                                rules={[
+                                    {
+                                        required: true,
+                                        message:
+                                            "Vui lòng nhập đáp án D"
+                                    }
+                                ]}
+                            >
+                                <Input.TextArea  />
+                            </Form.Item>
+                        </>
+                    )}
+
+                    {loaiCauHoi === "chon_mot" && (
+                        <Form.Item
+                            name="dapAn"
+                            label="Đáp án đúng"
+                            rules={[
+                                {
+                                    required: true,
+                                    message:
+                                        "Vui lòng chọn đáp án đúng"
+                                }
+                            ]}
+                        >
+                            <Select options={[{
+                                value: 1, label: 'Đáp án A'
+                            }, {
+                                value: 2, label: 'Đáp án B'
+                            }, {
+                                value: 3, label: 'Đáp án C'
+                            }, {
+                                value: 4, label: 'Đáp án D'
+                            }]}/>
+                        </Form.Item>
+                    )}
+
+                    {loaiCauHoi === "chon_nhieu" && (
+                        <Form.Item
+                            name="dapAnNhieu"
+                            label="Các đáp án đúng"
+                            rules={[
+                                {
+                                    required: true,
+                                    message: "Vui lòng chọn ít nhất 1 đáp án đúng",
+                                },
+                            ]}
+                        >
+                            <Checkbox.Group
+                                options={[
+                                    { value: 1, label: "A" },
+                                    { value: 2, label: "B" },
+                                    { value: 3, label: "C" },
+                                    { value: 4, label: "D" },
+                                ]}
+                            />
+                        </Form.Item>
+                    )}
+
+                    {loaiCauHoi === "dien_tu" && (
+                        <Form.Item
+                            name="dapAnText"
+                            label="Đáp án đúng"
+                            rules={[
+                                {
+                                    required: true,
+                                    message: "Vui lòng nhập đáp án đúng",
+                                },
+                            ]}
+                            extra="Hệ thống chấm theo nội dung khớp hoàn toàn, không phân biệt hoa thường."
+                        >
+                            <Input.TextArea rows={3} />
+                        </Form.Item>
+                    )}
+
+                    <Row gutter={16}>
+                        <Col span={24}>
                             <Form.Item
                                 name="diem"
-                                label="Điểm mặc đinh"
+                                label="Điểm mặc định"
                                 rules={[
                                     {
                                         required: true,
@@ -330,7 +416,6 @@ export default function TracNghiemModal({
                             </Form.Item>
                         </Col>
                     </Row>
-
                 </Card>
             </Form>
 

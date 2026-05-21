@@ -14,6 +14,12 @@ const {
     users,
 } = require("../../db/schema");
 
+const LOAI_CAU_HOI = {
+    CHON_MOT: "chon_mot",
+    CHON_NHIEU: "chon_nhieu",
+    DIEN_TU: "dien_tu",
+};
+
 function withLegacyKeys(data) {
     if (!data || typeof data !== "object" || Array.isArray(data)) {
         return data;
@@ -41,6 +47,9 @@ function withLegacyKeys(data) {
         ...(data.cauHoiText !== undefined ? {cau_hoi: data.cauHoiText} : {}),
         ...(data.goiY !== undefined ? {goi_y: data.goiY} : {}),
         ...(data.luaChon !== undefined ? {lua_chon: data.luaChon} : {}),
+        ...(data.loaiCauHoi !== undefined ? {loai_cau_hoi: data.loaiCauHoi} : {}),
+        ...(data.dapAnChonNhieu !== undefined ? {dap_an_chon_nhieu: data.dapAnChonNhieu} : {}),
+        ...(data.dapAnTuDo !== undefined ? {dap_an_tu_do: data.dapAnTuDo} : {}),
     };
 }
 
@@ -68,6 +77,10 @@ function shuffleArray(items, seed) {
 }
 
 function taoLuaChonDaTron(row, deThiId) {
+    if (row.loaiCauHoi === LOAI_CAU_HOI.DIEN_TU) {
+        return [];
+    }
+
     const rawOptions = [
         {value: 1, text: row.cauA},
         {value: 2, text: row.cauB},
@@ -84,6 +97,38 @@ function taoLuaChonDaTron(row, deThiId) {
         ...item,
         label: ["A", "B", "C", "D"][index] || String(index + 1),
     }));
+}
+
+function normalizeLoaiCauHoi(value) {
+    const normalized = String(value || LOAI_CAU_HOI.CHON_MOT).trim().toLowerCase();
+    return Object.values(LOAI_CAU_HOI).includes(normalized)
+        ? normalized
+        : LOAI_CAU_HOI.CHON_MOT;
+}
+
+function normalizeAnswerList(value) {
+    const items =
+        Array.isArray(value)
+            ? value
+            : String(value || "")
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean);
+
+    return [...new Set(
+        items
+            .map((item) => Number(item))
+            .filter((item) => Number.isInteger(item) && item >= 1 && item <= 4)
+    )].sort((left, right) => left - right);
+}
+
+function serializeAnswerList(value) {
+    const normalized = normalizeAnswerList(value);
+    return normalized.length ? normalized.join(",") : null;
+}
+
+function normalizeTextAnswer(value) {
+    return String(value || "").trim().toLocaleLowerCase("vi");
 }
 
 function mapBaiThi(row) {
@@ -150,10 +195,12 @@ function mapThiSinh(row) {
 
 function mapTracNghiemQuestion(row) {
     const luaChon = taoLuaChonDaTron(row, row.deThiId);
+    const loaiCauHoi = normalizeLoaiCauHoi(row.loaiCauHoi);
 
     return withLegacyKeys({
         id: row.id,
         cauHoiText: row.cauHoi,
+        loaiCauHoi,
         caua: luaChon[0]?.text ?? null,
         caub: luaChon[1]?.text ?? null,
         cauc: luaChon[2]?.text ?? null,
@@ -161,6 +208,8 @@ function mapTracNghiemQuestion(row) {
         diem: row.diem,
         thuTu: row.thuTu,
         dapAnChon: row.dapAnChon,
+        dapAnChonNhieu: normalizeAnswerList(row.dapAnChonNhieu),
+        dapAnTuDo: row.dapAnTuDo ?? "",
         luaChon,
     });
 }
@@ -315,9 +364,12 @@ async function layCauHoiDeThiInternal(tx, workspaceId, deThiId, baiThiId) {
             cauB: tracNghiem.cauB,
             cauC: tracNghiem.cauC,
             cauD: tracNghiem.cauD,
+            loaiCauHoi: tracNghiem.loaiCauHoi,
             diem: tracNghiem.diem,
             thuTu: deThiCauHoi.thuTu,
             dapAnChon: baiThiChiTiet.dapAnChon,
+            dapAnChonNhieu: baiThiChiTiet.dapAnChonNhieu,
+            dapAnTuDo: baiThiChiTiet.dapAnTuDo,
             coTronDapAn: sql`${deThi.lanThi} > 1 and ${dotThi.coTronCauHoi} = true`,
         })
         .from(deThiCauHoi)
@@ -551,23 +603,52 @@ exports.batDauThi = async (workspaceId, deThiId, thiSinhId) => {
 };
 
 exports.luuCauTraLoi = async (workspaceId, baiThiId, cauHoiId, dapAn) => {
-    await Promise.all([
-        ensureScopedEntityExists(db, baiThi, workspaceId, baiThiId, "Bài thi không tồn tại trong workspace hiện tại."),
-        ensureScopedEntityExists(db, tracNghiem, workspaceId, cauHoiId, "Câu hỏi không tồn tại trong workspace hiện tại."),
-    ]);
+    await ensureScopedEntityExists(db, baiThi, workspaceId, baiThiId, "Bài thi không tồn tại trong workspace hiện tại.");
+
+    const [question] = await db
+        .select({
+            id: tracNghiem.id,
+            loaiCauHoi: tracNghiem.loaiCauHoi,
+        })
+        .from(tracNghiem)
+        .where(and(
+            eq(tracNghiem.workspaceId, Number(workspaceId)),
+            eq(tracNghiem.id, Number(cauHoiId))
+        ))
+        .limit(1);
+
+    if (!question) {
+        throw "Câu hỏi không tồn tại trong workspace hiện tại.";
+    }
+
+    const loaiCauHoi = normalizeLoaiCauHoi(question.loaiCauHoi);
+    const values = {
+        baiThiId: Number(baiThiId),
+        cauHoiId: Number(cauHoiId),
+        dapAnChon: null,
+        dapAnChonNhieu: null,
+        dapAnTuDo: null,
+    };
+
+    if (loaiCauHoi === LOAI_CAU_HOI.CHON_MOT) {
+        const normalized = Number(dapAn);
+        values.dapAnChon = Number.isInteger(normalized) ? normalized : null;
+    }
+
+    if (loaiCauHoi === LOAI_CAU_HOI.CHON_NHIEU) {
+        values.dapAnChonNhieu = serializeAnswerList(dapAn);
+    }
+
+    if (loaiCauHoi === LOAI_CAU_HOI.DIEN_TU) {
+        values.dapAnTuDo = String(dapAn || "").trim() || null;
+    }
 
     await db
         .insert(baiThiChiTiet)
-        .values({
-            baiThiId: Number(baiThiId),
-            cauHoiId: Number(cauHoiId),
-            dapAnChon: dapAn,
-        })
+        .values(values)
         .onConflictDoUpdate({
             target: [baiThiChiTiet.baiThiId, baiThiChiTiet.cauHoiId],
-            set: {
-                dapAnChon: dapAn,
-            },
+            set: values,
         });
 
     return null;
@@ -603,8 +684,13 @@ exports.nopBai = async (workspaceId, baiThiIdValue) => {
         const chiTietRows = await tx
             .select({
                 id: baiThiChiTiet.id,
+                loaiCauHoi: tracNghiem.loaiCauHoi,
                 dapAnChon: baiThiChiTiet.dapAnChon,
+                dapAnChonNhieu: baiThiChiTiet.dapAnChonNhieu,
+                dapAnTuDo: baiThiChiTiet.dapAnTuDo,
                 dapAn: tracNghiem.dapAn,
+                dapAnNhieu: tracNghiem.dapAnNhieu,
+                dapAnText: tracNghiem.dapAnText,
                 diemCauHoi: tracNghiem.diem,
             })
             .from(baiThiChiTiet)
@@ -617,7 +703,25 @@ exports.nopBai = async (workspaceId, baiThiIdValue) => {
         let tongDiem = 0;
 
         await Promise.all(chiTietRows.map(async (item) => {
-            const dung = item.dapAnChon === item.dapAn;
+            const loaiCauHoi = normalizeLoaiCauHoi(item.loaiCauHoi);
+            let dung = false;
+
+            if (loaiCauHoi === LOAI_CAU_HOI.CHON_MOT) {
+                dung = item.dapAnChon === item.dapAn;
+            }
+
+            if (loaiCauHoi === LOAI_CAU_HOI.CHON_NHIEU) {
+                dung =
+                    serializeAnswerList(item.dapAnChonNhieu) ===
+                    serializeAnswerList(item.dapAnNhieu);
+            }
+
+            if (loaiCauHoi === LOAI_CAU_HOI.DIEN_TU) {
+                dung =
+                    normalizeTextAnswer(item.dapAnTuDo) !== "" &&
+                    normalizeTextAnswer(item.dapAnTuDo) === normalizeTextAnswer(item.dapAnText);
+            }
+
             const diem = dung ? Number(item.diemCauHoi || 0) : 0;
             tongDiem += diem;
 

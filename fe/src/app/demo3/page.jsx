@@ -293,10 +293,10 @@ export default function Demo3Page() {
                 <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(91,8,8,0.08),rgba(91,8,8,0.03),rgba(91,8,8,0.01))]" />
                 <div className="absolute -bottom-16 left-0 right-0 h-32 rounded-t-[100%] bg-[#fff6e7]" />
 
-                <div className="relative z-[1] px-4 pb-52 pt-16 sm:px-6 lg:px-10 xl:px-14 xl:pb-64 xl:pt-20" />
+                <div className="relative z-[1] px-4 pb-72 pt-18 sm:px-6 lg:px-10 xl:px-14 xl:pb-88 xl:pt-24" />
             </section>
 
-            <div className="relative z-10 -mt-10 px-4 pb-12 sm:px-6 lg:-mt-14 lg:px-10 xl:-mt-18 xl:px-14">
+            <div className="relative z-10 mt-0 px-4 pb-12 sm:px-6 lg:-mt-4 lg:px-10 xl:-mt-8 xl:px-14">
                 <div className="mx-auto max-w-[1500px] space-y-10">
                     <Reveal delay={90}>
                         <div className="demo3-marble rounded-[36px] border p-4 shadow-[0_30px_80px_rgba(90,33,10,0.18)] md:p-6 xl:p-7" style={{borderColor: alphaColor(colorPrimary, 0.18)}}>

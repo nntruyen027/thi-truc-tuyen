@@ -9,6 +9,8 @@ create table thi.bai_thi_chi_tiet
     cau_hoi_id  int references thi.trac_nghiem (id),
 
     dap_an_chon int,
+    dap_an_chon_nhieu text,
+    dap_an_tu_do text,
 
     dung        boolean,
 

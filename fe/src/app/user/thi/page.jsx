@@ -1,7 +1,7 @@
 "use client"
 
 import {useEffect, useRef, useState} from "react"
-import {App, Button, Card, Drawer, Input, Layout, Modal, Radio, Spin, Typography, theme} from "antd"
+import {App, Button, Card, Checkbox, Drawer, Input, Layout, Modal, Radio, Spin, Typography, theme} from "antd"
 import {LeftOutlined, MenuOutlined, RightOutlined} from "@ant-design/icons"
 import {useRouter} from "next/navigation"
 
@@ -19,12 +19,26 @@ import {layDotThiHienTai} from "~/services/thi/dot-thi"
 
 const {Sider, Content} = Layout
 const {Title, Paragraph, Text} = Typography
+const LOAI_CAU_HOI = {
+    CHON_MOT: "chon_mot",
+    CHON_NHIEU: "chon_nhieu",
+    DIEN_TU: "dien_tu",
+}
+
+function normalizeLoaiCauHoi(value) {
+    return Object.values(LOAI_CAU_HOI).includes(value)
+        ? value
+        : LOAI_CAU_HOI.CHON_MOT
+}
 
 function normalizeQuestions(data, enableTuLuan = false) {
     const tracNghiem =
         (data?.cauHoi || []).map((item, index) => ({
             ...item,
             loai: 1,
+            loai_cau_hoi: normalizeLoaiCauHoi(item.loai_cau_hoi),
+            dap_an_chon_nhieu: Array.isArray(item.dap_an_chon_nhieu) ? item.dap_an_chon_nhieu : [],
+            dap_an_tu_do: item.dap_an_tu_do || "",
             questionId: item.id,
             clientKey: `tn-${item.id}-${index}`,
             displayOrder: index + 1,
@@ -55,6 +69,26 @@ function getQuestionOptions(question) {
     ].filter((item) => item.text != null)
 }
 
+function isAnswered(question) {
+    if (!question) {
+        return false
+    }
+
+    if (question.loai === 1) {
+        if (question.loai_cau_hoi === LOAI_CAU_HOI.CHON_NHIEU) {
+            return Array.isArray(question.dap_an_chon_nhieu) && question.dap_an_chon_nhieu.length > 0
+        }
+
+        if (question.loai_cau_hoi === LOAI_CAU_HOI.DIEN_TU) {
+            return Boolean((question.dap_an_tu_do || "").trim())
+        }
+
+        return question.dap_an_chon != null
+    }
+
+    return Boolean((question.dap_an || "").trim())
+}
+
 export default function Thi() {
     const router = useRouter()
     const {message} = App.useApp()
@@ -76,6 +110,7 @@ export default function Thi() {
     const finishingRef = useRef(false)
     const debounceRef = useRef(null)
     const pendingTuLuanRef = useRef(null)
+    const pendingDienTuRef = useRef(null)
     const questionSectionRef = useRef(null)
 
     useEffect(() => {
@@ -195,16 +230,12 @@ export default function Thi() {
             : null
 
     const currentOptions =
-        currentQuestion?.loai === 1
+        currentQuestion?.loai === 1 && currentQuestion?.loai_cau_hoi !== LOAI_CAU_HOI.DIEN_TU
             ? getQuestionOptions(currentQuestion)
             : []
 
     const answeredCount =
-        cauHoi.filter((item) => (
-            item.loai === 1
-                ? item.dap_an_chon != null
-                : Boolean((item.dap_an || "").trim())
-        )).length
+        cauHoi.filter(isAnswered).length
 
     const totalSlots =
         cauHoi.length + (dotThi?.du_doan ? 1 : 0)
@@ -230,6 +261,35 @@ export default function Thi() {
                         ? {
                             ...item,
                             dap_an_chon: dapAn
+                        }
+                        : item
+                )
+            )
+        } catch (error) {
+            message.error(error.message || "Không thể lưu đáp án.")
+        } finally {
+            savingRef.current = false
+        }
+    }
+
+    async function chonNhieu(clientKey, questionId, dapAn) {
+        if (savingRef.current) return
+
+        savingRef.current = true
+
+        try {
+            await traLoi(
+                baiThiId,
+                questionId,
+                dapAn
+            )
+
+            setCauHoi((old) =>
+                old.map((item) =>
+                    item.clientKey === clientKey
+                        ? {
+                            ...item,
+                            dap_an_chon_nhieu: dapAn
                         }
                         : item
                 )
@@ -278,6 +338,43 @@ export default function Thi() {
         }, 500)
     }
 
+    function dienTu(clientKey, questionId, val) {
+        pendingDienTuRef.current = {
+            clientKey,
+            questionId,
+            val
+        }
+
+        setCauHoi((old) =>
+            old.map((item) =>
+                item.clientKey === clientKey
+                    ? {
+                        ...item,
+                        dap_an_tu_do: val
+                    }
+                    : item
+            )
+        )
+
+        if (debounceRef.current) {
+            clearTimeout(debounceRef.current)
+        }
+
+        debounceRef.current = setTimeout(async () => {
+            try {
+                await traLoi(
+                    baiThiId,
+                    questionId,
+                    val
+                )
+
+                pendingDienTuRef.current = null
+            } catch (error) {
+                message.error(error.message || "Không thể lưu câu trả lời.")
+            }
+        }, 500)
+    }
+
     async function flushPendingTuLuan() {
         if (debounceRef.current) {
             clearTimeout(debounceRef.current)
@@ -300,6 +397,25 @@ export default function Thi() {
         )
 
         pendingTuLuanRef.current = null
+    }
+
+    async function flushPendingDienTu() {
+        if (!pendingDienTuRef.current || !baiThiId) {
+            return
+        }
+
+        const {
+            questionId,
+            val
+        } = pendingDienTuRef.current
+
+        await traLoi(
+            baiThiId,
+            questionId,
+            val
+        )
+
+        pendingDienTuRef.current = null
     }
 
     async function pauseCurrentAttempt(options = {}) {
@@ -354,6 +470,7 @@ export default function Thi() {
                     finishingRef.current = true
 
                     await flushPendingTuLuan()
+                    await flushPendingDienTu()
                     await pauseCurrentAttempt({
                         reason: "submit"
                     })
@@ -385,6 +502,7 @@ export default function Thi() {
             async onOk() {
                 try {
                     await flushPendingTuLuan()
+                    await flushPendingDienTu()
                     await pauseCurrentAttempt({
                         reason: "save"
                     })
@@ -409,6 +527,7 @@ export default function Thi() {
             finishingRef.current = true
 
             await flushPendingTuLuan()
+            await flushPendingDienTu()
             await pauseCurrentAttempt({
                 reason: "submit"
             })
@@ -460,10 +579,7 @@ export default function Thi() {
 
             <div className="grid grid-cols-4 gap-3">
                 {cauHoi.map((item, itemIndex) => {
-                    const answered =
-                        item.loai === 1
-                            ? item.dap_an_chon != null
-                            : Boolean((item.dap_an || "").trim())
+                    const answered = isAnswered(item)
 
                     return (
                         <Button
@@ -561,7 +677,7 @@ export default function Thi() {
 
                                     <div className="space-y-3">
                                         <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em]" style={{color: token.colorPrimary}}>
-                                            {isDuDoan ? "Phần dự đoán" : currentQuestion?.loai === 2 ? "Câu tự luận" : "Câu trắc nghiệm"}
+                                            {isDuDoan ? "Phần dự đoán" : currentQuestion?.loai === 2 ? "Câu tự luận" : currentQuestion?.loai_cau_hoi === LOAI_CAU_HOI.CHON_NHIEU ? "Trắc nghiệm chọn nhiều" : currentQuestion?.loai_cau_hoi === LOAI_CAU_HOI.DIEN_TU ? "Điền từ" : "Trắc nghiệm chọn 1"}
                                         </Text>
                                         <Title level={3} className="!mb-0 !text-slate-900 md:!text-[2rem]">
                                             {isDuDoan ? "Dự đoán kết quả" : `Câu ${index + 1}`}
@@ -647,7 +763,7 @@ export default function Thi() {
                                 </div>
                             )}
 
-                            {!isDuDoan && currentQuestion?.loai === 1 && (
+                            {!isDuDoan && currentQuestion?.loai === 1 && currentQuestion?.loai_cau_hoi === LOAI_CAU_HOI.CHON_MOT && (
                                 <div className="space-y-5">
                                     <div className="space-y-2">
                                         <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em]" style={{color: token.colorPrimary}}>
@@ -698,6 +814,96 @@ export default function Thi() {
                                             ))}
                                         </div>
                                     </Radio.Group>
+                                </div>
+                            )}
+
+                            {!isDuDoan && currentQuestion?.loai === 1 && currentQuestion?.loai_cau_hoi === LOAI_CAU_HOI.CHON_NHIEU && (
+                                <div className="space-y-5">
+                                    <div className="space-y-2">
+                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em]" style={{color: token.colorPrimary}}>
+                                            Nội dung câu hỏi
+                                        </Text>
+                                        <Paragraph className="!mb-0 !max-w-4xl !text-base !leading-8 !text-slate-700 md:!text-[1.08rem]">
+                                            {currentQuestion?.cau_hoi}
+                                        </Paragraph>
+                                    </div>
+
+                                    <Checkbox.Group
+                                        className="w-full"
+                                        value={currentQuestion.dap_an_chon_nhieu || []}
+                                        onChange={(values) =>
+                                            chonNhieu(
+                                                currentQuestion.clientKey,
+                                                currentQuestion.questionId,
+                                                values
+                                            )
+                                        }
+                                    >
+                                        <div className="grid gap-4">
+                                            {currentOptions.map((option) => {
+                                                const selected = (currentQuestion.dap_an_chon_nhieu || []).includes(option.value)
+
+                                                return (
+                                                    <label
+                                                        key={`${currentQuestion.clientKey}-${option.value}`}
+                                                        className={`flex cursor-pointer items-start gap-4 rounded-[24px] border px-4 py-4 transition md:px-6 md:py-5 ${
+                                                            selected
+                                                                ? "shadow-[0_12px_24px_rgba(15,23,42,0.10)]"
+                                                                : "border-slate-200 bg-white"
+                                                        }`}
+                                                        style={selected
+                                                            ? {
+                                                                borderColor: token.colorPrimary,
+                                                                background: "rgba(var(--workspace-primary-rgb), 0.08)",
+                                                            }
+                                                            : undefined}
+                                                    >
+                                                        <Checkbox value={option.value} className="mt-1" />
+                                                        <div className="min-w-0">
+                                                            <div className="text-base font-semibold text-slate-900 md:text-lg">
+                                                                {option.label}.
+                                                            </div>
+                                                            <div className="mt-2 whitespace-pre-wrap text-[15px] leading-7 text-slate-700 md:text-base md:leading-8">
+                                                                {option.text}
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                )
+                                            })}
+                                        </div>
+                                    </Checkbox.Group>
+                                </div>
+                            )}
+
+                            {!isDuDoan && currentQuestion?.loai === 1 && currentQuestion?.loai_cau_hoi === LOAI_CAU_HOI.DIEN_TU && (
+                                <div className="space-y-5">
+                                    <div className="space-y-2">
+                                        <Text className="!text-xs !font-semibold !uppercase !tracking-[0.22em]" style={{color: token.colorPrimary}}>
+                                            Nội dung câu hỏi
+                                        </Text>
+                                        <Paragraph className="!mb-0 !max-w-4xl !text-base !leading-8 !text-slate-700 md:!text-[1.08rem]">
+                                            {currentQuestion?.cau_hoi}
+                                        </Paragraph>
+                                    </div>
+
+                                    <div>
+                                        <Text className="!mb-2 !block !text-sm !font-semibold !uppercase !tracking-[0.18em] !text-slate-500">
+                                            Câu trả lời của bạn
+                                        </Text>
+                                        <Input.TextArea
+                                            rows={4}
+                                            value={currentQuestion.dap_an_tu_do || ""}
+                                            placeholder="Nhập đáp án điền từ..."
+                                            className="!rounded-[24px] !bg-slate-50 !px-1 !text-base !leading-8"
+                                            onChange={(e) =>
+                                                dienTu(
+                                                    currentQuestion.clientKey,
+                                                    currentQuestion.questionId,
+                                                    e.target.value
+                                                )
+                                            }
+                                        />
+                                    </div>
                                 </div>
                             )}
 

@@ -50,12 +50,15 @@ router.post(
             const {
                 linh_vuc_id,
                 nhom_id,
+                loai_cau_hoi,
                 cau_hoi,
                 cauA,
                 cauB,
                 cauC,
                 cauD,
                 dapAn,
+                dapAnNhieu,
+                dapAnText,
                 diem
             } = req.body
 
@@ -63,12 +66,15 @@ router.post(
                 requireWorkspaceId(req),
                 linh_vuc_id,
                 nhom_id,
+                loai_cau_hoi,
                 cau_hoi,
                 cauA,
                 cauB,
                 cauC,
                 cauD,
                 dapAn,
+                dapAnNhieu,
+                dapAnText,
                 diem)
 
 
@@ -89,23 +95,29 @@ router.put(
             const {
                 linh_vuc_id,
                 nhom_id,
+                loai_cau_hoi,
                 cau_hoi,
                 cauA,
                 cauB,
                 cauC,
                 cauD,
                 dapAn,
+                dapAnNhieu,
+                dapAnText,
                 diem
             } = req.body
 
             const data = await query.suaTracNghiem(requireWorkspaceId(req), id, linh_vuc_id,
                 nhom_id,
+                loai_cau_hoi,
                 cau_hoi,
                 cauA,
                 cauB,
                 cauC,
                 cauD,
                 dapAn,
+                dapAnNhieu,
+                dapAnText,
                 diem)
 
 
@@ -141,7 +153,7 @@ router.get(
         const file =
             path.resolve(
                 process.cwd(),
-                "uploads/template/trac-nghiem.xlsx"
+                "uploads/template/trac_nghiem.xlsx"
             )
 
         res.download(file)
