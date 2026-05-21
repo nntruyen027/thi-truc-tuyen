@@ -474,5 +474,27 @@ router.get("/ket-qua-trac-nghiem/cuoc-thi/:cuocThiId/:top", async (req, res) => 
     }
 })
 
+router.get("/bang-vang-don-vi/dot-thi/:dotThiId/:top", async (req, res) => {
+    try {
+        const dotThiId = validation.ensureRequiredId(req.params.dotThiId, "Đợt thi");
+        const top = validation.normalizeTopParam(req.params.top);
+        const data = await query.xepHangDonViTheoDotThi(requireWorkspaceId(req), dotThiId, top);
+        resUtil.ok(res, data)
+    } catch (err) {
+        resUtil.error(res, err)
+    }
+})
+
+router.get("/bang-vang-don-vi/cuoc-thi/:cuocThiId/:top", async (req, res) => {
+    try {
+        const cuocThiId = validation.ensureRequiredId(req.params.cuocThiId, "Cuộc thi");
+        const top = validation.normalizeTopParam(req.params.top);
+        const data = await query.xepHangDonViTheoCuocThi(requireWorkspaceId(req), cuocThiId, top);
+        resUtil.ok(res, data)
+    } catch (err) {
+        resUtil.error(res, err)
+    }
+})
+
 module.exports = router
 

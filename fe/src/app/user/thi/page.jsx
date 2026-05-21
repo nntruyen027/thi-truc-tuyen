@@ -42,6 +42,19 @@ function normalizeQuestions(data, enableTuLuan = false) {
     return [...tracNghiem, ...tuLuan]
 }
 
+function getQuestionOptions(question) {
+    if (Array.isArray(question?.lua_chon) && question.lua_chon.length) {
+        return question.lua_chon
+    }
+
+    return [
+        {value: 1, label: "A", text: question?.caua},
+        {value: 2, label: "B", text: question?.caub},
+        {value: 3, label: "C", text: question?.cauc},
+        {value: 4, label: "D", text: question?.caud},
+    ].filter((item) => item.text != null)
+}
+
 export default function Thi() {
     const router = useRouter()
     const {message} = App.useApp()
@@ -180,6 +193,11 @@ export default function Thi() {
         !isDuDoan
             ? cauHoi[index]
             : null
+
+    const currentOptions =
+        currentQuestion?.loai === 1
+            ? getQuestionOptions(currentQuestion)
+            : []
 
     const answeredCount =
         cauHoi.filter((item) => (
@@ -652,12 +670,7 @@ export default function Thi() {
                                         }
                                     >
                                         <div className="grid gap-4">
-                                            {[
-                                                {value: 1, label: "A", text: currentQuestion.caua},
-                                                {value: 2, label: "B", text: currentQuestion.caub},
-                                                {value: 3, label: "C", text: currentQuestion.cauc},
-                                                {value: 4, label: "D", text: currentQuestion.caud},
-                                            ].map((option) => (
+                                            {currentOptions.map((option) => (
                                                 <label
                                                     key={`${currentQuestion.clientKey}-${option.value}`}
                                                     className={`flex cursor-pointer items-start gap-4 rounded-[24px] border px-4 py-4 transition md:px-6 md:py-5 ${

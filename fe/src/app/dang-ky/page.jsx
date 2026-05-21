@@ -116,7 +116,6 @@ export default function DangKy() {
                             </div>
                             {(showField(USER_PROFILE_FIELD_KEYS.hoTen)
                                 || showField(USER_PROFILE_FIELD_KEYS.diaChiDong1)
-                                || showField(USER_PROFILE_FIELD_KEYS.xaPhuong)
                                 || showField(USER_PROFILE_FIELD_KEYS.tinhThanh)
                                 || showField(USER_PROFILE_FIELD_KEYS.ngheNghiep)
                                 || showField(USER_PROFILE_FIELD_KEYS.doiTuong)
@@ -248,25 +247,12 @@ export default function DangKy() {
                                 </Col>
                             ) : null}
 
-                            {showField(USER_PROFILE_FIELD_KEYS.xaPhuong) ? (
-                                <Col xs={24} md={12}>
-                                    <Form.Item
-                                        label="Xã/Phường"
-                                        name="xaPhuong"
-                                        rules={[{ required: true, message: "Vui lòng nhập xã/phường" }]}
-                                        className="!mb-4"
-                                    >
-                                        <Input maxLength={255} />
-                                    </Form.Item>
-                                </Col>
-                            ) : null}
-
                             {showField(USER_PROFILE_FIELD_KEYS.tinhThanh) ? (
                                 <Col xs={24} md={12}>
                                     <Form.Item
-                                        label="Tỉnh/Thành phố"
+                                        label="Tỉnh/Thành phố thường trú"
                                         name="tinhThanh"
-                                        rules={[{ required: true, message: "Vui lòng chọn tỉnh/thành phố" }]}
+                                        rules={[{ required: true, message: "Vui lòng chọn tỉnh/thành phố thường trú" }]}
                                         className="!mb-4"
                                     >
                                         <Select options={TINH_THANH_OPTIONS} />
@@ -277,7 +263,7 @@ export default function DangKy() {
                             {showField(USER_PROFILE_FIELD_KEYS.diaChiDong1) ? (
                                 <Col xs={24}>
                                     <Form.Item
-                                        label="Địa chỉ"
+                                        label="Địa chỉ thường trú"
                                         name="diaChiDong1"
                                         rules={[{ required: true, message: "Vui lòng nhập số nhà, đường, ấp/khu vực" }]}
                                         className="!mb-4"

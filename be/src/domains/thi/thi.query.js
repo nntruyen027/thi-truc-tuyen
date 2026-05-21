@@ -6,6 +6,7 @@ const {
     baiThiChiTietTuLuan,
     deThi,
     deThiCauHoi,
+    donVi,
     dotThi,
     tracNghiemDotThi,
     tracNghiem,
@@ -39,7 +40,50 @@ function withLegacyKeys(data) {
         ...(data.dotThiId !== undefined ? {dot_thi_id: data.dotThiId} : {}),
         ...(data.cauHoiText !== undefined ? {cau_hoi: data.cauHoiText} : {}),
         ...(data.goiY !== undefined ? {goi_y: data.goiY} : {}),
+        ...(data.luaChon !== undefined ? {lua_chon: data.luaChon} : {}),
     };
+}
+
+function createSeededRandom(seed) {
+    let state = Number(seed) || 1;
+
+    return () => {
+        state = (state * 1664525 + 1013904223) % 4294967296;
+        return state / 4294967296;
+    };
+}
+
+function shuffleArray(items, seed) {
+    const result = [...items];
+    const random = createSeededRandom(seed);
+
+    for (let index = result.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(random() * (index + 1));
+        const current = result[index];
+        result[index] = result[swapIndex];
+        result[swapIndex] = current;
+    }
+
+    return result;
+}
+
+function taoLuaChonDaTron(row, deThiId) {
+    const rawOptions = [
+        {value: 1, text: row.cauA},
+        {value: 2, text: row.cauB},
+        {value: 3, text: row.cauC},
+        {value: 4, text: row.cauD},
+    ].filter((item) => item.text != null);
+
+    const shuffledOptions =
+        row.coTronDapAn
+            ? shuffleArray(rawOptions, (Number(deThiId) * 10007) + (Number(row.id) * 97))
+            : rawOptions;
+
+    return shuffledOptions.map((item, index) => ({
+        ...item,
+        label: ["A", "B", "C", "D"][index] || String(index + 1),
+    }));
 }
 
 function mapBaiThi(row) {
@@ -105,16 +149,19 @@ function mapThiSinh(row) {
 }
 
 function mapTracNghiemQuestion(row) {
+    const luaChon = taoLuaChonDaTron(row, row.deThiId);
+
     return withLegacyKeys({
         id: row.id,
         cauHoiText: row.cauHoi,
-        caua: row.cauA,
-        caub: row.cauB,
-        cauc: row.cauC,
-        caud: row.cauD,
+        caua: luaChon[0]?.text ?? null,
+        caub: luaChon[1]?.text ?? null,
+        cauc: luaChon[2]?.text ?? null,
+        caud: luaChon[3]?.text ?? null,
         diem: row.diem,
         thuTu: row.thuTu,
         dapAnChon: row.dapAnChon,
+        luaChon,
     });
 }
 
@@ -201,6 +248,29 @@ function mapRankingRow(row) {
     };
 }
 
+function compareDonViRankingRow(left, right) {
+    const bySoLuong = Number(right.soLuongThiSinh || 0) - Number(left.soLuongThiSinh || 0);
+
+    if (bySoLuong !== 0) {
+        return bySoLuong;
+    }
+
+    return String(left.tenDonVi || "").localeCompare(String(right.tenDonVi || ""), "vi", {
+        sensitivity: "base",
+    });
+}
+
+function mapDonViRankingRow(row) {
+    return {
+        donViId: row.donViId,
+        don_vi_id: row.donViId,
+        tenDonVi: row.tenDonVi,
+        ten_don_vi: row.tenDonVi,
+        soLuongThiSinh: row.soLuongThiSinh,
+        so_luong_thi_sinh: row.soLuongThiSinh,
+    };
+}
+
 async function ensureScopedEntityExists(tx, table, workspaceId, id, message) {
     const [row] = await tx
         .select({ id: table.id })
@@ -238,6 +308,7 @@ async function layThoiGianThiTheoDeThi(tx, workspaceId, deThiId) {
 async function layCauHoiDeThiInternal(tx, workspaceId, deThiId, baiThiId) {
     const rows = await tx
         .select({
+            deThiId: deThi.id,
             id: tracNghiem.id,
             cauHoi: tracNghiem.cauHoi,
             cauA: tracNghiem.cauA,
@@ -247,11 +318,16 @@ async function layCauHoiDeThiInternal(tx, workspaceId, deThiId, baiThiId) {
             diem: tracNghiem.diem,
             thuTu: deThiCauHoi.thuTu,
             dapAnChon: baiThiChiTiet.dapAnChon,
+            coTronDapAn: sql`${deThi.lanThi} > 1 and ${dotThi.coTronCauHoi} = true`,
         })
         .from(deThiCauHoi)
         .innerJoin(deThi, and(
             eq(deThi.id, deThiCauHoi.deThiId),
             eq(deThi.workspaceId, Number(workspaceId))
+        ))
+        .innerJoin(dotThi, and(
+            eq(dotThi.id, deThi.dotThiId),
+            eq(dotThi.workspaceId, Number(workspaceId))
         ))
         .innerJoin(tracNghiem, and(
             eq(tracNghiem.id, deThiCauHoi.cauHoiId),
@@ -385,13 +461,28 @@ exports.taoDeThi = async (workspaceId, dotThiId, thiSinhId) => {
                 eq(deThi.thiSinhId, Number(thiSinhId))
             ));
 
+        const lanThi = Number(lanThiRow?.lanThi || 1);
+        const [dotThiInfo] = await tx
+            .select({
+                coTronCauHoi: dotThi.coTronCauHoi,
+            })
+            .from(dotThi)
+            .where(and(
+                eq(dotThi.workspaceId, Number(workspaceId)),
+                eq(dotThi.id, Number(dotThiId))
+            ))
+            .limit(1);
+
+        const shouldShuffleQuestions =
+            lanThi > 1 && Boolean(dotThiInfo?.coTronCauHoi);
+
         const [createdDeThi] = await tx
             .insert(deThi)
             .values({
                 workspaceId: Number(workspaceId),
                 dotThiId: Number(dotThiId),
                 thiSinhId: Number(thiSinhId),
-                lanThi: Number(lanThiRow?.lanThi || 1),
+                lanThi,
             })
             .returning({id: deThi.id});
 
@@ -406,7 +497,7 @@ exports.taoDeThi = async (workspaceId, dotThiId, thiSinhId) => {
         let thuTu = 0;
 
         for (const config of cauHinhRows) {
-            const randomRows = await tx
+            const questionRows = await tx
                 .select({id: tracNghiem.id})
                 .from(tracNghiem)
                 .where(and(
@@ -414,10 +505,10 @@ exports.taoDeThi = async (workspaceId, dotThiId, thiSinhId) => {
                     eq(tracNghiem.linhVucId, config.linhVucId),
                     eq(tracNghiem.nhomId, config.nhomId)
                 ))
-                .orderBy(sql`random()`)
+                .orderBy(shouldShuffleQuestions ? sql`random()` : asc(tracNghiem.id))
                 .limit(config.soLuong);
 
-            for (const question of randomRows) {
+            for (const question of questionRows) {
                 thuTu += 1;
 
                 await tx
@@ -909,6 +1000,41 @@ async function layDanhSachBaiThiXepHang(workspaceId, whereClause) {
         .sort(compareRankingRow);
 }
 
+async function layXepHangDonViTheoDieuKien(workspaceId, whereClause) {
+    const rows = await db
+        .select({
+            donViId: donVi.id,
+            tenDonVi: donVi.ten,
+            soLuongThiSinh: sql`count(distinct ${baiThi.thiSinhId})::int`,
+        })
+        .from(baiThi)
+        .innerJoin(deThi, and(
+            eq(deThi.id, baiThi.deThiId),
+            eq(deThi.workspaceId, Number(workspaceId))
+        ))
+        .innerJoin(users, and(
+            eq(users.id, baiThi.thiSinhId),
+            eq(users.workspaceId, Number(workspaceId))
+        ))
+        .innerJoin(donVi, and(
+            eq(donVi.id, users.donViId),
+            eq(donVi.workspaceId, Number(workspaceId))
+        ))
+        .where(and(
+            eq(baiThi.workspaceId, Number(workspaceId)),
+            whereClause
+        ))
+        .groupBy(donVi.id, donVi.ten);
+
+    return rows
+        .map((row) => ({
+            donViId: row.donViId,
+            tenDonVi: row.tenDonVi,
+            soLuongThiSinh: Number(row.soLuongThiSinh || 0),
+        }))
+        .sort(compareDonViRankingRow);
+}
+
 exports.xepHangTracNghiemTheoDotThi = async (workspaceId, dotThiId, topGiai) => {
     const rows = await layDanhSachBaiThiXepHang(
         workspaceId,
@@ -949,5 +1075,47 @@ exports.xepHangTracNghiemTheoCuocThi = async (workspaceId, cuocThiId, topGiai) =
     return data
         .slice(0, Number(topGiai) || 10)
         .map(mapRankingRow);
+};
+
+exports.xepHangDonViTheoDotThi = async (workspaceId, dotThiId, top) => {
+    const rows = await layXepHangDonViTheoDieuKien(
+        workspaceId,
+        and(
+            eq(deThi.workspaceId, Number(workspaceId)),
+            eq(deThi.dotThiId, Number(dotThiId))
+        )
+    );
+
+    return rows
+        .slice(0, Number(top) || 10)
+        .map(mapDonViRankingRow);
+};
+
+exports.xepHangDonViTheoCuocThi = async (workspaceId, cuocThiId, top) => {
+    const rows = await db
+        .select({ id: dotThi.id })
+        .from(dotThi)
+        .where(and(
+            eq(dotThi.workspaceId, Number(workspaceId)),
+            eq(dotThi.cuocThiId, Number(cuocThiId))
+        ));
+
+    const dotThiIds = rows.map((row) => row.id);
+
+    if (!dotThiIds.length) {
+        return [];
+    }
+
+    const data = await layXepHangDonViTheoDieuKien(
+        workspaceId,
+        and(
+            eq(deThi.workspaceId, Number(workspaceId)),
+            inArray(deThi.dotThiId, dotThiIds)
+        )
+    );
+
+    return data
+        .slice(0, Number(top) || 10)
+        .map(mapDonViRankingRow);
 };
 

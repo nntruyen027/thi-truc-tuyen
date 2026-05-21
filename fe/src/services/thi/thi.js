@@ -486,3 +486,63 @@ export async function xepHangTracNghiemTheoCuocThi(
 
     }
 }
+
+export async function xepHangDonViTheoDotThi(
+    dotThiId,
+    top
+) {
+
+    try {
+
+        let val = Number(top)
+
+        if (isNaN(val)) {
+            val = 10
+        }
+
+        const res =
+            await api.get(
+                BASE_PATH + "/bang-vang-don-vi/dot-thi/" + dotThiId + "/" + val,
+            )
+
+        return res.data.data
+
+    }
+    catch (e) {
+
+        throw new Error(
+            e?.response?.data?.message
+        )
+
+    }
+}
+
+export async function xepHangDonViTheoCuocThi(
+    cuocThiId,
+    top
+) {
+
+    try {
+
+        let val = Number(top)
+
+        if (isNaN(val)) {
+            val = 10
+        }
+
+        const res =
+            await api.get(
+                BASE_PATH + "/bang-vang-don-vi/cuoc-thi/" + cuocThiId + "/" + val,
+            )
+
+        return res.data.data
+
+    }
+    catch (e) {
+
+        throw new Error(
+            e?.response?.data?.message
+        )
+
+    }
+}

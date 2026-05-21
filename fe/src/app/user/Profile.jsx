@@ -87,10 +87,6 @@ export default function Profile() {
                 payload.diaChiDong1 = values.diaChiDong1?.trim()
             }
 
-            if (showField(USER_PROFILE_FIELD_KEYS.xaPhuong)) {
-                payload.xaPhuong = values.xaPhuong?.trim()
-            }
-
             if (showField(USER_PROFILE_FIELD_KEYS.tinhThanh)) {
                 payload.tinhThanh = values.tinhThanh
             }
@@ -152,7 +148,7 @@ export default function Profile() {
 
             {showField(USER_PROFILE_FIELD_KEYS.diaChiDong1) ? (
                 <Form.Item
-                    label="Địa chỉ"
+                    label="Địa chỉ thường trú"
                     name="diaChiDong1"
                     rules={[{required: true, message: "Vui lòng nhập số nhà, đường, ấp/khu vực"}]}
                     extra="Dòng 1: Số nhà, đường, ấp/khu vực"
@@ -162,24 +158,12 @@ export default function Profile() {
             ) : null}
 
             <Row gutter={[16, 0]}>
-                {showField(USER_PROFILE_FIELD_KEYS.xaPhuong) ? (
-                    <Col xs={24} md={12}>
-                        <Form.Item
-                            label="Xã/Phường"
-                            name="xaPhuong"
-                            rules={[{required: true, message: "Vui lòng nhập xã/phường"}]}
-                        >
-                            <Input maxLength={255} />
-                        </Form.Item>
-                    </Col>
-                ) : null}
-
                 {showField(USER_PROFILE_FIELD_KEYS.tinhThanh) ? (
                     <Col xs={24} md={12}>
                         <Form.Item
-                            label="Tỉnh/Thành phố"
+                            label="Tỉnh/Thành phố thường trú"
                             name="tinhThanh"
-                            rules={[{required: true, message: "Vui lòng chọn tỉnh/thành phố"}]}
+                            rules={[{required: true, message: "Vui lòng chọn tỉnh/thành phố thường trú"}]}
                         >
                             <Select options={TINH_THANH_OPTIONS} />
                         </Form.Item>

@@ -8,7 +8,7 @@ export default function CountDown({time}) {
 
     const {token} = theme.useToken();
     const {colorPrimary} = token;
-    const titleBackground = darkenColor(colorPrimary, 0.18);
+    const titleBackground = darkenColor(colorPrimary, 0.08);
     const [t, setT] = useState(time);
 
     useEffect(() => {

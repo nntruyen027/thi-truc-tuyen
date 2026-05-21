@@ -2,38 +2,43 @@
 
 import {layCauHinh} from "~/services/cau-hinh";
 import {useEffect, useMemo, useRef, useState} from "react";
-import {layDotThiHienTai, layDotThi} from "~/services/thi/dot-thi";
-import {Col, Row, Typography, theme} from "antd";
-import {layLuotThiHienTai, layThoiGianConLaiCuaCuocThi} from "~/services/thi/cuoc-thi";
+import {Button, Row, Typography, theme} from "antd";
+import {ArrowUpOutlined} from "@ant-design/icons";
 import {useRouter} from "next/navigation";
-import KetQuaCongBo from "~/app/(public)/KetQuaCongBo";
+import KetQuaCongBo from "~/app/demo1/KetQuaCongBo";
 import Reveal from "~/app/components/common/Reveal";
 import {useAuthStore} from "~/store/auth";
 import {parseCuocThiMeta} from "~/utils/cuocThiMeta";
 import {darkenColor, parseMediaConfig} from "~/utils/workspaceTheme";
-import TaiLieuTongHop from "~/app/(public)/TaiLieuTongHop";
-import GiaiThuongCuocThi from "~/app/(public)/GiaiThuongCuocThi";
-import {buildTimelineStages, formatLongVietnameseDate, SO_LUOT_THI_TOI_THIEU, tabItems} from "~/app/(public)/page.config";
-import PublicPageBanner from "~/app/(public)/components/PublicPageBanner";
-import PublicPageTicker from "~/app/(public)/components/PublicPageTicker";
-import PublicContestOverview from "~/app/(public)/components/PublicContestOverview";
-import PublicContestTimeline from "~/app/(public)/components/PublicContestTimeline";
-import PublicPageSectionDivider from "~/app/(public)/components/PublicPageSectionDivider";
+import TaiLieuTongHop from "~/app/demo1/TaiLieuTongHop";
+import GiaiThuongCuocThi from "~/app/demo1/GiaiThuongCuocThi";
+import {buildTimelineStages, SO_LUOT_THI_TOI_THIEU} from "~/app/demo1/page.config";
+import PublicPageBanner from "~/app/demo1/components/PublicPageBanner";
+import PublicContestOverview from "~/app/demo1/components/PublicContestOverview";
+import PublicContestTimeline from "~/app/demo1/components/PublicContestTimeline";
+import PublicPageSectionDivider from "~/app/demo1/components/PublicPageSectionDivider";
+import PublicHonorBoard from "~/app/demo1/components/PublicHonorBoard";
+import {
+    DEMO_BANNER_CONFIG,
+    DEMO_DOCUMENTS,
+    DEMO_DOT_THI,
+    DEMO_HONOR_BOARD,
+    DEMO_PRIZES,
+    DEMO_RANKINGS,
+    DEMO_TIME_LEFT,
+    DEMO_TIMELINE,
+    DEMO_TOTAL_ATTEMPTS,
+} from "~/app/demo1/demo-data";
 
 const {Text} = Typography;
 
 export default function Page() {
-    const [image, setImage] = useState(null);
-    const [zoom, setZoom] = useState(1);
-    const [bannerPositionX, setBannerPositionX] = useState(50);
-    const [bannerPositionY, setBannerPositionY] = useState(50);
-    const [dotThi, setDotThi] = useState(null);
-    const [thoiGianConLai, setThoiGianConLai] = useState(null);
-    const [tongLuotThi, setTongLuotThi] = useState(SO_LUOT_THI_TOI_THIEU);
-    const [dsDotThi, setDsDotThi] = useState([]);
+    const [image, setImage] = useState(DEMO_BANNER_CONFIG.image);
+    const [zoom, setZoom] = useState(DEMO_BANNER_CONFIG.zoom);
+    const [bannerPositionX, setBannerPositionX] = useState(DEMO_BANNER_CONFIG.positionX);
+    const [bannerPositionY, setBannerPositionY] = useState(DEMO_BANNER_CONFIG.positionY);
     const [isMobileViewport, setIsMobileViewport] = useState(false);
-    const [activeSection, setActiveSection] = useState("thong-tin");
-    const [compactTicker, setCompactTicker] = useState(false);
+    const [showBackToTop, setShowBackToTop] = useState(false);
     const sectionRefs = useRef({
         "thong-tin": null,
         "giai-thuong": null,
@@ -43,9 +48,13 @@ export default function Page() {
 
     const {token} = theme.useToken();
     const {colorPrimary} = token;
-    const deepPrimary = darkenColor(colorPrimary, 0.18);
+    const deepPrimary = darkenColor(colorPrimary, 0.08);
     const route = useRouter();
     const user = useAuthStore((state) => state.user);
+    const dotThi = DEMO_DOT_THI;
+    const thoiGianConLai = DEMO_TIME_LEFT;
+    const tongLuotThi = DEMO_TOTAL_ATTEMPTS;
+    const dsDotThi = DEMO_TIMELINE;
 
     const contestMeta = useMemo(
         () => parseCuocThiMeta(dotThi?.cuoc_thi?.mo_ta),
@@ -59,148 +68,55 @@ export default function Page() {
         ? `${window.location.origin}/login`
         : "";
 
-    const getKhoa = () => {
-        if (window.innerWidth < 768) {
-            return "banner_mobile";
-        }
-
-        return "banner_desktop";
-    };
-
     useEffect(() => {
         let active = true;
 
-        const load = async () => {
-            const applyIfActive = (callback) => {
-                if (active) {
-                    callback();
-                }
-            };
+        const getKhoa = () => (window.innerWidth < 768 ? "banner_mobile" : "banner_desktop");
 
+        const loadBanner = async () => {
             const mobile = window.innerWidth < 768;
-            const khoa = getKhoa();
+
+            if (active) {
+                setIsMobileViewport(mobile);
+            }
 
             try {
-            } catch (error) {
-                console.error("Không thể tải dữ liệu trang chủ", error);
-            }
+                const res = await layCauHinh(getKhoa());
+                const val = parseMediaConfig(res?.data?.gia_tri);
 
-            const [bannerResult, dotThiResult, conLaiResult, luotThiResult] = await Promise.allSettled([
-                layCauHinh(khoa),
-                layDotThiHienTai(),
-                layThoiGianConLaiCuaCuocThi(),
-                layLuotThiHienTai(),
-            ]);
-
-            applyIfActive(() => {
-                setIsMobileViewport(mobile);
-            });
-
-            if (bannerResult.status === "fulfilled" && bannerResult.value?.data) {
-                const val = parseMediaConfig(bannerResult.value.data.gia_tri);
-
-                applyIfActive(() => {
-                    setImage(val.duongDan || val.url || "");
-                    setZoom(val.zoom || 1);
-                    setBannerPositionX(val.positionX || 50);
-                    setBannerPositionY(val.positionY || 50);
-                });
-            } else {
-                applyIfActive(() => {
-                    setImage(null);
-                    setZoom(1);
-                    setBannerPositionX(50);
-                    setBannerPositionY(50);
-                });
-            }
-
-            if (dotThiResult.status === "fulfilled" && dotThiResult.value?.data) {
-                const currentDotThi = dotThiResult.value.data;
-
-                applyIfActive(() => {
-                    setDotThi(currentDotThi);
-                });
-
-                if (currentDotThi.cuoc_thi_id) {
-                    try {
-                        const dsDotThi = await layDotThi(currentDotThi.cuoc_thi_id, {
-                            size: 50,
-                            page: 1,
-                        });
-
-                        applyIfActive(() => {
-                            setDsDotThi(dsDotThi?.data || []);
-                        });
-                    } catch (error) {
-                        console.error("Không thể tải timeline đợt thi", error);
-                    }
+                if (!active) {
+                    return;
                 }
-            }
 
-            if (conLaiResult.status === "fulfilled" && conLaiResult.value?.data) {
-                applyIfActive(() => {
-                    setThoiGianConLai(conLaiResult.value.data);
-                });
-            }
+                setImage(val.duongDan || val.url || DEMO_BANNER_CONFIG.image);
+                setZoom(val.zoom || DEMO_BANNER_CONFIG.zoom);
+                setBannerPositionX(val.positionX || DEMO_BANNER_CONFIG.positionX);
+                setBannerPositionY(val.positionY || DEMO_BANNER_CONFIG.positionY);
+            } catch {
+                if (!active) {
+                    return;
+                }
 
-            if (luotThiResult.status === "fulfilled") {
-                applyIfActive(() => {
-                    setTongLuotThi(
-                        Number(luotThiResult.value?.data || 0)
-                    );
-                });
+                setImage(DEMO_BANNER_CONFIG.image);
+                setZoom(DEMO_BANNER_CONFIG.zoom);
+                setBannerPositionX(DEMO_BANNER_CONFIG.positionX);
+                setBannerPositionY(DEMO_BANNER_CONFIG.positionY);
             }
         };
 
-        void load();
+        void loadBanner();
 
-        const onResize = () => {
-            void load();
+        const updateViewport = () => {
+            void loadBanner();
         };
 
-        window.addEventListener("resize", onResize);
+        window.addEventListener("resize", updateViewport);
 
         return () => {
             active = false;
-            window.removeEventListener("resize", onResize);
+            window.removeEventListener("resize", updateViewport);
         };
     }, []);
-
-    useEffect(() => {
-        const updateTickerState = () => {
-            const stickyTrigger = isMobileViewport ? 220 : 260;
-            setCompactTicker(window.scrollY > stickyTrigger);
-
-            const offsets = tabItems.map((item) => {
-                const node = sectionRefs.current[item.key];
-
-                if (!node) {
-                    return null;
-                }
-
-                return {
-                    key: item.key,
-                    top: node.getBoundingClientRect().top + window.scrollY,
-                };
-            }).filter(Boolean);
-
-            const current =
-                [...offsets]
-                    .reverse()
-                    .find((item) => window.scrollY + 140 >= item.top);
-
-            if (current?.key) {
-                setActiveSection(current.key);
-            }
-        };
-
-        updateTickerState();
-        window.addEventListener("scroll", updateTickerState, { passive: true });
-
-        return () => {
-            window.removeEventListener("scroll", updateTickerState);
-        };
-    }, [isMobileViewport]);
 
     const handleJoinExam = () => {
         let currentUser = user;
@@ -237,28 +153,22 @@ export default function Page() {
         [tongLuotThi]
     );
 
-    const thongTinDuThi = useMemo(() => {
-        const batDau = formatLongVietnameseDate(dotThi?.cuoc_thi?.thoi_gian_bat_dau);
-        const ketThuc = formatLongVietnameseDate(dotThi?.cuoc_thi?.thoi_gian_ket_thuc);
+    useEffect(() => {
+        const updateBackToTopState = () => {
+            setShowBackToTop(window.scrollY > (isMobileViewport ? 320 : 420));
+        };
 
-        if (batDau && ketThuc) {
-            return `Cuộc thi diễn ra từ ${batDau} đến hết ${ketThuc}.`;
-        }
+        updateBackToTopState();
+        window.addEventListener("scroll", updateBackToTopState, { passive: true });
 
-        return "Tập thể, cá nhân đoạt giải được thông báo sau khi cuộc thi kết thúc.";
-    }, [dotThi?.cuoc_thi?.thoi_gian_bat_dau, dotThi?.cuoc_thi?.thoi_gian_ket_thuc]);
+        return () => {
+            window.removeEventListener("scroll", updateBackToTopState);
+        };
+    }, [isMobileViewport]);
 
-    const scrollToSection = (key) => {
-        const node = sectionRefs.current[key];
-
-        if (!node) {
-            return;
-        }
-
-        const top = node.getBoundingClientRect().top + window.scrollY - 96;
-
+    const scrollToTop = () => {
         window.scrollTo({
-            top,
+            top: 0,
             behavior: "smooth",
         });
     };
@@ -273,15 +183,7 @@ export default function Page() {
                 isMobileViewport={isMobileViewport}
             />
 
-            <PublicPageTicker
-                items={tabItems}
-                compactTicker={compactTicker}
-                colorPrimary={colorPrimary}
-                activeSection={activeSection}
-                onSelect={scrollToSection}
-            />
-
-            <div className="mx-auto w-full px-4 py-4 sm:px-10 md:px-10 lg:px-30 xl:px-50 2xl:px-70">
+            <div className="w-full px-4 py-4 sm:px-6 md:px-8 xl:px-10 2xl:px-12">
                 <Row gutter={[20, 20]} align="stretch">
                     <PublicContestOverview
                         colorPrimary={colorPrimary}
@@ -289,23 +191,31 @@ export default function Page() {
                         contestMeta={contestMeta}
                         thoiGianConLai={thoiGianConLai}
                         qrValue={qrValue}
-                        thongTinDuThi={thongTinDuThi}
                         hienThiTongLuotThi={hienThiTongLuotThi}
                         minLuotThi={SO_LUOT_THI_TOI_THIEU}
                         onJoinExam={handleJoinExam}
                         thongTinRef={(node) => {
                             sectionRefs.current["thong-tin"] = node;
                         }}
-                    />
+                            honorBoard={
+                                <PublicHonorBoard
+                                    dotThi={dotThi}
+                                    colorPrimary={colorPrimary}
+                                    deepPrimary={deepPrimary}
+                                    demoData={DEMO_HONOR_BOARD}
+                                />
+                            }
+                        />
+                </Row>
+            </div>
 
-                    <Col span={24}>
-                        <Reveal delay={130}>
-                            <PublicContestTimeline items={timelineItems} colorPrimary={colorPrimary} />
-                        </Reveal>
-                    </Col>
+            <div className="mx-auto w-full px-4 py-4 sm:px-10 md:px-10 lg:px-30 xl:px-50 2xl:px-70">
+                <div className="space-y-5">
+                    <Reveal delay={130}>
+                        <PublicContestTimeline items={timelineItems} colorPrimary={colorPrimary} />
+                    </Reveal>
 
-                    <Col span={24}>
-                        <div className="space-y-5">
+                    <div className="space-y-5">
                             <PublicPageSectionDivider colorPrimary={colorPrimary} />
 
                             <Reveal delay={160}>
@@ -321,7 +231,7 @@ export default function Page() {
                                             Giải thưởng
                                         </div>
                                     </div>
-                                    <GiaiThuongCuocThi/>
+                                    <GiaiThuongCuocThi demoData={DEMO_PRIZES}/>
                                 </section>
                             </Reveal>
 
@@ -340,7 +250,7 @@ export default function Page() {
                                             Tài liệu
                                         </div>
                                     </div>
-                                    <TaiLieuTongHop/>
+                                    <TaiLieuTongHop demoData={DEMO_DOCUMENTS}/>
                                 </section>
                             </Reveal>
 
@@ -359,13 +269,25 @@ export default function Page() {
                                             Kết quả
                                         </div>
                                     </div>
-                                    <KetQuaCongBo dotThi={dotThi} />
+                                    <KetQuaCongBo dotThi={dotThi} demoData={DEMO_RANKINGS} />
                                 </section>
                             </Reveal>
                         </div>
-                    </Col>
-                </Row>
-            </div>
+                    </div>
+                </div>
+            {showBackToTop ? (
+                <div className="fixed bottom-5 right-5 z-40 md:bottom-7 md:right-7">
+                    <Button
+                        type="primary"
+                        shape="circle"
+                        size="large"
+                        icon={<ArrowUpOutlined />}
+                        onClick={scrollToTop}
+                        className="!h-13 !w-13 !border-0 shadow-[0_14px_30px_rgba(25,72,190,0.28)]"
+                        style={{background: colorPrimary}}
+                    />
+                </div>
+            ) : null}
             <style>{`
                 .join-exam-pulse {
                     isolation: isolate;
