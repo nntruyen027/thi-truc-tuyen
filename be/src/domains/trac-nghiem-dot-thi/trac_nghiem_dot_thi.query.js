@@ -1,4 +1,4 @@
-const { and, count, eq } = require("drizzle-orm");
+const { and, count, eq, sql } = require("drizzle-orm");
 const db = require("../../db/client");
 const { tracNghiem, tracNghiemDotThi } = require("../../db/schema");
 const pool = require("../../core/config/db");
@@ -19,6 +19,70 @@ async function hasLoaiCauHoiColumn() {
     }
 
     return hasLoaiCauHoiColumnPromise;
+}
+
+async function insertLegacyTracNghiemDotThi(workspaceId, dotThiId, linh_vuc_id, nhom_id, so_luong) {
+    const result = await pool.query(`
+        insert into thi.trac_nghiem_dot_thi (
+            workspace_id,
+            dot_thi_id,
+            linh_vuc_id,
+            nhom_id,
+            so_luong
+        )
+        values ($1, $2, $3, $4, $5)
+        returning id, workspace_id, dot_thi_id, linh_vuc_id, nhom_id, so_luong
+    `, [
+        Number(workspaceId),
+        Number(dotThiId),
+        linh_vuc_id,
+        nhom_id,
+        so_luong,
+    ]);
+
+    const row = result.rows[0];
+
+    return row
+        ? {
+            id: row.id,
+            workspaceId: row.workspace_id,
+            dotThiId: row.dot_thi_id,
+            linhVucId: row.linh_vuc_id,
+            nhomId: row.nhom_id,
+            soLuong: row.so_luong,
+        }
+        : null;
+}
+
+async function updateLegacyTracNghiemDotThi(workspaceId, id, linh_vuc_id, nhom_id, so_luong) {
+    const result = await pool.query(`
+        update thi.trac_nghiem_dot_thi
+        set linh_vuc_id = $1,
+            nhom_id = $2,
+            so_luong = $3
+        where workspace_id = $4
+          and id = $5
+        returning id, workspace_id, dot_thi_id, linh_vuc_id, nhom_id, so_luong
+    `, [
+        linh_vuc_id,
+        nhom_id,
+        so_luong,
+        Number(workspaceId),
+        Number(id),
+    ]);
+
+    const row = result.rows[0];
+
+    return row
+        ? {
+            id: row.id,
+            workspaceId: row.workspace_id,
+            dotThiId: row.dot_thi_id,
+            linhVucId: row.linh_vuc_id,
+            nhomId: row.nhom_id,
+            soLuong: row.so_luong,
+        }
+        : null;
 }
 
 function mapRow(row) {
@@ -46,20 +110,24 @@ exports.layDsTracNghiem = async (workspaceId, dotThiId) => {
                 eq(tracNghiemDotThi.dotThiId, Number(dotThiId))
             ));
     } else {
-        rows = await db
-            .select({
-                id: tracNghiemDotThi.id,
-                workspaceId: tracNghiemDotThi.workspaceId,
-                dotThiId: tracNghiemDotThi.dotThiId,
-                linhVucId: tracNghiemDotThi.linhVucId,
-                nhomId: tracNghiemDotThi.nhomId,
-                soLuong: tracNghiemDotThi.soLuong,
-            })
-            .from(tracNghiemDotThi)
-            .where(and(
-                eq(tracNghiemDotThi.workspaceId, Number(workspaceId)),
-                eq(tracNghiemDotThi.dotThiId, Number(dotThiId))
-            ));
+        const result = await pool.query(`
+            select id, workspace_id, dot_thi_id, linh_vuc_id, nhom_id, so_luong
+            from thi.trac_nghiem_dot_thi
+            where workspace_id = $1
+              and dot_thi_id = $2
+        `, [
+            Number(workspaceId),
+            Number(dotThiId),
+        ]);
+
+        rows = result.rows.map((row) => ({
+            id: row.id,
+            workspaceId: row.workspace_id,
+            dotThiId: row.dot_thi_id,
+            linhVucId: row.linh_vuc_id,
+            nhomId: row.nhom_id,
+            soLuong: row.so_luong,
+        }));
     }
 
     const rowsWithCounts = await Promise.all(
@@ -101,16 +169,13 @@ exports.themTracNghiem = async (workspaceId, dotThiId, linh_vuc_id, nhom_id, loa
             })
             .returning();
     } else {
-        [created] = await db
-            .insert(tracNghiemDotThi)
-            .values({
-                workspaceId: Number(workspaceId),
-                dotThiId: Number(dotThiId),
-                linhVucId: linh_vuc_id,
-                nhomId: nhom_id,
-                soLuong: so_luong,
-            })
-            .returning();
+        created = await insertLegacyTracNghiemDotThi(
+            workspaceId,
+            dotThiId,
+            linh_vuc_id,
+            nhom_id,
+            so_luong
+        );
     }
 
     return mapRow(created);
@@ -135,18 +200,13 @@ exports.suaTracNghiem = async (workspaceId, id, linh_vuc_id, nhom_id, loai_cau_h
             ))
             .returning();
     } else {
-        [updated] = await db
-            .update(tracNghiemDotThi)
-            .set({
-                linhVucId: linh_vuc_id,
-                nhomId: nhom_id,
-                soLuong: so_luong,
-            })
-            .where(and(
-                eq(tracNghiemDotThi.workspaceId, Number(workspaceId)),
-                eq(tracNghiemDotThi.id, Number(id))
-            ))
-            .returning();
+        updated = await updateLegacyTracNghiemDotThi(
+            workspaceId,
+            id,
+            linh_vuc_id,
+            nhom_id,
+            so_luong
+        );
     }
 
     return mapRow(updated);
