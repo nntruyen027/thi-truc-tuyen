@@ -2,7 +2,6 @@ export const USER_PROFILE_FIELD_KEYS = {
     hoTen: "hoTen",
     soDienThoai: "soDienThoai",
     diaChiDong1: "diaChiDong1",
-    xaPhuong: "xaPhuong",
     tinhThanh: "tinhThanh",
     ngheNghiep: "ngheNghiep",
     doiTuong: "doiTuong",
