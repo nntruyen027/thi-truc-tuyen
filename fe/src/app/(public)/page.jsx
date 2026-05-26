@@ -4,7 +4,7 @@ import {layCauHinh} from "~/services/cau-hinh";
 import {useEffect, useMemo, useRef, useState} from "react";
 import {layDotThiHienTai, layDotThi} from "~/services/thi/dot-thi";
 import {Col, Row, Typography, theme} from "antd";
-import {layLuotThiHienTai, layThoiGianConLaiCuaCuocThi} from "~/services/thi/cuoc-thi";
+import {layCuocThi, layLuotThiHienTai, layThoiGianConLaiCuaCuocThi} from "~/services/thi/cuoc-thi";
 import {useRouter} from "next/navigation";
 import KetQuaCongBo from "~/app/(public)/KetQuaCongBo";
 import Reveal from "~/app/components/common/Reveal";
@@ -19,8 +19,47 @@ import PublicPageTicker from "~/app/(public)/components/PublicPageTicker";
 import PublicContestOverview from "~/app/(public)/components/PublicContestOverview";
 import PublicContestTimeline from "~/app/(public)/components/PublicContestTimeline";
 import PublicPageSectionDivider from "~/app/(public)/components/PublicPageSectionDivider";
+import dayjs from "dayjs";
 
 const {Text} = Typography;
+
+function chonCuocThiGanNhat(dsCuocThi = []) {
+    const now = dayjs();
+
+    return [...dsCuocThi]
+        .filter((item) => item?.trang_thai)
+        .filter((item) => {
+            const ketThuc = dayjs(item.thoi_gian_ket_thuc);
+            return ketThuc.isValid() && !ketThuc.isBefore(now);
+        })
+        .sort((a, b) => {
+            const batDauA = dayjs(a.thoi_gian_bat_dau);
+            const batDauB = dayjs(b.thoi_gian_bat_dau);
+            const aDangDienRa = batDauA.isValid() && !batDauA.isAfter(now);
+            const bDangDienRa = batDauB.isValid() && !batDauB.isAfter(now);
+
+            if (aDangDienRa !== bDangDienRa) {
+                return aDangDienRa ? -1 : 1;
+            }
+
+            return batDauA.valueOf() - batDauB.valueOf();
+        })[0] || null;
+}
+
+function taoDotThiFallbackTuCuocThi(cuocThi) {
+    if (!cuocThi) {
+        return null;
+    }
+
+    return {
+        id: null,
+        cuoc_thi_id: cuocThi.id,
+        ten: "",
+        mo_ta: "",
+        la_sap_dien_ra: dayjs(cuocThi.thoi_gian_bat_dau).isAfter(dayjs()),
+        cuoc_thi: cuocThi,
+    };
+}
 
 export default function Page() {
     const [image, setImage] = useState(null);
@@ -85,11 +124,17 @@ export default function Page() {
                 console.error("Không thể tải dữ liệu trang chủ", error);
             }
 
-            const [bannerResult, dotThiResult, conLaiResult, luotThiResult] = await Promise.allSettled([
+            const [bannerResult, dotThiResult, conLaiResult, luotThiResult, cuocThiResult] = await Promise.allSettled([
                 layCauHinh(khoa),
                 layDotThiHienTai(),
                 layThoiGianConLaiCuaCuocThi(),
                 layLuotThiHienTai(),
+                layCuocThi({
+                    size: 100,
+                    page: 1,
+                    sortField: "thoi_gian_bat_dau",
+                    sortType: "asc",
+                }),
             ]);
 
             applyIfActive(() => {
@@ -114,16 +159,22 @@ export default function Page() {
                 });
             }
 
-            if (dotThiResult.status === "fulfilled" && dotThiResult.value?.data) {
-                const currentDotThi = dotThiResult.value.data;
+            const currentDotThi = dotThiResult.status === "fulfilled"
+                ? dotThiResult.value?.data || null
+                : null;
+            const fallbackCuocThi = cuocThiResult.status === "fulfilled"
+                ? chonCuocThiGanNhat(cuocThiResult.value?.data || [])
+                : null;
+            const selectedDotThi = currentDotThi || taoDotThiFallbackTuCuocThi(fallbackCuocThi);
 
+            if (selectedDotThi) {
                 applyIfActive(() => {
-                    setDotThi(currentDotThi);
+                    setDotThi(selectedDotThi);
                 });
 
-                if (currentDotThi.cuoc_thi_id) {
+                if (selectedDotThi.cuoc_thi_id) {
                     try {
-                        const dsDotThi = await layDotThi(currentDotThi.cuoc_thi_id, {
+                        const dsDotThi = await layDotThi(selectedDotThi.cuoc_thi_id, {
                             size: 50,
                             page: 1,
                         });
@@ -135,6 +186,11 @@ export default function Page() {
                         console.error("Không thể tải timeline đợt thi", error);
                     }
                 }
+            } else {
+                applyIfActive(() => {
+                    setDotThi(null);
+                    setDsDotThi([]);
+                });
             }
 
             if (conLaiResult.status === "fulfilled" && conLaiResult.value?.data) {

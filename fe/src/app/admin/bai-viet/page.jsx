@@ -212,6 +212,8 @@ export default function BaiVietPage() {
             />
 
             <Modal
+            maskClosable={false}
+            keyboard={false}
                 title="Xác nhận xóa"
                 open={deleteModalVisible}
                 onOk={confirmDelete}
@@ -225,3 +227,4 @@ export default function BaiVietPage() {
         </div>
     );
 }
+

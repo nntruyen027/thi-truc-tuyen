@@ -14,6 +14,11 @@ import {
 import {useLinhVucSelect} from "~/hook/useLinhVuc";
 import {useNhomCauHoiSelect} from "~/hook/useNhomCauHoi";
 
+const LOAI_CAU_HOI_OPTIONS = [
+    { value: "chon_mot", label: "Trắc nghiệm chọn 1" },
+    { value: "chon_nhieu", label: "Trắc nghiệm chọn nhiều" },
+    { value: "dien_tu", label: "Điền từ" },
+];
 
 export default function TracNghiemDotThiModal({
                                                   open,
@@ -84,6 +89,7 @@ export default function TracNghiemDotThiModal({
                 {
                     linh_vuc_id: dsLinhVuc[0]?.id,
                     nhom_id: dsNhomCauHoi[0]?.id,
+                    loai_cau_hoi: "chon_mot",
                     so_luong: 1
                 }
             );
@@ -198,20 +204,44 @@ export default function TracNghiemDotThiModal({
         },
 
         {
-            title: "Số lượng",
+            title: "Loại câu",
             render: (r) => (
 
-                <InputNumber
-                    min={1}
-                    value={r.so_luong}
+                <Select
+                    value={r.loai_cau_hoi || "chon_mot"}
+                    style={{ width: 220 }}
+                    options={LOAI_CAU_HOI_OPTIONS}
                     onChange={(v) =>
                         updateRow(
                             r.id,
-                            "so_luong",
+                            "loai_cau_hoi",
                             v
                         )
                     }
                 />
+
+            )
+        },
+
+        {
+            title: "Số lượng",
+            render: (r) => (
+                <div className="space-y-2">
+                    <InputNumber
+                        min={1}
+                        value={r.so_luong}
+                        onChange={(v) =>
+                            updateRow(
+                                r.id,
+                                "so_luong",
+                                v
+                            )
+                        }
+                    />
+                    <div className="text-xs text-slate-500">
+                        Khả dụng: {Intl.NumberFormat("vi-VN").format(r.so_cau_kha_dung || 0)} câu
+                    </div>
+                </div>
 
             )
         },
@@ -240,6 +270,8 @@ export default function TracNghiemDotThiModal({
     return (
 
         <Modal
+            maskClosable={false}
+            keyboard={false}
             open={open}
             onCancel={onClose}
             footer={null}
@@ -269,3 +301,4 @@ export default function TracNghiemDotThiModal({
     );
 
 }
+

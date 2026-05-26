@@ -39,6 +39,8 @@ export default function ChangePasswordModal() {
 
     return (
         <Modal
+            maskClosable={false}
+            keyboard={false}
             open={isUpdatePassOpen}
             onCancel={handleClose}
             title="Đổi mật khẩu"
@@ -131,3 +133,4 @@ export default function ChangePasswordModal() {
         </Modal>
     );
 }
+

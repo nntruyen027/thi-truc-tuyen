@@ -385,6 +385,8 @@ export default function DotThi() {
                 dotThiId={editing?.id}
             />
             <Modal
+            maskClosable={false}
+            keyboard={false}
                 title="Xác nhận xóa"
                 open={deleteModalVisible}
                 onOk={confirmDelete}
@@ -401,3 +403,4 @@ export default function DotThi() {
     );
 
 }
+

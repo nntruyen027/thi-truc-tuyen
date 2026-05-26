@@ -140,6 +140,8 @@ export default function TracNghiemModal({
     return (
 
         <Modal
+            maskClosable={false}
+            keyboard={false}
             open={open}
             forceRender
             destroyOnClose
@@ -424,3 +426,4 @@ export default function TracNghiemModal({
     );
 
 }
+

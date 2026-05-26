@@ -39,6 +39,7 @@ begin
                 from thi.trac_nghiem
                 where linh_vuc_id = r.linh_vuc_id
                   and nhom_id = r.nhom_id
+                  and loai_cau_hoi = coalesce(r.loai_cau_hoi, 'chon_mot')
                 order by random()
                 limit r.so_luong
                 loop

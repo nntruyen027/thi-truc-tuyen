@@ -61,6 +61,8 @@ export default function AccountProfileModal() {
 
     return (
         <Modal
+            maskClosable={false}
+            keyboard={false}
             open={isEditOpen}
             onCancel={handleClose}
             title="Thông tin tài khoản"
@@ -147,3 +149,4 @@ export default function AccountProfileModal() {
         </Modal>
     );
 }
+

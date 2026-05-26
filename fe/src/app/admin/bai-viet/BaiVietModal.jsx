@@ -105,6 +105,8 @@ export default function BaiVietModal({open, data, onClose, onSuccess}) {
 
     return (
         <Modal
+            maskClosable={false}
+            keyboard={false}
             title={data ? "Cập nhật bài viết" : "Thêm bài viết"}
             open={open}
             onCancel={handleCancel}
@@ -192,3 +194,4 @@ export default function BaiVietModal({open, data, onClose, onSuccess}) {
         </Modal>
     );
 }
+

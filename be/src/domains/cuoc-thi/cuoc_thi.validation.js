@@ -33,6 +33,8 @@ function normalizeDateValue(value, fieldName) {
     return date;
 }
 
+const MAX_MO_TA_LENGTH = 1000;
+
 exports.normalizeCuocThiPayload = (payload = {}) => {
     const thoiGianBatDau = normalizeDateValue(payload.thoi_gian_bat_dau, "thời gian bắt đầu");
     const thoiGianKetThuc = normalizeDateValue(payload.thoi_gian_ket_thuc, "thời gian kết thúc");
@@ -48,12 +50,18 @@ exports.normalizeCuocThiPayload = (payload = {}) => {
         throw "Muốn cho xem lại đáp án thì phải bật công bố kết quả.";
     }
 
+    const moTa = typeof payload.mo_ta === "string" ? payload.mo_ta.trim() : "";
+
+    if (moTa.length > MAX_MO_TA_LENGTH) {
+        throw `Thông tin cuộc thi không được vượt quá ${MAX_MO_TA_LENGTH} ký tự. Vui lòng rút gọn phần mô tả.`;
+    }
+
     return {
         ten: normalizeText(payload.ten, "tên cuộc thi", {
             required: true,
             maxLength: 255,
         }),
-        mo_ta: typeof payload.mo_ta === "string" ? payload.mo_ta.trim() : "",
+        mo_ta: moTa,
         thoi_gian_bat_dau: thoiGianBatDau,
         thoi_gian_ket_thuc: thoiGianKetThuc,
         trang_thai: normalizeBoolean(payload.trang_thai),

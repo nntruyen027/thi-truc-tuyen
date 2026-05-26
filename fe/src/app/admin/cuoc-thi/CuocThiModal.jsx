@@ -5,7 +5,11 @@ import {useEffect} from "react";
 import dayjs from "dayjs";
 
 import {suaCuocThi, themCuocThi} from "~/services/thi/cuoc-thi";
-import {parseCuocThiMeta, stringifyCuocThiMeta} from "~/utils/cuocThiMeta";
+import {
+    parseCuocThiMeta,
+    stringifyCuocThiMeta,
+    validateCuocThiMetaLength
+} from "~/utils/cuocThiMeta";
 
 
 const DATE_FORMAT = "DD/MM/YYYY HH:mm:ss";
@@ -72,17 +76,21 @@ export default function CuocThiModal({
                 await form.validateFields();
 
 
+            const moTa = stringifyCuocThiMeta({
+                ...values,
+                mo_ta_tom_tat: values.mo_ta_tom_tat?.trim(),
+                doi_tuong_tham_gia: values.doi_tuong_tham_gia?.trim(),
+                noi_dung_cuoc_thi: values.noi_dung_cuoc_thi?.trim(),
+                hinh_thuc_du_thi: values.hinh_thuc_du_thi?.trim(),
+            });
+
+            validateCuocThiMetaLength(moTa);
+
             const payload = {
 
                 ...values,
                 ten: values.ten?.trim(),
-                mo_ta: stringifyCuocThiMeta({
-                    ...values,
-                    mo_ta_tom_tat: values.mo_ta_tom_tat?.trim(),
-                    doi_tuong_tham_gia: values.doi_tuong_tham_gia?.trim(),
-                    noi_dung_cuoc_thi: values.noi_dung_cuoc_thi?.trim(),
-                    hinh_thuc_du_thi: values.hinh_thuc_du_thi?.trim(),
-                }),
+                mo_ta: moTa,
 
                 thoi_gian_bat_dau:
                     values.thoi_gian_bat_dau
@@ -152,6 +160,8 @@ export default function CuocThiModal({
     return (
 
         <Modal
+            maskClosable={false}
+            keyboard={false}
             open={open}
             forceRender
             destroyOnHidden
@@ -360,3 +370,4 @@ export default function CuocThiModal({
     );
 
 }
+

@@ -238,6 +238,8 @@ export default function TuLuanDotThiModal({
     return (
 
         <Modal
+            maskClosable={false}
+            keyboard={false}
 
             open={open}
 
@@ -288,3 +290,4 @@ export default function TuLuanDotThiModal({
     );
 
 }
+

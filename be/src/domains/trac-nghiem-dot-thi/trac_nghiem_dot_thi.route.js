@@ -35,6 +35,7 @@ router.post(
             const {
                 linh_vuc_id,
                 nhom_id,
+                loai_cau_hoi,
                 so_luong
             } = req.body
             const dotThiId = req.params.dotThiId;
@@ -44,11 +45,13 @@ router.post(
                 dotThiId,
                 linhVucId: linh_vuc_id,
                 nhomId: nhom_id,
+                loaiCauHoi: loai_cau_hoi,
                 soLuong: so_luong,
             })
 
             const data = await query.themTracNghiem(requireWorkspaceId(req), dotThiId, linh_vuc_id,
                 nhom_id,
+                loai_cau_hoi,
                 so_luong)
 
 
@@ -69,6 +72,7 @@ router.put(
             const {
                 linh_vuc_id,
                 nhom_id,
+                loai_cau_hoi,
                 so_luong
             } = req.body
 
@@ -79,12 +83,14 @@ router.put(
                 dotThiId,
                 linhVucId: linh_vuc_id,
                 nhomId: nhom_id,
+                loaiCauHoi: loai_cau_hoi,
                 soLuong: so_luong,
                 ignoreId: id,
             })
 
             const data = await query.suaTracNghiem(requireWorkspaceId(req), id, linh_vuc_id,
                 nhom_id,
+                loai_cau_hoi,
                 so_luong)
 
 

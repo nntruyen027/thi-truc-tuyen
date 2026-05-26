@@ -86,6 +86,8 @@ export default function NhomCauHoi() {
         const errors = Array.isArray(summary.errors) ? summary.errors : [];
 
         Modal.info({
+            maskClosable: false,
+            keyboard: false,
             title: "Kết quả import nhóm câu hỏi",
             width: 680,
             okText: "Đã hiểu",
@@ -118,6 +120,8 @@ export default function NhomCauHoi() {
 
     const handleImportFile = (file) => {
         Modal.confirm({
+            maskClosable: false,
+            keyboard: false,
             title: "Nhập danh sách nhóm câu hỏi?",
             content: file.name,
             okText: "Nhập dữ liệu",
@@ -397,6 +401,8 @@ export default function NhomCauHoi() {
                 }}
             />
             <Modal
+            maskClosable={false}
+            keyboard={false}
                 title="Xác nhận xóa"
                 open={deleteModalVisible}
                 onOk={confirmDelete}
@@ -413,3 +419,4 @@ export default function NhomCauHoi() {
     );
 
 }
+

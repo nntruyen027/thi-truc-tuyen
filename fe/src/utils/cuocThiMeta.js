@@ -1,3 +1,5 @@
+export const MAX_CUOC_THI_META_LENGTH = 1000;
+
 export function parseCuocThiMeta(rawValue) {
     const fallback = {
         mo_ta_tom_tat: rawValue || "",
@@ -34,4 +36,12 @@ export function stringifyCuocThiMeta(values = {}) {
         noi_dung_cuoc_thi: values.noi_dung_cuoc_thi || "",
         hinh_thuc_du_thi: values.hinh_thuc_du_thi || "",
     });
+}
+
+export function validateCuocThiMetaLength(serializedValue) {
+    if ((serializedValue || "").length > MAX_CUOC_THI_META_LENGTH) {
+        throw new Error(
+            `Thông tin cuộc thi không được vượt quá ${MAX_CUOC_THI_META_LENGTH} ký tự. Vui lòng rút gọn phần mô tả.`
+        );
+    }
 }

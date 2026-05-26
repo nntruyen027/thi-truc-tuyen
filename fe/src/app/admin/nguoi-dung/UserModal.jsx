@@ -85,6 +85,8 @@ export default function UserModal({
 
     return (
         <Modal
+            maskClosable={false}
+            keyboard={false}
             open={open}
             onCancel={onClose}
             onOk={handleOk}
@@ -183,3 +185,4 @@ export default function UserModal({
         </Modal>
     );
 }
+

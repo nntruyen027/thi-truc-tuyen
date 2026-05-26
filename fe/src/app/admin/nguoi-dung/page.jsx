@@ -383,6 +383,8 @@ export default function NguoiDung() {
             />
 
             <Modal
+            maskClosable={false}
+            keyboard={false}
                 title="Xác nhận xóa tài khoản"
                 open={!!deleteTarget}
                 onCancel={() => setDeleteTarget(null)}
@@ -398,3 +400,4 @@ export default function NguoiDung() {
         </div>
     );
 }
+

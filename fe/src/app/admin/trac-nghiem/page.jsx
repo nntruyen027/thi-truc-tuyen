@@ -82,6 +82,8 @@ export default function TracNghiem() {
     const handleImportFile = (file) => {
 
         Modal.confirm({
+            maskClosable: false,
+            keyboard: false,
 
             title: "Import dữ liệu ?",
 
@@ -401,6 +403,8 @@ export default function TracNghiem() {
                 }}
             />
             <Modal
+            maskClosable={false}
+            keyboard={false}
                 title="Xác nhận xóa"
                 open={deleteModalVisible}
                 onOk={confirmDelete}
@@ -417,3 +421,4 @@ export default function TracNghiem() {
     );
 
 }
+

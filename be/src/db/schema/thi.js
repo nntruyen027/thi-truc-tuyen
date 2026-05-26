@@ -67,6 +67,7 @@ const tracNghiemDotThi = thiSchema.table("trac_nghiem_dot_thi", {
     dotThiId: integer("dot_thi_id"),
     linhVucId: integer("linh_vuc_id"),
     nhomId: integer("nhom_id"),
+    loaiCauHoi: varchar("loai_cau_hoi", { length: 50 }).default("chon_mot"),
     soLuong: integer("so_luong"),
 });
 

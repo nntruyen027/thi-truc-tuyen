@@ -79,6 +79,28 @@ function normalizePositiveInteger(value, fieldName, {min = 1, max = null} = {}) 
     return normalized;
 }
 
+const LOAI_CAU_HOI = {
+    CHON_MOT: "chon_mot",
+    CHON_NHIEU: "chon_nhieu",
+    DIEN_TU: "dien_tu",
+};
+
+const LOAI_CAU_HOI_LABEL = {
+    [LOAI_CAU_HOI.CHON_MOT]: "Trắc nghiệm chọn 1",
+    [LOAI_CAU_HOI.CHON_NHIEU]: "Trắc nghiệm chọn nhiều",
+    [LOAI_CAU_HOI.DIEN_TU]: "Điền từ",
+};
+
+function normalizeLoaiCauHoi(value) {
+    const normalized = String(value || LOAI_CAU_HOI.CHON_MOT).trim().toLowerCase();
+
+    if (!Object.values(LOAI_CAU_HOI).includes(normalized)) {
+        throw "Loại câu hỏi không hợp lệ.";
+    }
+
+    return normalized;
+}
+
 exports.normalizeDotThiPayload = (payload = {}) => {
     const thoiGianBatDau = normalizeDateValue(payload.thoi_gian_bat_dau, "thời gian bắt đầu");
     const thoiGianKetThuc = normalizeDateValue(payload.thoi_gian_ket_thuc, "thời gian kết thúc");
@@ -272,6 +294,7 @@ exports.ensureTracNghiemConfigPossible = async ({
     dotThiId,
     linhVucId,
     nhomId,
+    loaiCauHoi,
     soLuong,
     ignoreId = null,
 }) => {
@@ -282,6 +305,8 @@ exports.ensureTracNghiemConfigPossible = async ({
     if (!linhVucId || !nhomId) {
         throw "Vui lòng chọn đủ lĩnh vực và nhóm câu hỏi.";
     }
+
+    const normalizedLoaiCauHoi = normalizeLoaiCauHoi(loaiCauHoi);
 
     if (!Number.isInteger(Number(soLuong)) || Number(soLuong) < 1) {
         throw "Số lượng câu hỏi phải lớn hơn 0.";
@@ -294,7 +319,8 @@ exports.ensureTracNghiemConfigPossible = async ({
             .where(and(
                 eq(tracNghiem.workspaceId, Number(workspaceId)),
                 eq(tracNghiem.linhVucId, Number(linhVucId)),
-                eq(tracNghiem.nhomId, Number(nhomId))
+                eq(tracNghiem.nhomId, Number(nhomId)),
+                eq(tracNghiem.loaiCauHoi, normalizedLoaiCauHoi)
             )),
         db
             .select({total: sql`coalesce(sum(${tracNghiemDotThi.soLuong}), 0)::int`})
@@ -304,6 +330,7 @@ exports.ensureTracNghiemConfigPossible = async ({
                 eq(tracNghiemDotThi.dotThiId, Number(dotThiId)),
                 eq(tracNghiemDotThi.linhVucId, Number(linhVucId)),
                 eq(tracNghiemDotThi.nhomId, Number(nhomId)),
+                eq(tracNghiemDotThi.loaiCauHoi, normalizedLoaiCauHoi),
                 ignoreId != null
                     ? sql`${tracNghiemDotThi.id} <> ${Number(ignoreId)}`
                     : sql`true`
@@ -314,7 +341,7 @@ exports.ensureTracNghiemConfigPossible = async ({
     const requested = Number(usedRow[0]?.total || 0) + Number(soLuong);
 
     if (available === 0) {
-        throw "Tổ hợp lĩnh vực và nhóm câu hỏi này hiện chưa có ngân hàng câu hỏi.";
+        throw "Tổ hợp lĩnh vực, nhóm câu hỏi và loại câu hỏi này hiện chưa có ngân hàng câu hỏi.";
     }
 
     if (requested > available) {
@@ -331,6 +358,7 @@ exports.ensureDotThiQuestionConfigValid = async (workspaceId, dotThiId) => {
                 id: tracNghiemDotThi.id,
                 linhVucId: tracNghiemDotThi.linhVucId,
                 nhomId: tracNghiemDotThi.nhomId,
+                loaiCauHoi: tracNghiemDotThi.loaiCauHoi,
                 soLuong: tracNghiemDotThi.soLuong,
                 linhVucTen: linhVuc.ten,
                 nhomTen: nhomCauHoi.ten,
@@ -339,6 +367,7 @@ exports.ensureDotThiQuestionConfigValid = async (workspaceId, dotThiId) => {
                     from thi.trac_nghiem q
                     where q.linh_vuc_id = ${tracNghiemDotThi.linhVucId}
                       and q.nhom_id = ${tracNghiemDotThi.nhomId}
+                      and q.loai_cau_hoi = coalesce(${tracNghiemDotThi.loaiCauHoi}, 'chon_mot')
                       and q.workspace_id = ${Number(workspaceId)}
                 )`,
             })
@@ -376,12 +405,18 @@ exports.ensureDotThiQuestionConfigValid = async (workspaceId, dotThiId) => {
             throw "Cấu hình trắc nghiệm còn thiếu lĩnh vực hoặc nhóm câu hỏi.";
         }
 
+        normalizeLoaiCauHoi(row.loaiCauHoi);
+
         if (!row.soLuong || row.soLuong < 1) {
             throw "Cấu hình trắc nghiệm có số lượng câu hỏi không hợp lệ.";
         }
 
         if (Number(row.soLuong) > Number(row.soCauKhaDung || 0)) {
-            throw `Nhóm "${row.nhomTen || "Chưa chọn nhóm"}" thuộc lĩnh vực "${row.linhVucTen || "Chưa chọn lĩnh vực"}" không đủ câu hỏi. Cần ${row.soLuong}, hiện có ${row.soCauKhaDung}.`;
+            const loaiCauHoiLabel =
+                LOAI_CAU_HOI_LABEL[row.loaiCauHoi || LOAI_CAU_HOI.CHON_MOT]
+                || LOAI_CAU_HOI_LABEL[LOAI_CAU_HOI.CHON_MOT];
+
+            throw `Nhóm "${row.nhomTen || "Chưa chọn nhóm"}" thuộc lĩnh vực "${row.linhVucTen || "Chưa chọn lĩnh vực"}" không đủ câu hỏi cho loại "${loaiCauHoiLabel}". Cần ${row.soLuong}, hiện có ${row.soCauKhaDung}.`;
         }
     }
 };

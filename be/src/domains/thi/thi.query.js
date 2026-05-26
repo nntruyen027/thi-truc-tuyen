@@ -555,7 +555,8 @@ exports.taoDeThi = async (workspaceId, dotThiId, thiSinhId) => {
                 .where(and(
                     eq(tracNghiem.workspaceId, Number(workspaceId)),
                     eq(tracNghiem.linhVucId, config.linhVucId),
-                    eq(tracNghiem.nhomId, config.nhomId)
+                    eq(tracNghiem.nhomId, config.nhomId),
+                    eq(tracNghiem.loaiCauHoi, config.loaiCauHoi || LOAI_CAU_HOI.CHON_MOT)
                 ))
                 .orderBy(shouldShuffleQuestions ? sql`random()` : asc(tracNghiem.id))
                 .limit(config.soLuong);

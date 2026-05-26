@@ -86,6 +86,8 @@ export default function DonVi() {
         const errors = Array.isArray(summary.errors) ? summary.errors : [];
 
         Modal.info({
+            maskClosable: false,
+            keyboard: false,
             title: "Kết quả import đơn vị",
             width: 680,
             okText: "Đã hiểu",
@@ -118,6 +120,8 @@ export default function DonVi() {
 
     const handleImportFile = (file) => {
         Modal.confirm({
+            maskClosable: false,
+            keyboard: false,
             title: "Nhập danh sách đơn vị?",
             content: file.name,
             okText: "Nhập dữ liệu",
@@ -396,6 +400,8 @@ export default function DonVi() {
                 }}
             />
             <Modal
+            maskClosable={false}
+            keyboard={false}
                 title="Xác nhận xóa"
                 open={deleteModalVisible}
                 onOk={confirmDelete}
@@ -412,3 +418,4 @@ export default function DonVi() {
     );
 
 }
+

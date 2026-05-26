@@ -233,6 +233,8 @@ export default function SuperAdminPage() {
             )}
 
             <Modal
+            maskClosable={false}
+            keyboard={false}
                 open={open}
                 title={editing ? "Cập nhật workspace" : "Tạo workspace"}
                 onCancel={() => setOpen(false)}
@@ -292,3 +294,4 @@ export default function SuperAdminPage() {
         </div>
     );
 }
+
