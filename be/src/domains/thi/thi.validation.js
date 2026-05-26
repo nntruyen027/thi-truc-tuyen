@@ -1,5 +1,6 @@
 const { and, count, eq, sql } = require("drizzle-orm");
 const db = require("../../db/client");
+const pool = require("../../core/config/db");
 const {
     baiThi,
     deThi,
@@ -99,6 +100,24 @@ function normalizeLoaiCauHoi(value) {
     }
 
     return normalized;
+}
+
+let hasLoaiCauHoiColumnPromise = null;
+
+async function hasLoaiCauHoiColumn() {
+    if (!hasLoaiCauHoiColumnPromise) {
+        hasLoaiCauHoiColumnPromise = pool.query(`
+            select 1
+            from information_schema.columns
+            where table_schema = 'thi'
+              and table_name = 'trac_nghiem_dot_thi'
+              and column_name = 'loai_cau_hoi'
+            limit 1
+        `).then((result) => result.rows.length > 0)
+            .catch(() => false);
+    }
+
+    return hasLoaiCauHoiColumnPromise;
 }
 
 exports.normalizeDotThiPayload = (payload = {}) => {
@@ -307,35 +326,65 @@ exports.ensureTracNghiemConfigPossible = async ({
     }
 
     const normalizedLoaiCauHoi = normalizeLoaiCauHoi(loaiCauHoi);
+    const hasLoaiColumn = await hasLoaiCauHoiColumn();
 
     if (!Number.isInteger(Number(soLuong)) || Number(soLuong) < 1) {
         throw "Số lượng câu hỏi phải lớn hơn 0.";
     }
 
-    const [availableRow, usedRow] = await Promise.all([
-        db
-            .select({total: count()})
-            .from(tracNghiem)
-            .where(and(
-                eq(tracNghiem.workspaceId, Number(workspaceId)),
-                eq(tracNghiem.linhVucId, Number(linhVucId)),
-                eq(tracNghiem.nhomId, Number(nhomId)),
-                eq(tracNghiem.loaiCauHoi, normalizedLoaiCauHoi)
-            )),
-        db
-            .select({total: sql`coalesce(sum(${tracNghiemDotThi.soLuong}), 0)::int`})
-            .from(tracNghiemDotThi)
-            .where(and(
-                eq(tracNghiemDotThi.workspaceId, Number(workspaceId)),
-                eq(tracNghiemDotThi.dotThiId, Number(dotThiId)),
-                eq(tracNghiemDotThi.linhVucId, Number(linhVucId)),
-                eq(tracNghiemDotThi.nhomId, Number(nhomId)),
-                eq(tracNghiemDotThi.loaiCauHoi, normalizedLoaiCauHoi),
-                ignoreId != null
-                    ? sql`${tracNghiemDotThi.id} <> ${Number(ignoreId)}`
-                    : sql`true`
-            )),
-    ]);
+    let availableRow;
+    let usedRow;
+
+    if (hasLoaiColumn) {
+        [availableRow, usedRow] = await Promise.all([
+            db
+                .select({total: count()})
+                .from(tracNghiem)
+                .where(and(
+                    eq(tracNghiem.workspaceId, Number(workspaceId)),
+                    eq(tracNghiem.linhVucId, Number(linhVucId)),
+                    eq(tracNghiem.nhomId, Number(nhomId)),
+                    eq(tracNghiem.loaiCauHoi, normalizedLoaiCauHoi)
+                )),
+            db
+                .select({total: sql`coalesce(sum(${tracNghiemDotThi.soLuong}), 0)::int`})
+                .from(tracNghiemDotThi)
+                .where(and(
+                    eq(tracNghiemDotThi.workspaceId, Number(workspaceId)),
+                    eq(tracNghiemDotThi.dotThiId, Number(dotThiId)),
+                    eq(tracNghiemDotThi.linhVucId, Number(linhVucId)),
+                    eq(tracNghiemDotThi.nhomId, Number(nhomId)),
+                    eq(tracNghiemDotThi.loaiCauHoi, normalizedLoaiCauHoi),
+                    ignoreId != null
+                        ? sql`${tracNghiemDotThi.id} <> ${Number(ignoreId)}`
+                        : sql`true`
+                )),
+        ]);
+    } else {
+        [availableRow, usedRow] = await Promise.all([
+            db
+                .select({total: count()})
+                .from(tracNghiem)
+                .where(and(
+                    eq(tracNghiem.workspaceId, Number(workspaceId)),
+                    eq(tracNghiem.linhVucId, Number(linhVucId)),
+                    eq(tracNghiem.nhomId, Number(nhomId)),
+                    eq(tracNghiem.loaiCauHoi, normalizedLoaiCauHoi)
+                )),
+            db
+                .select({total: sql`coalesce(sum(${tracNghiemDotThi.soLuong}), 0)::int`})
+                .from(tracNghiemDotThi)
+                .where(and(
+                    eq(tracNghiemDotThi.workspaceId, Number(workspaceId)),
+                    eq(tracNghiemDotThi.dotThiId, Number(dotThiId)),
+                    eq(tracNghiemDotThi.linhVucId, Number(linhVucId)),
+                    eq(tracNghiemDotThi.nhomId, Number(nhomId)),
+                    ignoreId != null
+                        ? sql`${tracNghiemDotThi.id} <> ${Number(ignoreId)}`
+                        : sql`true`
+                )),
+        ]);
+    }
 
     const available = Number(availableRow[0]?.total || 0);
     const requested = Number(usedRow[0]?.total || 0) + Number(soLuong);
@@ -351,9 +400,21 @@ exports.ensureTracNghiemConfigPossible = async ({
 
 exports.ensureDotThiQuestionConfigValid = async (workspaceId, dotThiId) => {
     const dotThiInfo = await exports.layTrangThaiTuLuanTheoDotThi(workspaceId, dotThiId);
+    const hasLoaiColumn = await hasLoaiCauHoiColumn();
 
-    const [tracRows, tuLuanRows] = await Promise.all([
+    let tracRows;
+    const [tuLuanRows] = await Promise.all([
         db
+            .select({total: count()})
+            .from(tuLuanDotThi)
+            .where(and(
+                eq(tuLuanDotThi.workspaceId, Number(workspaceId)),
+                eq(tuLuanDotThi.dotThiId, Number(dotThiId))
+            )),
+    ]);
+
+    if (hasLoaiColumn) {
+        tracRows = await db
             .select({
                 id: tracNghiemDotThi.id,
                 linhVucId: tracNghiemDotThi.linhVucId,
@@ -383,15 +444,39 @@ exports.ensureDotThiQuestionConfigValid = async (workspaceId, dotThiId) => {
             .where(and(
                 eq(tracNghiemDotThi.workspaceId, Number(workspaceId)),
                 eq(tracNghiemDotThi.dotThiId, Number(dotThiId))
-            )),
-        db
-            .select({total: count()})
-            .from(tuLuanDotThi)
+            ));
+    } else {
+        tracRows = await db
+            .select({
+                id: tracNghiemDotThi.id,
+                linhVucId: tracNghiemDotThi.linhVucId,
+                nhomId: tracNghiemDotThi.nhomId,
+                soLuong: tracNghiemDotThi.soLuong,
+                linhVucTen: linhVuc.ten,
+                nhomTen: nhomCauHoi.ten,
+                soCauKhaDung: sql`(
+                    select count(*)::int
+                    from thi.trac_nghiem q
+                    where q.linh_vuc_id = ${tracNghiemDotThi.linhVucId}
+                      and q.nhom_id = ${tracNghiemDotThi.nhomId}
+                      and q.loai_cau_hoi = ${normalizeLoaiCauHoi(LOAI_CAU_HOI.CHON_MOT)}
+                      and q.workspace_id = ${Number(workspaceId)}
+                )`,
+            })
+            .from(tracNghiemDotThi)
+            .leftJoin(linhVuc, and(
+                eq(linhVuc.id, tracNghiemDotThi.linhVucId),
+                eq(linhVuc.workspaceId, Number(workspaceId))
+            ))
+            .leftJoin(nhomCauHoi, and(
+                eq(nhomCauHoi.id, tracNghiemDotThi.nhomId),
+                eq(nhomCauHoi.workspaceId, Number(workspaceId))
+            ))
             .where(and(
-                eq(tuLuanDotThi.workspaceId, Number(workspaceId)),
-                eq(tuLuanDotThi.dotThiId, Number(dotThiId))
-            )),
-    ]);
+                eq(tracNghiemDotThi.workspaceId, Number(workspaceId)),
+                eq(tracNghiemDotThi.dotThiId, Number(dotThiId))
+            ));
+    }
 
     const totalTuLuan = Number(tuLuanRows[0]?.total || 0);
     const totalTuLuanHieuLuc = dotThiInfo.coTuLuan ? totalTuLuan : 0;
