@@ -76,7 +76,21 @@ function shuffleArray(items, seed) {
     return result;
 }
 
-function taoLuaChonDaTron(row, deThiId) {
+function getLoaiCauHoiOrder(value) {
+    const normalized = normalizeLoaiCauHoi(value);
+
+    if (normalized === LOAI_CAU_HOI.CHON_MOT) {
+        return 0;
+    }
+
+    if (normalized === LOAI_CAU_HOI.CHON_NHIEU) {
+        return 1;
+    }
+
+    return 2;
+}
+
+function taoLuaChonDaTron(row, deThiId, shouldShuffleAnswers) {
     if (row.loaiCauHoi === LOAI_CAU_HOI.DIEN_TU) {
         return [];
     }
@@ -89,7 +103,7 @@ function taoLuaChonDaTron(row, deThiId) {
     ].filter((item) => item.text != null);
 
     const shuffledOptions =
-        row.coTronDapAn
+        shouldShuffleAnswers
             ? shuffleArray(rawOptions, (Number(deThiId) * 10007) + (Number(row.id) * 97))
             : rawOptions;
 
@@ -194,7 +208,7 @@ function mapThiSinh(row) {
 }
 
 function mapTracNghiemQuestion(row) {
-    const luaChon = taoLuaChonDaTron(row, row.deThiId);
+    const luaChon = taoLuaChonDaTron(row, row.deThiId, !!row.coTronDapAn);
     const loaiCauHoi = normalizeLoaiCauHoi(row.loaiCauHoi);
 
     return withLegacyKeys({
@@ -546,9 +560,21 @@ exports.taoDeThi = async (workspaceId, dotThiId, thiSinhId) => {
                 eq(tracNghiemDotThi.dotThiId, Number(dotThiId))
             ));
 
+        const sortedConfigs = [...cauHinhRows].sort((left, right) => {
+            const byLoai =
+                getLoaiCauHoiOrder(left.loaiCauHoi || LOAI_CAU_HOI.CHON_MOT)
+                - getLoaiCauHoiOrder(right.loaiCauHoi || LOAI_CAU_HOI.CHON_MOT);
+
+            if (byLoai !== 0) {
+                return byLoai;
+            }
+
+            return Number(left.id) - Number(right.id);
+        });
+
         let thuTu = 0;
 
-        for (const config of cauHinhRows) {
+        for (const config of sortedConfigs) {
             const questionRows = await tx
                 .select({id: tracNghiem.id})
                 .from(tracNghiem)
@@ -558,17 +584,26 @@ exports.taoDeThi = async (workspaceId, dotThiId, thiSinhId) => {
                     eq(tracNghiem.nhomId, config.nhomId),
                     eq(tracNghiem.loaiCauHoi, config.loaiCauHoi || LOAI_CAU_HOI.CHON_MOT)
                 ))
-                .orderBy(shouldShuffleQuestions ? sql`random()` : asc(tracNghiem.id))
-                .limit(config.soLuong);
+                .orderBy(asc(tracNghiem.id));
 
-            for (const question of questionRows) {
+            const candidateIds = questionRows.map((item) => item.id);
+            const selectedIds =
+                shouldShuffleQuestions
+                    ? shuffleArray(
+                        candidateIds,
+                        (Number(createdDeThi.id) * 1000003)
+                        + (Number(config.id) * 17)
+                    ).slice(0, config.soLuong)
+                    : candidateIds.slice(0, config.soLuong);
+
+            for (const questionId of selectedIds) {
                 thuTu += 1;
 
                 await tx
                     .insert(deThiCauHoi)
                     .values({
                         deThiId: createdDeThi.id,
-                        cauHoiId: question.id,
+                        cauHoiId: questionId,
                         thuTu,
                     });
             }
