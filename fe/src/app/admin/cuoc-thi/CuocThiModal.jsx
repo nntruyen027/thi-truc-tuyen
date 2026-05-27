@@ -160,7 +160,7 @@ export default function CuocThiModal({
     return (
 
         <Modal
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
             open={open}
             forceRender

@@ -383,7 +383,7 @@ export default function NguoiDung() {
             />
 
             <Modal
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
                 title="Xác nhận xóa tài khoản"
                 open={!!deleteTarget}

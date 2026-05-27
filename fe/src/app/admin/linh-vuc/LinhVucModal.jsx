@@ -96,11 +96,11 @@ export default function LinhVucModal({
     return (
 
         <Modal
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
             open={open}
             forceRender
-            destroyOnClose
+            destroyOnHidden
             title={
                 data
                     ? "Sửa lĩnh vực"

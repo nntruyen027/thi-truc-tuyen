@@ -178,11 +178,11 @@ export default function DotThiModal({
     return (
 
         <Modal
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
             open={open}
             forceRender
-            destroyOnClose
+            destroyOnHidden
             title={
                 data
                     ? "Sửa đợt thi"

@@ -39,7 +39,7 @@ export default function ChangePasswordModal() {
 
     return (
         <Modal
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
             open={isUpdatePassOpen}
             onCancel={handleClose}

@@ -385,7 +385,7 @@ export default function DotThi() {
                 dotThiId={editing?.id}
             />
             <Modal
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
                 title="Xác nhận xóa"
                 open={deleteModalVisible}

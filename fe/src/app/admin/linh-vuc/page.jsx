@@ -86,7 +86,7 @@ export default function LinhVuc() {
         const errors = Array.isArray(summary.errors) ? summary.errors : [];
 
         Modal.info({
-            maskClosable: false,
+            mask: { closable: false },
             keyboard: false,
             title: "Kết quả import lĩnh vực",
             width: 680,
@@ -120,7 +120,7 @@ export default function LinhVuc() {
 
     const handleImportFile = (file) => {
         Modal.confirm({
-            maskClosable: false,
+            mask: { closable: false },
             keyboard: false,
             title: "Nhập danh sách lĩnh vực?",
             content: file.name,
@@ -401,7 +401,7 @@ export default function LinhVuc() {
                 }}
             />
             <Modal
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
                 title="Xác nhận xóa"
                 open={deleteModalVisible}

@@ -238,7 +238,7 @@ export default function TuLuanDotThiModal({
     return (
 
         <Modal
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
 
             open={open}

@@ -270,7 +270,7 @@ export default function TracNghiemDotThiModal({
     return (
 
         <Modal
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
             open={open}
             onCancel={onClose}

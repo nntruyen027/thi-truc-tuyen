@@ -61,7 +61,7 @@ export default function AccountProfileModal() {
 
     return (
         <Modal
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
             open={isEditOpen}
             onCancel={handleClose}

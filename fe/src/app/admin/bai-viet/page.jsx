@@ -212,7 +212,7 @@ export default function BaiVietPage() {
             />
 
             <Modal
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
                 title="Xác nhận xóa"
                 open={deleteModalVisible}

@@ -104,7 +104,7 @@ export default function CuocThi() {
         const errors = Array.isArray(summary.errors) ? summary.errors : [];
 
         Modal.info({
-            maskClosable: false,
+            mask: { closable: false },
             keyboard: false,
             title: "Kết quả import dữ liệu",
             width: 720,
@@ -156,7 +156,7 @@ export default function CuocThi() {
 
     const handleImportFile = (file) => {
         Modal.confirm({
-            maskClosable: false,
+            mask: { closable: false },
             keyboard: false,
             title: "Nhập dữ liệu từ Excel?",
             content: file.name,
@@ -512,7 +512,7 @@ export default function CuocThi() {
                 }}
             />
             <Modal
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
                 title="Xác nhận xóa"
                 open={deleteModalVisible}

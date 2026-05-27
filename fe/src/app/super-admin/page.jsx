@@ -233,7 +233,7 @@ export default function SuperAdminPage() {
             )}
 
             <Modal
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
                 open={open}
                 title={editing ? "Cập nhật workspace" : "Tạo workspace"}

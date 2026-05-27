@@ -461,7 +461,7 @@ export default function Thi() {
 
     function nop() {
         Modal.confirm({
-            maskClosable: false,
+            mask: { closable: false },
             keyboard: false,
             title: "Nộp bài?",
             content: "Sau khi nộp, bạn sẽ không thể tiếp tục chỉnh sửa câu trả lời.",
@@ -497,7 +497,7 @@ export default function Thi() {
 
     function luuThoat() {
         Modal.confirm({
-            maskClosable: false,
+            mask: { closable: false },
             keyboard: false,
             title: "Lưu bài và thoát?",
             content: "Bài làm hiện tại sẽ được lưu để bạn tiếp tục sau.",
@@ -521,7 +521,7 @@ export default function Thi() {
 
     async function hetGio() {
         Modal.info({
-            maskClosable: false,
+            mask: { closable: false },
             keyboard: false,
             title: "Hết giờ làm bài",
             okButtonProps: {
