@@ -14,6 +14,10 @@ const MIGRATIONS_TABLE = "public.app_schema_migrations";
 const LAST_PRE_SINGLE_TENANT_MIGRATION = "0007_trac_nghiem_dot_thi_loai_cau_hoi.sql";
 const LAST_PRE_DROP_WORKSPACE_MIGRATION = "0009_single_tenant_schema.sql";
 
+function toMigrationPath(...parts) {
+    return parts.join("/").replace(/\\/g, "/");
+}
+
 function getBaseConfig(database) {
     return {
         host: DB_HOST,
@@ -67,7 +71,7 @@ async function listSqlFiles(relativeDir) {
 
     return entries
         .filter((entry) => entry.isFile() && entry.name.endsWith(".sql"))
-        .map((entry) => path.join(relativeDir, entry.name))
+        .map((entry) => toMigrationPath(relativeDir, entry.name))
         .sort((left, right) => left.localeCompare(right));
 }
 

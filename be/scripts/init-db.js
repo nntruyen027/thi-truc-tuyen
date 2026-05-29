@@ -16,6 +16,10 @@ const SAFE_TABLE_PATCH_FILES = [
     "sql/tables/2026_05_21_ho_tro_loai_cau_hoi_moi.sql",
 ];
 
+function toMigrationPath(...parts) {
+    return parts.join("/").replace(/\\/g, "/");
+}
+
 function getBaseConfig(database) {
     return {
         host: DB_HOST,
@@ -110,6 +114,7 @@ async function listSqlFiles(relativeDir) {
 
     for (const entry of entries) {
         const entryRelativePath = path.join(relativeDir, entry.name);
+        const normalizedEntryRelativePath = toMigrationPath(relativeDir, entry.name);
 
         if (entry.isDirectory()) {
             files.push(...await listSqlFiles(entryRelativePath));
@@ -117,7 +122,7 @@ async function listSqlFiles(relativeDir) {
         }
 
         if (entry.isFile() && entry.name.endsWith(".sql")) {
-            files.push(entryRelativePath);
+            files.push(normalizedEntryRelativePath);
         }
     }
 

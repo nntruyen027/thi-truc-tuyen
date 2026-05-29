@@ -72,4 +72,9 @@ alter table if exists thi.de_thi
 alter table if exists thi.bai_thi
     drop column if exists workspace_id;
 
+drop table if exists platform.workspace_domains;
+drop table if exists platform.workspace_settings;
+drop table if exists platform.workspaces;
+drop schema if exists platform;
+
 commit;

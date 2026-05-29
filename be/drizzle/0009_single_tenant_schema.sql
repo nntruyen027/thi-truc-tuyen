@@ -35,9 +35,4 @@ alter table if exists auth.users
 create unique index if not exists uq_auth_users_username
     on auth.users (username);
 
-drop table if exists platform.workspace_domains;
-drop table if exists platform.workspace_settings;
-drop table if exists platform.workspaces;
-drop schema if exists platform;
-
 commit;
