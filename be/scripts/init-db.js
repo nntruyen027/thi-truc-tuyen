@@ -22,6 +22,10 @@ const DRIZZLE_FILES = [
     "drizzle/0007_trac_nghiem_dot_thi_loai_cau_hoi.sql",
 ];
 
+const SAFE_TABLE_PATCH_FILES = [
+    "sql/tables/2026_05_21_ho_tro_loai_cau_hoi_moi.sql",
+];
+
 function getBaseConfig(database) {
     return {
         host: DB_HOST,
@@ -143,6 +147,15 @@ async function run() {
         const functionFiles = await listSqlFiles("sql/functions");
         const procedureFiles = await listSqlFiles("sql/procedures");
         const viewFiles = await listSqlFiles("sql/views");
+        const patchFiles = await listSqlFiles("sql/patches");
+
+        for (const file of SAFE_TABLE_PATCH_FILES) {
+            await executeSqlFile(client, file);
+        }
+
+        for (const file of patchFiles) {
+            await executeSqlFile(client, file);
+        }
 
         for (const file of functionFiles) {
             await executeSqlFile(client, file);
