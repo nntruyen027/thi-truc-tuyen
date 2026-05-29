@@ -2,7 +2,7 @@ const path = require("path");
 const fs = require("fs/promises");
 const { eq } = require("drizzle-orm");
 const db = require("../../db/client");
-const { baiViet, cauHinh, files } = require("../../db/schema");
+const { cauHinh, files } = require("../../db/schema");
 
 const FILE_SCOPED_KEYS = new Set([
     "favicon",
@@ -82,23 +82,6 @@ async function isPathStillReferenced(duongDan, khoa) {
 
     for (const row of globalConfigs) {
         if (row.khoa !== khoa && extractUploadPaths(row.giaTri).includes(duongDan)) {
-            return true;
-        }
-    }
-
-    const baiVietRows = await db
-        .select({
-            anhDaiDien: baiViet.anhDaiDien,
-            noiDung: baiViet.noiDung,
-        })
-        .from(baiViet);
-
-    for (const row of baiVietRows) {
-        if (row.anhDaiDien === duongDan) {
-            return true;
-        }
-
-        if (String(row.noiDung || "").includes(duongDan)) {
             return true;
         }
     }
