@@ -32,7 +32,7 @@ const imageSources = [
   {
     protocol: "http",
     hostname: "localhost",
-    port: "8080",
+    port: "4000",
     pathname: "/uploads/**",
   },
 ];
