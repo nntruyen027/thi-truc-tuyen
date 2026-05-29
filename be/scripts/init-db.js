@@ -83,7 +83,18 @@ async function hasCoreSchema(client) {
 
 async function listSqlFiles(relativeDir) {
     const absoluteDir = path.join(ROOT, relativeDir);
-    const entries = await fs.readdir(absoluteDir, { withFileTypes: true });
+    let entries = [];
+
+    try {
+        entries = await fs.readdir(absoluteDir, { withFileTypes: true });
+    } catch (error) {
+        if (error?.code === "ENOENT") {
+            return [];
+        }
+
+        throw error;
+    }
+
     const files = [];
 
     for (const entry of entries) {
