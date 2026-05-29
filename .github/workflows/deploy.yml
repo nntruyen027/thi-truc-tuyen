@@ -11,7 +11,11 @@ jobs:
     steps:
       - name: Deploy
         run: |
-          cd /home/dev_01/thi-truc-tuyen
+          cd /home/administrator/thi-truc-tuyen
+
+          echo "== Enable pnpm =="
+          corepack enable
+          corepack prepare pnpm@10.32.1 --activate
 
           echo "== Pull code =="
           git fetch --all
@@ -19,19 +23,17 @@ jobs:
 
           echo "== Install BE =="
           cd be
-          npm ci
-
-          echo "== Restart BE =="
-          pm2 restart be || pm2 start npm --name be -- start
+          pnpm install --frozen-lockfile
 
           echo "== Install FE =="
           cd ../fe
-          npm ci
+          pnpm install --frozen-lockfile
 
           echo "== Build FE =="
-          npm run build
+          pnpm run build
 
-          echo "== Restart FE =="
-          pm2 restart fe || pm2 start npm --name fe -- start
+          echo "== Restart apps =="
+          cd ..
+          pm2 startOrReload ecosystem.config.js --update-env
 
           echo "== Done =="
