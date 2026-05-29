@@ -1,5 +1,5 @@
 const bcrypt = require("bcrypt");
-const { eq } = require("drizzle-orm");
+const { eq, sql } = require("drizzle-orm");
 
 const db = require("../../db/client");
 const { users } = require("../../db/schema");
@@ -46,15 +46,21 @@ exports.ensureBootstrapSuperAdmin = async () => {
 
         const passwordHash = await bcrypt.hash(DEFAULT_SUPER_ADMIN_PASSWORD, 10);
 
-        await db
-            .insert(users)
-            .values({
-                workspaceId: null,
-                username: DEFAULT_SUPER_ADMIN_USERNAME,
-                password: passwordHash,
-                hoTen: DEFAULT_SUPER_ADMIN_NAME,
-                role: "super_admin",
-            });
+        await db.execute(sql`
+            insert into auth.users (
+                workspace_id,
+                username,
+                password,
+                ho_ten,
+                role
+            ) values (
+                null,
+                ${DEFAULT_SUPER_ADMIN_USERNAME},
+                ${passwordHash},
+                ${DEFAULT_SUPER_ADMIN_NAME},
+                'super_admin'
+            )
+        `);
 
         console.log(
             `[bootstrap] Created default super_admin "${DEFAULT_SUPER_ADMIN_USERNAME}".`
