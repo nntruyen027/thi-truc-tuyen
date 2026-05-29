@@ -16,70 +16,9 @@ async function hashPassword(password) {
 }
 
 function normalizeRole(value) {
-    if (value === "super_admin") {
-        return "super_admin";
-    }
-
     return value === "admin"
         ? "admin"
         : "user"
-}
-
-function getWorkspaceScope(req) {
-    if (req.user?.role === "super_admin") {
-        return {
-            role: req.user.role,
-            workspaceId: req.query?.workspaceId || req.body?.workspaceId || null,
-        };
-    }
-
-    return {
-        role: req.user?.role,
-        workspaceId: req.user?.workspace_id || null,
-    };
-}
-
-function normalizeRoleForActor(value, actorRole) {
-    const nextRole = normalizeRole(value);
-
-    if (nextRole === "super_admin" && actorRole !== "super_admin") {
-        return "admin";
-    }
-
-    return nextRole;
-}
-
-function ensureWorkspaceAssignment(scope, actorRole, nextRole) {
-    if (actorRole !== "super_admin") {
-        return;
-    }
-
-    if (nextRole === "super_admin") {
-        return;
-    }
-
-    if (!scope.workspaceId) {
-        throw "Vui lòng chọn workspace cho tài khoản này.";
-    }
-}
-
-function resolveAssignedWorkspaceId(scope, nextRole) {
-    if (nextRole === "super_admin") {
-        return null;
-    }
-
-    return scope.workspaceId ? Number(scope.workspaceId) : null;
-}
-
-function resolveReadScope(scope, nextRole) {
-    if (nextRole === "super_admin") {
-        return {
-            role: scope?.role,
-            workspaceId: null,
-        };
-    }
-
-    return scope;
 }
 
 router.get(
@@ -91,7 +30,7 @@ router.get(
             const {search, page, size} = req.query
 
             const data =
-                await query.getUsers(search, page, size, getWorkspaceScope(req))
+                await query.getUsers(search, page, size)
 
             resUtil.ok(res, data)
         } catch (err) {
@@ -123,14 +62,9 @@ router.post(
                 throw "Vui lòng nhập đầy đủ tên đăng nhập, họ tên và mật khẩu."
             }
 
-            const scope = getWorkspaceScope(req)
-            const nextRole = normalizeRoleForActor(userRole, req.user?.role)
-            const assignedWorkspaceId = resolveAssignedWorkspaceId(scope, nextRole)
-            const readScope = resolveReadScope(scope, nextRole)
+            const nextRole = normalizeRole(userRole)
 
-            ensureWorkspaceAssignment(scope, req.user?.role, nextRole)
-
-            if (await query.usernameExists(username, null, assignedWorkspaceId)) {
+            if (await query.usernameExists(username)) {
                 throw `Tài khoản ${username} đã tồn tại.`
             }
 
@@ -142,7 +76,6 @@ router.post(
                     username,
                     hoTen,
                     password: hash,
-                    workspaceId: assignedWorkspaceId,
                     donViId: donViId || null,
                     diaChiDong1: diaChiDong1 || null,
                     xaPhuong: xaPhuong || null,
@@ -153,7 +86,7 @@ router.post(
                 })
 
             const data =
-                await query.getUserById(id, readScope)
+                await query.getUserById(id)
 
             resUtil.ok(res, data)
         } catch (err) {
@@ -187,7 +120,7 @@ router.put(
             }
 
             const existing =
-                await query.getUserById(id, getWorkspaceScope(req))
+                await query.getUserById(id)
 
             if (!existing) {
                 throw "Không tìm thấy người dùng."
@@ -197,14 +130,9 @@ router.put(
                 throw "Vui lòng nhập đầy đủ tên đăng nhập và họ tên."
             }
 
-            const scope = getWorkspaceScope(req)
-            const nextRole = normalizeRoleForActor(userRole, req.user?.role)
-            const assignedWorkspaceId = resolveAssignedWorkspaceId(scope, nextRole)
-            const readScope = resolveReadScope(scope, nextRole)
+            const nextRole = normalizeRole(userRole)
 
-            ensureWorkspaceAssignment(scope, req.user?.role, nextRole)
-
-            if (await query.usernameExists(username, id, assignedWorkspaceId)) {
+            if (await query.usernameExists(username, id)) {
                 throw `Tài khoản ${username} đã tồn tại.`
             }
 
@@ -216,7 +144,6 @@ router.put(
 
             await query.updateUser({
                 id,
-                workspaceId: assignedWorkspaceId,
                 username,
                 hoTen,
                 donViId: donViId || null,
@@ -230,7 +157,7 @@ router.put(
             })
 
             const data =
-                await query.getUserById(id, readScope)
+                await query.getUserById(id)
 
             resUtil.ok(res, data)
         } catch (err) {
@@ -247,33 +174,23 @@ router.patch(
         try {
             const id = Number(req.params.id)
             const nextRole =
-                normalizeRoleForActor(req.body?.role, req.user?.role)
-            const scope = getWorkspaceScope(req)
-            const readScope = resolveReadScope(scope, nextRole)
+                normalizeRole(req.body?.role)
 
             const existing =
-                await query.getUserById(id, scope)
+                await query.getUserById(id)
 
             if (!existing) {
                 throw "Không tìm thấy người dùng."
             }
 
-            if (req.user?.id === id) {
-                if (req.user?.role === "super_admin" && nextRole !== "super_admin") {
-                    throw "Không thể tự gỡ quyền super admin của chính mình."
-                }
-
-                if (req.user?.role === "admin" && nextRole !== "admin") {
-                    throw "Không thể tự gỡ quyền admin của chính mình."
-                }
+            if (req.user?.id === id && nextRole !== "admin") {
+                throw "Không thể tự gỡ quyền admin của chính mình."
             }
 
-            ensureWorkspaceAssignment(scope, req.user?.role, nextRole)
-
-            await query.updateRole(id, nextRole, scope)
+            await query.updateRole(id, nextRole)
 
             const data =
-                await query.getUserById(id, readScope)
+                await query.getUserById(id)
 
             resUtil.ok(res, data)
         } catch (err) {
@@ -295,13 +212,13 @@ router.delete(
             }
 
             const existing =
-                await query.getUserById(id, getWorkspaceScope(req))
+                await query.getUserById(id)
 
             if (!existing) {
                 throw "Không tìm thấy người dùng."
             }
 
-            await query.deleteUser(id, getWorkspaceScope(req))
+            await query.deleteUser(id)
 
             resUtil.ok(res, true)
         } catch (err) {
@@ -317,11 +234,6 @@ router.post(
     async (req, res) => {
         try {
             const username = req.params.username
-            const scope = getWorkspaceScope(req)
-
-            if (req.user?.role === "super_admin" && !scope.workspaceId) {
-                throw "Vui lòng chọn workspace khi đặt lại mật khẩu người dùng."
-            }
 
             const hash =
                 await hashPassword("Thitructuyen@2026")
@@ -330,8 +242,7 @@ router.post(
                 res,
                 await query.updatePassword(
                     username,
-                    hash,
-                    scope.workspaceId
+                    hash
                 )
             )
         } catch (err) {
@@ -341,4 +252,3 @@ router.post(
 )
 
 module.exports = router
-

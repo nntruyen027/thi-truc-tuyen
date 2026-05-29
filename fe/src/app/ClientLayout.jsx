@@ -5,30 +5,24 @@ import {useEffect} from "react";
 import InnerLayout from "./InnerLayout";
 import DynamicFavicon from "~/app/components/common/DynamicFavicon";
 import {layCauHinh} from "~/services/cau-hinh";
-import {layWorkspaceHienTai} from "~/services/workspace";
 import {useWorkspaceThemeStore} from "~/store/workspace-theme";
 import {alphaColor, hexToRgbString, parseThemePayload} from "~/utils/workspaceTheme";
 
 export default function ClientLayout({children}) {
     const primaryColor = useWorkspaceThemeStore((state) => state.primaryColor);
     const setPrimaryColor = useWorkspaceThemeStore((state) => state.setPrimaryColor);
-    const setWorkspace = useWorkspaceThemeStore((state) => state.setWorkspace);
 
     useEffect(() => {
         let active = true;
 
         const loadTheme = async () => {
             try {
-                const [workspace, themeConfig] = await Promise.all([
-                    layWorkspaceHienTai().catch(() => null),
-                    layCauHinh("theme_settings").catch(() => null),
-                ]);
+                const themeConfig = await layCauHinh("theme_settings").catch(() => null);
 
                 if (!active) {
                     return;
                 }
 
-                setWorkspace(workspace);
                 setPrimaryColor(parseThemePayload(themeConfig?.data).primaryColor);
             } catch {
                 if (active) {
@@ -42,7 +36,7 @@ export default function ClientLayout({children}) {
         return () => {
             active = false;
         };
-    }, [setPrimaryColor, setWorkspace]);
+    }, [setPrimaryColor]);
 
     useEffect(() => {
         const root = document.documentElement;

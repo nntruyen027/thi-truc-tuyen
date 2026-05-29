@@ -169,22 +169,15 @@ exports.normalizePredictionValue = (soDuDoan) => {
 exports.ensureRequiredId = normalizeRequiredId;
 exports.ensureOptionalId = normalizeOptionalId;
 
-exports.ensurePauseAllowed = async (workspaceId, baiThiId) => {
+exports.ensurePauseAllowed = async (baiThiId) => {
     const [row] = await db
         .select({
             choPhepLuuBai: dotThi.choPhepLuuBai,
         })
         .from(baiThi)
-        .innerJoin(deThi, and(
-            eq(deThi.id, baiThi.deThiId),
-            eq(deThi.workspaceId, Number(workspaceId))
-        ))
-        .innerJoin(dotThi, and(
-            eq(dotThi.id, deThi.dotThiId),
-            eq(dotThi.workspaceId, Number(workspaceId))
-        ))
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
         .where(and(
-            eq(baiThi.workspaceId, Number(workspaceId)),
             eq(baiThi.id, Number(baiThiId))
         ))
         .limit(1);
@@ -198,19 +191,15 @@ exports.ensurePauseAllowed = async (workspaceId, baiThiId) => {
     }
 };
 
-exports.layTrangThaiTuLuanTheoDotThi = async (workspaceId, dotThiId) => {
+exports.layTrangThaiTuLuanTheoDotThi = async (dotThiId) => {
     const [row] = await db
         .select({
             id: dotThi.id,
             coTuLuan: cuocThi.coTuLuan,
         })
         .from(dotThi)
-        .innerJoin(cuocThi, and(
-            eq(cuocThi.id, dotThi.cuocThiId),
-            eq(cuocThi.workspaceId, Number(workspaceId))
-        ))
+        .innerJoin(cuocThi, eq(cuocThi.id, dotThi.cuocThiId))
         .where(and(
-            eq(dotThi.workspaceId, Number(workspaceId)),
             eq(dotThi.id, Number(dotThiId))
         ))
         .limit(1);
@@ -225,26 +214,16 @@ exports.layTrangThaiTuLuanTheoDotThi = async (workspaceId, dotThiId) => {
     };
 };
 
-async function layTrangThaiTuLuanTheoBaiThi(workspaceId, baiThiId) {
+async function layTrangThaiTuLuanTheoBaiThi(baiThiId) {
     const [row] = await db
         .select({
             coTuLuan: cuocThi.coTuLuan,
         })
         .from(baiThi)
-        .innerJoin(deThi, and(
-            eq(deThi.id, baiThi.deThiId),
-            eq(deThi.workspaceId, Number(workspaceId))
-        ))
-        .innerJoin(dotThi, and(
-            eq(dotThi.id, deThi.dotThiId),
-            eq(dotThi.workspaceId, Number(workspaceId))
-        ))
-        .innerJoin(cuocThi, and(
-            eq(cuocThi.id, dotThi.cuocThiId),
-            eq(cuocThi.workspaceId, Number(workspaceId))
-        ))
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
+        .innerJoin(cuocThi, eq(cuocThi.id, dotThi.cuocThiId))
         .where(and(
-            eq(baiThi.workspaceId, Number(workspaceId)),
             eq(baiThi.id, Number(baiThiId))
         ))
         .limit(1);
@@ -256,20 +235,19 @@ async function layTrangThaiTuLuanTheoBaiThi(workspaceId, baiThiId) {
     return !!row.coTuLuan;
 }
 
-exports.ensureTuLuanAnswerAllowed = async (workspaceId, baiThiId) => {
-    const coTuLuan = await layTrangThaiTuLuanTheoBaiThi(workspaceId, baiThiId);
+exports.ensureTuLuanAnswerAllowed = async (baiThiId) => {
+    const coTuLuan = await layTrangThaiTuLuanTheoBaiThi(baiThiId);
 
     if (!coTuLuan) {
         throw "Cuộc thi hiện tại không bật phần tự luận.";
     }
 };
 
-exports.coChoPhepTraLoiTuLuan = async (workspaceId, baiThiId) => {
-    return layTrangThaiTuLuanTheoBaiThi(workspaceId, baiThiId);
+exports.coChoPhepTraLoiTuLuan = async (baiThiId) => {
+    return layTrangThaiTuLuanTheoBaiThi(baiThiId);
 };
 
 exports.ensureDotThiWithinCuocThi = async ({
-    workspaceId,
     cuocThiId,
     thoiGianBatDau,
     thoiGianKetThuc,
@@ -284,10 +262,7 @@ exports.ensureDotThiWithinCuocThi = async ({
             thoiGianKetThuc: cuocThi.thoiGianKetThuc,
         })
         .from(cuocThi)
-        .where(and(
-            eq(cuocThi.workspaceId, Number(workspaceId)),
-            eq(cuocThi.id, Number(cuocThiId))
-        ))
+        .where(eq(cuocThi.id, Number(cuocThiId)))
         .limit(1);
 
     if (!contest) {
@@ -309,7 +284,6 @@ exports.ensureDotThiWithinCuocThi = async ({
 };
 
 exports.ensureTracNghiemConfigPossible = async ({
-    workspaceId,
     dotThiId,
     linhVucId,
     nhomId,
@@ -341,7 +315,6 @@ exports.ensureTracNghiemConfigPossible = async ({
                 .select({total: count()})
                 .from(tracNghiem)
                 .where(and(
-                    eq(tracNghiem.workspaceId, Number(workspaceId)),
                     eq(tracNghiem.linhVucId, Number(linhVucId)),
                     eq(tracNghiem.nhomId, Number(nhomId)),
                     eq(tracNghiem.loaiCauHoi, normalizedLoaiCauHoi)
@@ -350,7 +323,6 @@ exports.ensureTracNghiemConfigPossible = async ({
                 .select({total: sql`coalesce(sum(${tracNghiemDotThi.soLuong}), 0)::int`})
                 .from(tracNghiemDotThi)
                 .where(and(
-                    eq(tracNghiemDotThi.workspaceId, Number(workspaceId)),
                     eq(tracNghiemDotThi.dotThiId, Number(dotThiId)),
                     eq(tracNghiemDotThi.linhVucId, Number(linhVucId)),
                     eq(tracNghiemDotThi.nhomId, Number(nhomId)),
@@ -366,7 +338,6 @@ exports.ensureTracNghiemConfigPossible = async ({
                 .select({total: count()})
                 .from(tracNghiem)
                 .where(and(
-                    eq(tracNghiem.workspaceId, Number(workspaceId)),
                     eq(tracNghiem.linhVucId, Number(linhVucId)),
                     eq(tracNghiem.nhomId, Number(nhomId)),
                     eq(tracNghiem.loaiCauHoi, normalizedLoaiCauHoi)
@@ -375,7 +346,6 @@ exports.ensureTracNghiemConfigPossible = async ({
                 .select({total: sql`coalesce(sum(${tracNghiemDotThi.soLuong}), 0)::int`})
                 .from(tracNghiemDotThi)
                 .where(and(
-                    eq(tracNghiemDotThi.workspaceId, Number(workspaceId)),
                     eq(tracNghiemDotThi.dotThiId, Number(dotThiId)),
                     eq(tracNghiemDotThi.linhVucId, Number(linhVucId)),
                     eq(tracNghiemDotThi.nhomId, Number(nhomId)),
@@ -398,8 +368,8 @@ exports.ensureTracNghiemConfigPossible = async ({
     }
 };
 
-exports.ensureDotThiQuestionConfigValid = async (workspaceId, dotThiId) => {
-    const dotThiInfo = await exports.layTrangThaiTuLuanTheoDotThi(workspaceId, dotThiId);
+exports.ensureDotThiQuestionConfigValid = async (dotThiId) => {
+    const dotThiInfo = await exports.layTrangThaiTuLuanTheoDotThi(dotThiId);
     const hasLoaiColumn = await hasLoaiCauHoiColumn();
 
     let tracRows;
@@ -408,7 +378,6 @@ exports.ensureDotThiQuestionConfigValid = async (workspaceId, dotThiId) => {
             .select({total: count()})
             .from(tuLuanDotThi)
             .where(and(
-                eq(tuLuanDotThi.workspaceId, Number(workspaceId)),
                 eq(tuLuanDotThi.dotThiId, Number(dotThiId))
             )),
     ]);
@@ -429,20 +398,13 @@ exports.ensureDotThiQuestionConfigValid = async (workspaceId, dotThiId) => {
                     where q.linh_vuc_id = ${tracNghiemDotThi.linhVucId}
                       and q.nhom_id = ${tracNghiemDotThi.nhomId}
                       and q.loai_cau_hoi = coalesce(${tracNghiemDotThi.loaiCauHoi}, 'chon_mot')
-                      and q.workspace_id = ${Number(workspaceId)}
+                      and true
                 )`,
             })
             .from(tracNghiemDotThi)
-            .leftJoin(linhVuc, and(
-                eq(linhVuc.id, tracNghiemDotThi.linhVucId),
-                eq(linhVuc.workspaceId, Number(workspaceId))
-            ))
-            .leftJoin(nhomCauHoi, and(
-                eq(nhomCauHoi.id, tracNghiemDotThi.nhomId),
-                eq(nhomCauHoi.workspaceId, Number(workspaceId))
-            ))
+            .leftJoin(linhVuc, eq(linhVuc.id, tracNghiemDotThi.linhVucId))
+            .leftJoin(nhomCauHoi, eq(nhomCauHoi.id, tracNghiemDotThi.nhomId))
             .where(and(
-                eq(tracNghiemDotThi.workspaceId, Number(workspaceId)),
                 eq(tracNghiemDotThi.dotThiId, Number(dotThiId))
             ));
     } else {
@@ -460,20 +422,13 @@ exports.ensureDotThiQuestionConfigValid = async (workspaceId, dotThiId) => {
                     where q.linh_vuc_id = ${tracNghiemDotThi.linhVucId}
                       and q.nhom_id = ${tracNghiemDotThi.nhomId}
                       and q.loai_cau_hoi = ${normalizeLoaiCauHoi(LOAI_CAU_HOI.CHON_MOT)}
-                      and q.workspace_id = ${Number(workspaceId)}
+                      and true
                 )`,
             })
             .from(tracNghiemDotThi)
-            .leftJoin(linhVuc, and(
-                eq(linhVuc.id, tracNghiemDotThi.linhVucId),
-                eq(linhVuc.workspaceId, Number(workspaceId))
-            ))
-            .leftJoin(nhomCauHoi, and(
-                eq(nhomCauHoi.id, tracNghiemDotThi.nhomId),
-                eq(nhomCauHoi.workspaceId, Number(workspaceId))
-            ))
+            .leftJoin(linhVuc, eq(linhVuc.id, tracNghiemDotThi.linhVucId))
+            .leftJoin(nhomCauHoi, eq(nhomCauHoi.id, tracNghiemDotThi.nhomId))
             .where(and(
-                eq(tracNghiemDotThi.workspaceId, Number(workspaceId)),
                 eq(tracNghiemDotThi.dotThiId, Number(dotThiId))
             ));
     }
@@ -506,8 +461,8 @@ exports.ensureDotThiQuestionConfigValid = async (workspaceId, dotThiId) => {
     }
 };
 
-exports.ensureTuLuanAllowed = async (workspaceId, dotThiId) => {
-    const info = await exports.layTrangThaiTuLuanTheoDotThi(workspaceId, dotThiId);
+exports.ensureTuLuanAllowed = async (dotThiId) => {
+    const info = await exports.layTrangThaiTuLuanTheoDotThi(dotThiId);
 
     if (!info.coTuLuan) {
         throw "Cuộc thi hiện tại không bật phần tự luận.";

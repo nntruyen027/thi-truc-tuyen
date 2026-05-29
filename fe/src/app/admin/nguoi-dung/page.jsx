@@ -30,20 +30,14 @@ import {
     layDsNguoiDung,
     xoaNguoiDung
 } from "~/services/dm_chung/nguoi_dung";
-import {layDanhSachWorkspace} from "~/services/workspace";
 import UserModal from "./UserModal";
 
 export default function NguoiDung() {
     const setPageInfo = usePageInfoStore((state) => state.setPageInfo);
-    const user = useAuthStore((state) => state.user);
     const {message} = App.useApp();
-    const isSuperAdmin = user?.role === "super_admin";
 
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [workspaceLoading, setWorkspaceLoading] = useState(false);
-    const [workspaceOptions, setWorkspaceOptions] = useState([]);
-    const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(undefined);
     const [pagination, setPagination] = useState({
         current: 1,
         pageSize: 10,
@@ -68,7 +62,6 @@ export default function NguoiDung() {
                 page,
                 size,
                 search,
-                workspaceId: selectedWorkspaceId,
             });
 
             setData(res.data || []);
@@ -84,28 +77,6 @@ export default function NguoiDung() {
         }
     };
 
-    const loadWorkspaces = async () => {
-        if (!isSuperAdmin) {
-            return;
-        }
-
-        setWorkspaceLoading(true);
-        try {
-            const rows = await layDanhSachWorkspace();
-
-            setWorkspaceOptions(
-                (rows || []).map((item) => ({
-                    label: item.ten,
-                    value: item.id,
-                }))
-            );
-        } catch (e) {
-            message.error(e.message || "Không thể tải danh sách workspace.");
-        } finally {
-            setWorkspaceLoading(false);
-        }
-    };
-
     const reloadCurrentPage = async () => {
         await fetchData(
             pagination.current,
@@ -117,8 +88,7 @@ export default function NguoiDung() {
     const handleUpdatePass = async (record) => {
         try {
             await capNhatMatKhau(
-                record.username,
-                record.workspace?.id || record.workspace_id || selectedWorkspaceId
+                record.username
             );
             message.success("Đã đặt lại mật khẩu mặc định: Thitructuyen@2026");
         } catch (e) {
@@ -127,11 +97,6 @@ export default function NguoiDung() {
     };
 
     const handleToggleAdmin = async (record) => {
-        if (record.role === "super_admin") {
-            message.warning("Tài khoản super admin được quản lý ở khu vực quản trị hệ thống.");
-            return;
-        }
-
         try {
             const nextRole =
                 record.role === "admin"
@@ -140,8 +105,7 @@ export default function NguoiDung() {
 
             await capNhatQuyenNguoiDung(
                 record.id,
-                nextRole,
-                record.workspace?.id || record.workspace_id || selectedWorkspaceId
+                nextRole
             );
 
             message.success(
@@ -189,11 +153,10 @@ export default function NguoiDung() {
             debouncedSearch,
         );
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [debouncedSearch, selectedWorkspaceId]);
+    }, [debouncedSearch]);
 
     useEffect(() => {
         void fetchData();
-        void loadWorkspaces();
 
         setPageInfo({
             title: "Người dùng"
@@ -229,21 +192,13 @@ export default function NguoiDung() {
             dataIndex: "don_vi",
             render: (value) => value?.ten || <Tag>Chưa gán</Tag>
         },
-        ...(isSuperAdmin
-            ? [{
-                title: "Workspace",
-                dataIndex: "workspace",
-                width: 220,
-                render: (value) => value?.ten || <Tag>Chưa gán</Tag>
-            }]
-            : []),
         {
             title: "Quyền",
             dataIndex: "role",
             width: 140,
             render: (value) => (
-                <Tag color={value === "super_admin" ? "gold" : value === "admin" ? "blue" : "default"}>
-                    {value === "super_admin" ? "Super Admin" : value === "admin" ? "Admin" : "Người dùng"}
+                <Tag color={value === "admin" ? "blue" : "default"}>
+                    {value === "admin" ? "Admin" : "Người dùng"}
                 </Tag>
             )
         },
@@ -280,16 +235,14 @@ export default function NguoiDung() {
                     },
                 ];
 
-                if (record.role !== "super_admin") {
-                    items.splice(1, 0, {
-                        key: "toggle-admin",
-                        label: record.role === "admin" ? "Thu hồi admin" : "Gán thành admin",
-                        icon: <SafetyCertificateOutlined />,
-                        onClick: () => {
-                            void handleToggleAdmin(record);
-                        }
-                    });
-                }
+                items.splice(1, 0, {
+                    key: "toggle-admin",
+                    label: record.role === "admin" ? "Thu hồi admin" : "Gán thành admin",
+                    icon: <SafetyCertificateOutlined />,
+                    onClick: () => {
+                        void handleToggleAdmin(record);
+                    }
+                });
 
                 return (
                     <Dropdown menu={{items}}>
@@ -316,20 +269,6 @@ export default function NguoiDung() {
                             onChange={(e) => setSearchText(e.target.value)}
                             className="max-w-xl"
                         />
-
-                        {isSuperAdmin && (
-                            <Select
-                                allowClear
-                                showSearch
-                                optionFilterProp="label"
-                                placeholder="Lọc theo workspace"
-                                loading={workspaceLoading}
-                                value={selectedWorkspaceId}
-                                options={workspaceOptions}
-                                onChange={(value) => setSelectedWorkspaceId(value)}
-                                className="w-full lg:max-w-xs"
-                            />
-                        )}
                     </div>
 
                      <Button
@@ -368,9 +307,6 @@ export default function NguoiDung() {
             <UserModal
                 open={modalOpen}
                 data={editing}
-                isSuperAdmin={isSuperAdmin}
-                selectedWorkspaceId={selectedWorkspaceId}
-                workspaceOptions={workspaceOptions}
                 onClose={() => {
                     setModalOpen(false);
                     setEditing(null);

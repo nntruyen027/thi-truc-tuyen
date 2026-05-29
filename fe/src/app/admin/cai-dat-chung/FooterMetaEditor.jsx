@@ -6,7 +6,7 @@ import useApp from "antd/es/app/useApp";
 
 import {layCauHinh, suaCauHinh} from "~/services/cau-hinh";
 
-export default function FooterMetaEditor({workspaceId = null}) {
+export default function FooterMetaEditor() {
     const [form] = Form.useForm();
     const {message} = useApp();
 
@@ -15,7 +15,7 @@ export default function FooterMetaEditor({workspaceId = null}) {
 
         const load = async () => {
             const res =
-                await layCauHinh("footer_meta", {workspaceId});
+                await layCauHinh("footer_meta");
 
             if (!active || !res.data?.gia_tri) {
                 return;
@@ -36,7 +36,7 @@ export default function FooterMetaEditor({workspaceId = null}) {
         return () => {
             active = false;
         };
-    }, [form, workspaceId]);
+    }, [form]);
 
     const save = async () => {
         try {
@@ -45,8 +45,7 @@ export default function FooterMetaEditor({workspaceId = null}) {
 
             await suaCauHinh(
                 "footer_meta",
-                JSON.stringify(values),
-                {workspaceId}
+                JSON.stringify(values)
             );
 
             message.success("Đã cập nhật thông tin footer");

@@ -354,11 +354,6 @@ export default function Page() {
             return;
         }
 
-        if (currentUser.role === "super_admin") {
-            route.push("/super-admin");
-            return;
-        }
-
         if (currentUser.role === "admin") {
             route.push("/admin/dashboard");
             return;

@@ -10,17 +10,7 @@ const DB_PORT = Number(process.env.DB_PORT || 5432);
 const DB_USER = process.env.DB_USER;
 const DB_PASS = process.env.DB_PASS;
 const DB_NAME = process.env.DB_NAME;
-
-const DRIZZLE_FILES = [
-    "drizzle/0000_sloppy_cobalt_man.sql",
-    "drizzle/0001_silky_iron_monger.sql",
-    "drizzle/0002_schema_alignment.sql",
-    "drizzle/0003_workspace_foundation.sql",
-    "drizzle/0004_query_indexes.sql",
-    "drizzle/0005_multitenant_scope.sql",
-    "drizzle/0006_workspace_enforcement.sql",
-    "drizzle/0007_trac_nghiem_dot_thi_loai_cau_hoi.sql",
-];
+const MIGRATIONS_TABLE = "public.app_schema_migrations";
 
 const SAFE_TABLE_PATCH_FILES = [
     "sql/tables/2026_05_21_ho_tro_loai_cau_hoi_moi.sql",
@@ -73,16 +63,33 @@ async function executeSqlFile(client, relativeFilePath) {
     await client.query(sql);
 }
 
+async function ensureMigrationsTable(client) {
+    await client.query(`
+        create table if not exists ${MIGRATIONS_TABLE} (
+            id serial primary key,
+            file_name varchar(255) not null unique,
+            applied_at timestamp not null default now()
+        )
+    `);
+}
+
+async function recordMigration(client, relativeFilePath) {
+    await client.query(
+        `insert into ${MIGRATIONS_TABLE} (file_name) values ($1) on conflict (file_name) do nothing`,
+        [relativeFilePath]
+    );
+}
+
 async function hasCoreSchema(client) {
     const result = await client.query(`
         SELECT
             to_regclass('auth.users') AS auth_users,
-            to_regclass('platform.workspaces') AS platform_workspaces
+            to_regclass('public.cau_hinh') AS app_config
     `);
 
     const row = result.rows[0] || {};
 
-    return Boolean(row.auth_users && row.platform_workspaces);
+    return Boolean(row.auth_users && row.app_config);
 }
 
 async function listSqlFiles(relativeDir) {
@@ -134,11 +141,14 @@ async function run() {
     await ensureDatabase();
 
     await withClient(DB_NAME, async (client) => {
+        await ensureMigrationsTable(client);
         const schemaReady = await hasCoreSchema(client);
+        const drizzleFiles = await listSqlFiles("drizzle");
 
         if (!schemaReady) {
-            for (const file of DRIZZLE_FILES) {
+            for (const file of drizzleFiles) {
                 await executeSqlFile(client, file);
+                await recordMigration(client, file);
             }
         } else {
             console.log("[db:init] Core schema already exists. Skip drizzle bootstrap files.");

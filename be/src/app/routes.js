@@ -1,7 +1,6 @@
 const router = require("express").Router()
 
 router.use("/auth", require("../domains/auth/auth.route"))
-router.use("/workspaces", require("../domains/workspace/workspace.route"))
 router.use("/users", require("../domains/user/user.route"))
 router.use("/dm-chung", require("../domains/danh-muc/danhmuc.route"))
 router.use("/cuoc-thi", require("../domains/cuoc-thi/cuoc_thi.route"))

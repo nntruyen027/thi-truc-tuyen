@@ -28,9 +28,7 @@ export default function DangKy() {
 
             message.success("Đăng nhập thành công");
 
-            if(user.role === 'super_admin')
-                router.replace('/super-admin');
-            else if(user.role === 'admin')
+            if(user.role === 'admin')
                 router.replace('/admin/dashboard');
             else
                 router.replace('/user');

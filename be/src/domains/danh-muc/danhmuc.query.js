@@ -36,7 +36,6 @@ function getTable(tenDm) {
 }
 
 exports.layDsDanhMuc = async (
-    workspaceId,
     tenDm,
     size,
     page,
@@ -46,7 +45,7 @@ exports.layDsDanhMuc = async (
 ) => {
     const table = getTable(tenDm);
     const paging = normalizePagination({page, size});
-    const clauses = [eq(table.workspaceId, Number(workspaceId))];
+    const clauses = [];
 
     if (search?.trim()) {
         clauses.push(ilike(table.ten, `%${search.trim()}%`));
@@ -89,13 +88,12 @@ exports.layDsDanhMuc = async (
     });
 };
 
-exports.themDanhMuc = async (workspaceId, tenDm, value) => {
+exports.themDanhMuc = async (tenDm, value) => {
     const table = getTable(tenDm);
 
     const [created] = await db
         .insert(table)
         .values({
-            workspaceId: Number(workspaceId),
             ten: value.ten,
             moTa: value.mo_ta,
         })
@@ -104,7 +102,7 @@ exports.themDanhMuc = async (workspaceId, tenDm, value) => {
     return mapDanhMuc(created);
 };
 
-exports.suaDanhMuc = async (workspaceId, tenDm, id, value) => {
+exports.suaDanhMuc = async (tenDm, id, value) => {
     const table = getTable(tenDm);
 
     const [updated] = await db
@@ -113,24 +111,18 @@ exports.suaDanhMuc = async (workspaceId, tenDm, id, value) => {
             ten: value.ten,
             moTa: value.mo_ta,
         })
-        .where(and(
-            eq(table.workspaceId, Number(workspaceId)),
-            eq(table.id, Number(id))
-        ))
+        .where(eq(table.id, Number(id)))
         .returning();
 
     return mapDanhMuc(updated);
 };
 
-exports.xoaDanhMuc = async (workspaceId, tenDm, id) => {
+exports.xoaDanhMuc = async (tenDm, id) => {
     const table = getTable(tenDm);
 
     await db
         .delete(table)
-        .where(and(
-            eq(table.workspaceId, Number(workspaceId)),
-            eq(table.id, Number(id))
-        ));
+        .where(eq(table.id, Number(id)));
 
     return true;
 };

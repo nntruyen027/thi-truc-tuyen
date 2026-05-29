@@ -218,14 +218,13 @@ function addGuideSheet(workbook) {
     });
 }
 
-async function preloadContestMap(workspaceId) {
+async function preloadContestMap() {
     const rows = await db
         .select({
             id: cuocThi.id,
             ten: cuocThi.ten,
         })
-        .from(cuocThi)
-        .where(eq(cuocThi.workspaceId, Number(workspaceId)));
+        .from(cuocThi);
 
     return new Map(
         rows
@@ -269,7 +268,7 @@ function worksheetRowsToObjects(worksheet, columns) {
     return rows;
 }
 
-async function importCuocThiSheet({ workspaceId, rows, contestsByName, summary }) {
+async function importCuocThiSheet({ rows, contestsByName, summary }) {
     for (const item of rows) {
         try {
             const payload = cuocThiValidation.normalizeCuocThiPayload({
@@ -290,7 +289,7 @@ async function importCuocThiSheet({ workspaceId, rows, contestsByName, summary }
                 continue;
             }
 
-            const created = await cuocThiQuery.themCuocThi(workspaceId, payload);
+            const created = await cuocThiQuery.themCuocThi(payload);
             contestsByName.set(lookupKey, created);
             summary.created.cuoc_thi += 1;
         } catch (error) {
@@ -303,7 +302,7 @@ async function importCuocThiSheet({ workspaceId, rows, contestsByName, summary }
     }
 }
 
-async function importDotThiSheet({ workspaceId, rows, contestsByName, summary }) {
+async function importDotThiSheet({ rows, contestsByName, summary }) {
     for (const item of rows) {
         try {
             const tenCuocThi = normalizeText(item.value.ten_cuoc_thi);
@@ -333,14 +332,12 @@ async function importDotThiSheet({ workspaceId, rows, contestsByName, summary })
             });
 
             await thiValidation.ensureDotThiWithinCuocThi({
-                workspaceId,
                 cuocThiId: contest.id,
                 thoiGianBatDau: payload.thoi_gian_bat_dau,
                 thoiGianKetThuc: payload.thoi_gian_ket_thuc,
             });
 
             await dotThiQuery.themDotThi(
-                workspaceId,
                 contest.id,
                 payload.ten,
                 payload.mo_ta,
@@ -449,7 +446,7 @@ exports.generateImportWorkbook = async () => {
     return workbook.xlsx.writeBuffer();
 };
 
-exports.importWorkbook = async (workspaceId, filePath) => {
+exports.importWorkbook = async (filePath) => {
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
 
@@ -465,10 +462,9 @@ exports.importWorkbook = async (workspaceId, filePath) => {
         errors: [],
     };
 
-    const contestsByName = await preloadContestMap(workspaceId);
+    const contestsByName = await preloadContestMap();
 
     await importCuocThiSheet({
-        workspaceId,
         rows: worksheetRowsToObjects(
             workbook.getWorksheet("Cuoc_thi"),
             [
@@ -487,7 +483,6 @@ exports.importWorkbook = async (workspaceId, filePath) => {
     });
 
     await importDotThiSheet({
-        workspaceId,
         rows: worksheetRowsToObjects(
             workbook.getWorksheet("Dot_thi"),
             [

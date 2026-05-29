@@ -160,14 +160,13 @@ function worksheetRowsToObjects(worksheet) {
     return rows;
 }
 
-async function preloadNameMap(table, workspaceId) {
+async function preloadNameMap(table) {
     const rows = await db
         .select({
             id: table.id,
             ten: table.ten,
         })
-        .from(table)
-        .where(eq(table.workspaceId, Number(workspaceId)));
+        .from(table);
 
     return new Map(
         rows
@@ -185,7 +184,7 @@ exports.generateTemplate = async (tenDm) => {
     };
 };
 
-exports.importWorkbook = async (workspaceId, tenDm, filePath) => {
+exports.importWorkbook = async (tenDm, filePath) => {
     const config = getConfig(tenDm);
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
@@ -195,7 +194,7 @@ exports.importWorkbook = async (workspaceId, tenDm, filePath) => {
         throw "File mẫu không hợp lệ.";
     }
 
-    const existingMap = await preloadNameMap(config.table, workspaceId);
+    const existingMap = await preloadNameMap(config.table);
     const rows = worksheetRowsToObjects(sheet);
     const summary = {
         created: 0,
@@ -223,7 +222,7 @@ exports.importWorkbook = async (workspaceId, tenDm, filePath) => {
             continue;
         }
 
-        await danhMucQuery.themDanhMuc(workspaceId, tenDm, {
+        await danhMucQuery.themDanhMuc(tenDm, {
             ten,
             mo_ta: moTa,
         });

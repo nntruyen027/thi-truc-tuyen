@@ -9,7 +9,7 @@ import {layCauHinh, suaCauHinh} from "~/services/cau-hinh";
 import {getPublicFileUrl, uploadFile} from "~/services/file";
 import {parseMediaConfig} from "~/utils/workspaceTheme";
 
-export default function FaviconEditor({workspaceId = null, disabled = false}) {
+export default function FaviconEditor({disabled = false}) {
     const {message} = App.useApp();
     const [image, setImage] = useState("");
 
@@ -18,7 +18,7 @@ export default function FaviconEditor({workspaceId = null, disabled = false}) {
 
         const load = async () => {
             const res =
-                await layCauHinh("favicon", {workspaceId});
+                await layCauHinh("favicon");
 
             if (!active) {
                 return;
@@ -38,19 +38,18 @@ export default function FaviconEditor({workspaceId = null, disabled = false}) {
         return () => {
             active = false;
         };
-    }, [workspaceId]);
+    }, []);
 
     const save = async (duongDan) => {
         await suaCauHinh(
             "favicon",
-            JSON.stringify({duongDan}),
-            {workspaceId}
+            JSON.stringify({duongDan})
         );
     };
 
     const handleUpload = async (file) => {
         const res =
-            await uploadFile(file, {workspaceId});
+            await uploadFile(file);
 
         const duongDan =
             res?.duongDan || res?.duong_dan || res?.url;

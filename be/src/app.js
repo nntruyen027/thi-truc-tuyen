@@ -5,7 +5,6 @@ const path = require("path")
 const multer = require("multer")
 
 const routes = require("./app/routes")
-const workspaceMiddleware = require("./core/middlewares/workspace")
 
 const app = express()
 const corsOptions = {
@@ -15,7 +14,6 @@ const corsOptions = {
     allowedHeaders: [
         "Content-Type",
         "Authorization",
-        "X-Workspace-Host",
     ],
 }
 
@@ -65,7 +63,6 @@ app.use(
     express.static(LEGACY_UPLOAD_PATH)
 );
 
-app.use(workspaceMiddleware)
 app.use("/api", routes)
 
 app.use((err, req, res, next) => {

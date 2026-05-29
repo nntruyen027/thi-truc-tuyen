@@ -4,7 +4,6 @@ const validation = require("./bai_viet.validation");
 const auth = require("../../core/middlewares/auth");
 const role = require("../../core/middlewares/role");
 const resUtil = require("../../core/utils/response");
-const { requireWorkspaceId } = require("../../core/utils/workspace-scope");
 
 router.get("/", async (req, res) => {
     try {
@@ -16,7 +15,6 @@ router.get("/", async (req, res) => {
         } = req.query;
 
         const data = await query.layDanhSachBaiViet({
-            workspaceId: requireWorkspaceId(req),
             page: Number(page),
             size: Number(size),
             search,
@@ -31,7 +29,7 @@ router.get("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
     try {
-        const data = await query.layBaiVietTheoId(requireWorkspaceId(req), req.params.id);
+        const data = await query.layBaiVietTheoId(req.params.id);
         resUtil.ok(res, data);
     } catch (err) {
         resUtil.error(res, err);
@@ -42,7 +40,6 @@ router.post("/", auth, role(["admin"]), async (req, res) => {
     try {
         const value = validation.normalizeBaiVietPayload(req.body || {});
         const data = await query.themBaiViet({
-            workspaceId: requireWorkspaceId(req),
             ...value,
             nguoiTao: req.user?.id || null,
         });
@@ -56,7 +53,7 @@ router.post("/", auth, role(["admin"]), async (req, res) => {
 router.put("/:id", auth, role(["admin"]), async (req, res) => {
     try {
         const value = validation.normalizeBaiVietPayload(req.body || {});
-        const data = await query.suaBaiViet(requireWorkspaceId(req), req.params.id, value);
+        const data = await query.suaBaiViet(req.params.id, value);
         resUtil.ok(res, data);
     } catch (err) {
         resUtil.error(res, err);
@@ -65,7 +62,7 @@ router.put("/:id", auth, role(["admin"]), async (req, res) => {
 
 router.delete("/:id", auth, role(["admin"]), async (req, res) => {
     try {
-        const data = await query.xoaBaiViet(requireWorkspaceId(req), req.params.id);
+        const data = await query.xoaBaiViet(req.params.id);
         resUtil.ok(res, data);
     } catch (err) {
         resUtil.error(res, err);

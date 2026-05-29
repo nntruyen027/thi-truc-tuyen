@@ -13,7 +13,7 @@ import {
 
 const {Paragraph, Text, Title} = Typography;
 
-export default function UserProfileFieldsEditor({workspaceId = null}) {
+export default function UserProfileFieldsEditor() {
     const {message} = App.useApp();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -25,7 +25,7 @@ export default function UserProfileFieldsEditor({workspaceId = null}) {
         const load = async () => {
             try {
                 setLoading(true);
-                const res = await layCauHinh("user_profile_fields", {workspaceId});
+                const res = await layCauHinh("user_profile_fields");
 
                 if (!active) {
                     return;
@@ -48,7 +48,7 @@ export default function UserProfileFieldsEditor({workspaceId = null}) {
         return () => {
             active = false;
         };
-    }, [workspaceId]);
+    }, []);
 
     const selectedValues = useMemo(
         () => Array.from(new Set([...LOCKED_USER_PROFILE_FIELDS, ...enabledFields])),
@@ -68,8 +68,7 @@ export default function UserProfileFieldsEditor({workspaceId = null}) {
             setSaving(true);
             await suaCauHinh(
                 "user_profile_fields",
-                buildUserProfileFieldConfig(selectedValues),
-                {workspaceId}
+                buildUserProfileFieldConfig(selectedValues)
             );
             message.success("Đã cập nhật cấu hình thông tin người dùng");
         } catch (error) {
@@ -91,7 +90,7 @@ export default function UserProfileFieldsEditor({workspaceId = null}) {
                         Hồ sơ người dùng
                     </Text>
                     <Title level={4} className="!mb-0 !mt-1">
-                        Trường thông tin theo workspace
+                        Trường thông tin người dùng
                     </Title>
                     <Paragraph className="!mb-0 !mt-2 !text-sm !leading-7 !text-slate-500">
                         Tick các thông tin cần thu thập ở form đăng ký và hồ sơ người dùng. Họ tên và số điện thoại luôn bật vì đang là định danh cốt lõi của hệ thống.
@@ -122,7 +121,7 @@ export default function UserProfileFieldsEditor({workspaceId = null}) {
                 <div className="rounded-[24px] border border-slate-200 bg-white px-4 py-4">
                     <div className="text-sm font-semibold text-slate-900">Thông tin có thể bật theo workspace</div>
                     <div className="mt-1 text-sm text-slate-500">
-                        Chỉ tick những trường mà tenant này thực sự cần thu thập khi đăng ký và cập nhật hồ sơ.
+                        Chỉ tick những trường thực sự cần thu thập khi đăng ký và cập nhật hồ sơ.
                     </div>
 
                     <Checkbox.Group value={selectedValues} onChange={handleChange} className="!mt-4 !w-full">

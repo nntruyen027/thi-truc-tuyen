@@ -79,7 +79,7 @@ export default function UserLayout({children}) {
             onClick: handleLogout,
         }]
         : [
-            ...(user?.role === "admin" || user?.role === "super_admin"
+            ...(user?.role === "admin"
                 ? [{
                     key: "admin",
                     label: "Khu vực quản trị",

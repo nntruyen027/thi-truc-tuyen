@@ -8,7 +8,6 @@ const role = require("../../core/middlewares/role");
 const upload = require("../../core/utils/upload");
 const importService = require("./cuoc_thi_import.service");
 const fs = require("fs/promises");
-const { requireWorkspaceId } = require("../../core/utils/workspace-scope");
 
 router.get("/",
     async (req, res) => {
@@ -22,7 +21,6 @@ router.get("/",
             } = req.query
 
             const data = await query.layDsCuocThi(
-                requireWorkspaceId(req),
                 Number(size),
                 Number(page),
                 search,
@@ -43,7 +41,6 @@ router.get("/con-lai", async (req, res) => {
     try {
 
         const data = await query.layThoiGianConLaiCuaCuocThi(
-            requireWorkspaceId(req),
         )
 
         resUtil.ok(res, data)
@@ -58,7 +55,6 @@ router.get("/con-lai", async (req, res) => {
 router.get("/luot-thi-hien-tai", async (req, res) => {
     try {
         const data = await query.layTongLuotThiCuaCuocThiHienTai(
-            requireWorkspaceId(req),
         )
 
         resUtil.ok(res, data)
@@ -72,9 +68,7 @@ router.get("/luot-thi-hien-tai", async (req, res) => {
 
 router.get("/import/template", async (req, res) => {
     try {
-        const buffer = await importService.generateImportWorkbook(
-            requireWorkspaceId(req),
-        );
+        const buffer = await importService.generateImportWorkbook();
 
         res.setHeader(
             "Content-Type",
@@ -105,7 +99,6 @@ router.post(
             }
 
             const data = await importService.importWorkbook(
-                requireWorkspaceId(req),
                 uploadedPath
             );
 
@@ -126,7 +119,6 @@ router.get("/:id", async (req, res) => {
         const id = req.params.id;
 
         const data = await query.layCuocThiTheoId(
-            requireWorkspaceId(req),
             id
         )
 
@@ -153,7 +145,6 @@ router.post(
 
             const data =
                 await query.themCuocThi(
-                    requireWorkspaceId(req),
                     value
                 )
 
@@ -186,7 +177,6 @@ router.put(
 
             const data =
                 await query.suaCuocThi(
-                    requireWorkspaceId(req),
                     id,
                     value
                 )
@@ -220,7 +210,6 @@ router.delete(
 
             const data =
                 await query.xoaCuocThi(
-                    requireWorkspaceId(req),
                     id
                 )
 

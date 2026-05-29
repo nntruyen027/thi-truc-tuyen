@@ -22,17 +22,11 @@ function mapBaiViet(row) {
     };
 }
 
-function isMissingWorkspaceColumnError(error) {
-    const message = String(error?.message || error || "").toLowerCase();
-    return message.includes("workspace_id") && message.includes("does not exist");
-}
-
 function buildWhere({
-    workspaceId,
     search = "",
     chiHienThi = false,
 }) {
-    const clauses = [eq(baiViet.workspaceId, Number(workspaceId))];
+    const clauses = [];
 
     if (search?.trim()) {
         clauses.push(ilike(baiViet.tieuDe, `%${search.trim()}%`));
@@ -50,14 +44,13 @@ function buildWhere({
 }
 
 exports.layDanhSachBaiViet = async ({
-    workspaceId,
     page = 1,
     size = 50,
     search = "",
     chiHienThi = false,
 }) => {
     const paging = normalizePagination({page, size, defaultSize: 50});
-    const where = buildWhere({workspaceId, search, chiHienThi});
+    const where = buildWhere({search, chiHienThi});
 
     const rowsQuery = db
         .select()
@@ -70,41 +63,10 @@ exports.layDanhSachBaiViet = async ({
         .select({total: count()})
         .from(baiViet);
 
-    let rows;
-    let totalRows;
-
-    try {
-        [rows, totalRows] = await Promise.all([
-            where ? rowsQuery.where(where) : rowsQuery,
-            where ? totalQuery.where(where) : totalQuery,
-        ]);
-    } catch (error) {
-        if (!isMissingWorkspaceColumnError(error)) {
-            throw error;
-        }
-
-        const legacyClauses = [];
-
-        if (search?.trim()) {
-            legacyClauses.push(ilike(baiViet.tieuDe, `%${search.trim()}%`));
-        }
-
-        if (chiHienThi) {
-            legacyClauses.push(eq(baiViet.trangThai, true));
-        }
-
-        const legacyWhere =
-            legacyClauses.length === 0
-                ? undefined
-                : legacyClauses.length === 1
-                    ? legacyClauses[0]
-                    : and(...legacyClauses);
-
-        [rows, totalRows] = await Promise.all([
-            legacyWhere ? rowsQuery.where(legacyWhere) : rowsQuery,
-            legacyWhere ? totalQuery.where(legacyWhere) : totalQuery,
-        ]);
-    }
+    const [rows, totalRows] = await Promise.all([
+        where ? rowsQuery.where(where) : rowsQuery,
+        where ? totalQuery.where(where) : totalQuery,
+    ]);
 
     return buildPagedResult({
         data: rows.map(mapBaiViet),
@@ -114,132 +76,55 @@ exports.layDanhSachBaiViet = async ({
     });
 };
 
-exports.layBaiVietTheoId = async (workspaceId, id) => {
-    let row;
-
-    try {
-        [row] = await db
-            .select()
-            .from(baiViet)
-            .where(and(
-                eq(baiViet.workspaceId, Number(workspaceId)),
-                eq(baiViet.id, Number(id))
-            ))
-            .limit(1);
-    } catch (error) {
-        if (!isMissingWorkspaceColumnError(error)) {
-            throw error;
-        }
-
-        [row] = await db
-            .select()
-            .from(baiViet)
-            .where(eq(baiViet.id, Number(id)))
-            .limit(1);
-    }
+exports.layBaiVietTheoId = async (id) => {
+    const [row] = await db
+        .select()
+        .from(baiViet)
+        .where(eq(baiViet.id, Number(id)))
+        .limit(1);
 
     return mapBaiViet(row);
 };
 
 exports.themBaiViet = async (value) => {
-    let created;
-
-    try {
-        [created] = await db
-            .insert(baiViet)
-            .values({
-                workspaceId: Number(value.workspaceId),
-                tieuDe: value.tieuDe,
-                tomTat: value.tomTat || "",
-                noiDung: value.noiDung,
-                anhDaiDien: value.anhDaiDien || "",
-                ngayDang: value.ngayDang,
-                trangThai: value.trangThai ?? true,
-                nguoiTao: value.nguoiTao || null,
-            })
-            .returning();
-    } catch (error) {
-        if (!isMissingWorkspaceColumnError(error)) {
-            throw error;
-        }
-
-        [created] = await db
-            .insert(baiViet)
-            .values({
-                tieuDe: value.tieuDe,
-                tomTat: value.tomTat || "",
-                noiDung: value.noiDung,
-                anhDaiDien: value.anhDaiDien || "",
-                ngayDang: value.ngayDang,
-                trangThai: value.trangThai ?? true,
-                nguoiTao: value.nguoiTao || null,
-            })
-            .returning();
-    }
+    const [created] = await db
+        .insert(baiViet)
+        .values({
+            tieuDe: value.tieuDe,
+            tomTat: value.tomTat || "",
+            noiDung: value.noiDung,
+            anhDaiDien: value.anhDaiDien || "",
+            ngayDang: value.ngayDang,
+            trangThai: value.trangThai ?? true,
+            nguoiTao: value.nguoiTao || null,
+        })
+        .returning();
 
     return mapBaiViet(created);
 };
 
-exports.suaBaiViet = async (workspaceId, id, value) => {
-    let updated;
-
-    try {
-        [updated] = await db
-            .update(baiViet)
-            .set({
-                tieuDe: value.tieuDe,
-                tomTat: value.tomTat || "",
-                noiDung: value.noiDung,
-                anhDaiDien: value.anhDaiDien || "",
-                ngayDang: value.ngayDang,
-                trangThai: value.trangThai ?? true,
-                updatedAt: new Date(),
-            })
-            .where(and(
-                eq(baiViet.workspaceId, Number(workspaceId)),
-                eq(baiViet.id, Number(id))
-            ))
-            .returning();
-    } catch (error) {
-        if (!isMissingWorkspaceColumnError(error)) {
-            throw error;
-        }
-
-        [updated] = await db
-            .update(baiViet)
-            .set({
-                tieuDe: value.tieuDe,
-                tomTat: value.tomTat || "",
-                noiDung: value.noiDung,
-                anhDaiDien: value.anhDaiDien || "",
-                ngayDang: value.ngayDang,
-                trangThai: value.trangThai ?? true,
-                updatedAt: new Date(),
-            })
-            .where(eq(baiViet.id, Number(id)))
-            .returning();
-    }
+exports.suaBaiViet = async (id, value) => {
+    const [updated] = await db
+        .update(baiViet)
+        .set({
+            tieuDe: value.tieuDe,
+            tomTat: value.tomTat || "",
+            noiDung: value.noiDung,
+            anhDaiDien: value.anhDaiDien || "",
+            ngayDang: value.ngayDang,
+            trangThai: value.trangThai ?? true,
+            updatedAt: new Date(),
+        })
+        .where(eq(baiViet.id, Number(id)))
+        .returning();
 
     return mapBaiViet(updated);
 };
 
-exports.xoaBaiViet = async (workspaceId, id) => {
-    try {
-        await db
-            .delete(baiViet)
-            .where(and(
-                eq(baiViet.workspaceId, Number(workspaceId)),
-                eq(baiViet.id, Number(id))
-            ));
-    } catch (error) {
-        if (!isMissingWorkspaceColumnError(error)) {
-            throw error;
-        }
-
-        await db
-            .delete(baiViet)
-            .where(eq(baiViet.id, Number(id)));
-    }
+exports.xoaBaiViet = async (id) => {
+    await db
+        .delete(baiViet)
+        .where(eq(baiViet.id, Number(id)));
 
     return true;
 };

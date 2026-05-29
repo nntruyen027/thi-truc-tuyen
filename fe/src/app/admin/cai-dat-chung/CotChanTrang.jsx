@@ -6,7 +6,7 @@ import {layCauHinh, suaCauHinh} from "~/services/cau-hinh";
 import {useEffect, useState} from "react";
 import useApp from "antd/es/app/useApp";
 
-export default function CotChanTrang({tieuDe, khoa, workspaceId = null}) {
+export default function CotChanTrang({tieuDe, khoa}) {
     const [form] = Form.useForm();
     const {message} = useApp()
     const [loading, setLoading] = useState(false);
@@ -22,8 +22,7 @@ export default function CotChanTrang({tieuDe, khoa, workspaceId = null}) {
 
             await suaCauHinh(
                 khoa,
-                JSON.stringify(values),
-                {workspaceId}
+                JSON.stringify(values)
             );
 
         }
@@ -39,7 +38,7 @@ export default function CotChanTrang({tieuDe, khoa, workspaceId = null}) {
     useEffect(() => {
         const load = async () => {
             const res =
-                await layCauHinh(khoa, {workspaceId})
+                await layCauHinh(khoa)
 
             if (!res.data) return
 
@@ -52,7 +51,7 @@ export default function CotChanTrang({tieuDe, khoa, workspaceId = null}) {
         }
 
         void load()
-    }, [form, khoa, workspaceId])
+    }, [form, khoa])
 
     return <Card title={tieuDe}>
         <Form form={form} layout="vertical">

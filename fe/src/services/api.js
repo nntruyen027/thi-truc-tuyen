@@ -18,11 +18,6 @@ api.interceptors.request.use((config) => {
         delete config.headers["Content-Type"];
     }
 
-    if (typeof window !== "undefined" && !config.skipWorkspaceHost) {
-        config.headers = config.headers || {};
-        config.headers["X-Workspace-Host"] = window.location.host;
-    }
-
     if (access) {
         if (isTokenExpired(access)) {
             useAuthStore.getState().clearAuth();

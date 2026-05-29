@@ -11,14 +11,10 @@ export default function UserModal({
     data,
     onClose,
     onSuccess,
-    workspaceOptions = [],
-    selectedWorkspaceId = null,
-    isSuperAdmin = false,
 }) {
     const {message} = App.useApp();
     const [form] = Form.useForm();
     const {dsDonVi, loading: donViLoading, setSearchDonVi, loadMore} = useDonViSelect();
-    const isEditingSuperAdmin = data?.role === "super_admin";
 
     useEffect(() => {
         if (!open) {
@@ -32,7 +28,6 @@ export default function UserModal({
                 hoTen: data.ho_ten,
                 donViId: data?.don_vi?.id || data?.don_vi_id || null,
                 role: data.role || "user",
-                workspaceId: data?.workspace?.id || data?.workspace_id || selectedWorkspaceId || null,
                 password: "",
             });
             return;
@@ -40,10 +35,9 @@ export default function UserModal({
 
         form.setFieldsValue({
             role: "user",
-            workspaceId: selectedWorkspaceId || null,
             password: "",
         });
-    }, [data, form, open, selectedWorkspaceId]);
+    }, [data, form, open]);
 
     const handleOk = async () => {
         try {
@@ -55,7 +49,6 @@ export default function UserModal({
                 hoTen: values.hoTen?.trim(),
                 donViId: values.donViId || null,
                 role: values.role || "user",
-                ...(isSuperAdmin && values.workspaceId ? {workspaceId: values.workspaceId} : {}),
             };
 
             if (values.password) {
@@ -148,31 +141,11 @@ export default function UserModal({
                 >
                     <Select
                         options={[
-                            ...(isEditingSuperAdmin
-                                ? [{label: "Super Admin", value: "super_admin"}]
-                                : []),
                             {label: "Người dùng", value: "user"},
                             {label: "Admin", value: "admin"},
                         ]}
-                        disabled={isEditingSuperAdmin}
                     />
                 </Form.Item>
-
-                {isSuperAdmin && (
-                    <Form.Item
-                        name="workspaceId"
-                        label="Workspace"
-                        rules={[{required: true, message: "Vui lòng chọn workspace"}]}
-                    >
-                        <Select
-                            showSearch
-                            optionFilterProp="label"
-                            placeholder="Chọn workspace"
-                            options={workspaceOptions}
-                            disabled={isEditingSuperAdmin}
-                        />
-                    </Form.Item>
-                )}
 
                 <Form.Item
                     name="password"

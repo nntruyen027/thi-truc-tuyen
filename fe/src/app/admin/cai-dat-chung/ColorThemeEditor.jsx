@@ -6,10 +6,9 @@ import {layCauHinh, suaCauHinh} from "~/services/cau-hinh";
 import {useWorkspaceThemeStore} from "~/store/workspace-theme";
 import {normalizePrimaryColor, parseThemePayload} from "~/utils/workspaceTheme";
 
-export default function ColorThemeEditor({workspaceId = null}) {
+export default function ColorThemeEditor() {
     const [form] = Form.useForm();
     const {message} = App.useApp();
-    const currentWorkspace = useWorkspaceThemeStore((state) => state.workspace);
     const setPrimaryColor = useWorkspaceThemeStore((state) => state.setPrimaryColor);
 
     useEffect(() => {
@@ -17,7 +16,7 @@ export default function ColorThemeEditor({workspaceId = null}) {
 
         const load = async () => {
             try {
-                const res = await layCauHinh("theme_settings", {workspaceId});
+                const res = await layCauHinh("theme_settings");
 
                 if (!active) {
                     return;
@@ -39,7 +38,7 @@ export default function ColorThemeEditor({workspaceId = null}) {
         return () => {
             active = false;
         };
-    }, [form, message, workspaceId]);
+    }, [form, message]);
 
     const handleColorChange = (event) => {
         form.setFieldValue("primaryColor", normalizePrimaryColor(event.target.value));
@@ -52,14 +51,10 @@ export default function ColorThemeEditor({workspaceId = null}) {
 
             await suaCauHinh(
                 "theme_settings",
-                JSON.stringify({primaryColor}),
-                {workspaceId}
+                JSON.stringify({primaryColor})
             );
 
-            if (!workspaceId || Number(currentWorkspace?.id) === Number(workspaceId)) {
-                setPrimaryColor(primaryColor);
-            }
-
+            setPrimaryColor(primaryColor);
             form.setFieldValue("primaryColor", primaryColor);
             message.success("Đã cập nhật màu chủ đạo");
         } catch (error) {

@@ -1,0 +1,75 @@
+begin;
+
+alter table if exists public.bai_viet
+    drop constraint if exists bai_viet_workspace_id_fk;
+alter table if exists file.file
+    drop constraint if exists file_workspace_id_fk;
+alter table if exists dm_chung.don_vi
+    drop constraint if exists don_vi_workspace_id_fk;
+alter table if exists dm_chung.linh_vuc
+    drop constraint if exists linh_vuc_workspace_id_fk;
+alter table if exists dm_chung.nhom_cau_hoi
+    drop constraint if exists nhom_cau_hoi_workspace_id_fk;
+alter table if exists thi.cuoc_thi
+    drop constraint if exists cuoc_thi_workspace_id_fk;
+alter table if exists thi.dot_thi
+    drop constraint if exists dot_thi_workspace_id_fk;
+alter table if exists thi.trac_nghiem
+    drop constraint if exists trac_nghiem_workspace_id_fk;
+alter table if exists thi.trac_nghiem_dot_thi
+    drop constraint if exists trac_nghiem_dot_thi_workspace_id_fk;
+alter table if exists thi.tu_luan_dot_thi
+    drop constraint if exists tu_luan_dot_thi_workspace_id_fk;
+alter table if exists thi.de_thi
+    drop constraint if exists de_thi_workspace_id_fk;
+alter table if exists thi.bai_thi
+    drop constraint if exists bai_thi_workspace_id_fk;
+
+drop index if exists auth.auth_users_workspace_id_idx;
+drop index if exists auth.auth_refresh_tokens_workspace_id_idx;
+drop index if exists dm_chung.don_vi_workspace_ten_idx;
+drop index if exists dm_chung.linh_vuc_workspace_ten_idx;
+drop index if exists dm_chung.nhom_cau_hoi_workspace_ten_idx;
+drop index if exists public.bai_viet_workspace_trang_thai_ngay_dang_idx;
+drop index if exists file.file_workspace_thoi_gian_tao_idx;
+drop index if exists thi.cuoc_thi_workspace_thoi_gian_idx;
+drop index if exists thi.cuoc_thi_workspace_ten_idx;
+drop index if exists thi.dot_thi_workspace_cuoc_thi_id_idx;
+drop index if exists thi.dot_thi_workspace_thoi_gian_idx;
+drop index if exists thi.dot_thi_workspace_cuoc_thi_ten_idx;
+drop index if exists thi.trac_nghiem_workspace_linh_vuc_nhom_idx;
+drop index if exists thi.trac_nghiem_dot_thi_workspace_dot_thi_id_idx;
+drop index if exists thi.tu_luan_dot_thi_workspace_dot_thi_id_idx;
+drop index if exists thi.de_thi_workspace_dot_thi_thi_sinh_idx;
+drop index if exists thi.bai_thi_workspace_thi_sinh_trang_thai_de_thi_idx;
+
+alter table if exists auth.users
+    drop column if exists workspace_id;
+alter table if exists auth.refresh_tokens
+    drop column if exists workspace_id;
+alter table if exists dm_chung.don_vi
+    drop column if exists workspace_id;
+alter table if exists dm_chung.linh_vuc
+    drop column if exists workspace_id;
+alter table if exists dm_chung.nhom_cau_hoi
+    drop column if exists workspace_id;
+alter table if exists public.bai_viet
+    drop column if exists workspace_id;
+alter table if exists file.file
+    drop column if exists workspace_id;
+alter table if exists thi.cuoc_thi
+    drop column if exists workspace_id;
+alter table if exists thi.dot_thi
+    drop column if exists workspace_id;
+alter table if exists thi.trac_nghiem
+    drop column if exists workspace_id;
+alter table if exists thi.trac_nghiem_dot_thi
+    drop column if exists workspace_id;
+alter table if exists thi.tu_luan_dot_thi
+    drop column if exists workspace_id;
+alter table if exists thi.de_thi
+    drop column if exists workspace_id;
+alter table if exists thi.bai_thi
+    drop column if exists workspace_id;
+
+commit;

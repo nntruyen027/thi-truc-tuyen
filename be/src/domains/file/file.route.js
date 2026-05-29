@@ -16,23 +16,8 @@ const auth =
 
 const resUtil =
     require("../../core/utils/response");
-const { requireWorkspaceId } = require("../../core/utils/workspace-scope");
 
 const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024;
-
-const ensureSuperAdminUploadWorkspaceMatch = (req, workspaceId) => {
-    if (req.user?.role !== "super_admin") {
-        return;
-    }
-
-    if (!workspaceId || !req.workspace?.id) {
-        return;
-    }
-
-    if (Number(workspaceId) !== Number(req.workspace.id)) {
-        throw new Error("Chỉ được tải media lên cho workspace đang truy cập hiện tại. Hãy mở đúng domain của workspace rồi tải lại file.");
-    }
-};
 
 const isRawBinaryRequest = (req) => {
     const contentType = String(req.headers["content-type"] || "").toLowerCase();
@@ -145,14 +130,10 @@ router.post(
                 throw new Error("Không tìm thấy file tải lên");
             }
 
-            const workspaceId = requireWorkspaceId(req);
-            ensureSuperAdminUploadWorkspaceMatch(req, workspaceId);
-
             const data =
                 await service.createFile({
                     file: uploadedFile,
                     userId: req.user.id,
-                    workspaceId,
                 });
 
             resUtil.ok(res, data);
@@ -175,7 +156,6 @@ router.get(
     async (req, res) => {
 
         try {
-
             const {
                 page = 1,
                 size = 10,
@@ -184,7 +164,6 @@ router.get(
 
             const data =
                 await service.listFiles({
-                    workspaceId: requireWorkspaceId(req),
                     page,
                     size,
                     search,
@@ -214,10 +193,8 @@ router.delete(
     async (req, res) => {
 
         try {
-
             const data =
                 await service.deleteFile(
-                    requireWorkspaceId(req),
                     req.params.id
                 );
 

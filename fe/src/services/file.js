@@ -67,19 +67,12 @@ export async function uploadFile(file, options = {}) {
         xhr.open("POST", `${API_BASE_URL}${BASE_PATH}/upload`);
         xhr.timeout = 10 * 60 * 1000;
 
-        if (typeof window !== "undefined") {
-            xhr.setRequestHeader("X-Workspace-Host", window.location.host);
-        }
-
         if (access) {
             xhr.setRequestHeader("Authorization", `Bearer ${access}`);
         }
 
         const formData = new FormData();
         formData.append("file", normalizedFile);
-        if (options.workspaceId) {
-            formData.append("workspaceId", String(options.workspaceId));
-        }
 
         if (xhr.upload && typeof options.onUploadProgress === "function") {
             xhr.upload.onprogress = (event) => {
@@ -128,9 +121,6 @@ export async function xoaFile(id) {
         method: "DELETE",
         headers: {
             ...(access ? {Authorization: `Bearer ${access}`} : {}),
-            ...(typeof window !== "undefined"
-                ? {"X-Workspace-Host": window.location.host}
-                : {}),
         },
     });
 

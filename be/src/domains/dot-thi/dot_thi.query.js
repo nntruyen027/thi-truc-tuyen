@@ -68,17 +68,7 @@ function mapTuLuanDotThi(row) {
     };
 }
 
-function isMissingWorkspaceColumnError(error) {
-    const message = String(error?.message || error || "").toLowerCase();
-    return message.includes("workspace_id") && message.includes("does not exist");
-}
-
-function hasWorkspaceColumn(table) {
-    return Boolean(table?.workspaceId);
-}
-
 function buildDotThiDuplicateCondition({
-    workspaceId,
     cuocThiId,
     ten,
     excludeId = null,
@@ -88,10 +78,6 @@ function buildDotThiDuplicateCondition({
         eq(dotThi.ten, ten),
     ];
 
-    if (hasWorkspaceColumn(dotThi)) {
-        conditions.unshift(eq(dotThi.workspaceId, Number(workspaceId)));
-    }
-
     if (excludeId !== null && excludeId !== undefined) {
         conditions.push(ne(dotThi.id, Number(excludeId)));
     }
@@ -99,88 +85,38 @@ function buildDotThiDuplicateCondition({
     return and(...conditions);
 }
 
-async function getDotThiWithCuocThi(workspaceId, id) {
-    let row;
-
-    if (hasWorkspaceColumn(dotThi) && hasWorkspaceColumn(cuocThi)) {
-        try {
-            [row] = await db
-                .select({
-                    id: dotThi.id,
-                    cuocThiId: dotThi.cuocThiId,
-                    ten: dotThi.ten,
-                    moTa: dotThi.moTa,
-                    soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
-                    thoiGianThi: dotThi.thoiGianThi,
-                    tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
-                    thoiGianBatDau: dotThi.thoiGianBatDau,
-                    thoiGianKetThuc: dotThi.thoiGianKetThuc,
-                    coTronCauHoi: dotThi.coTronCauHoi,
-                    choPhepLuuBai: dotThi.choPhepLuuBai,
-                    duDoan: dotThi.duDoan,
-                    trangThai: dotThi.trangThai,
-                    createdAt: dotThi.createdAt,
-                    cuoc_thi_id: cuocThi.id,
-                    cuoc_thi_ten: cuocThi.ten,
-                    cuoc_thi_mo_ta: cuocThi.moTa,
-                    cuoc_thi_thoi_gian_bat_dau: cuocThi.thoiGianBatDau,
-                    cuoc_thi_thoi_gian_ket_thuc: cuocThi.thoiGianKetThuc,
-                    cuoc_thi_trang_thai: cuocThi.trangThai,
-                    cuoc_thi_cho_phep_xem_lich_su: cuocThi.choPhepXemLichSu,
-                    cuoc_thi_cho_phep_xem_lai_dap_an: cuocThi.choPhepXemLaiDapAn,
-                    cuoc_thi_co_tu_luan: cuocThi.coTuLuan,
-                    cuoc_thi_created_at: cuocThi.createdAt,
-                })
-                .from(dotThi)
-                .leftJoin(cuocThi, and(
-                    eq(dotThi.cuocThiId, cuocThi.id),
-                    eq(cuocThi.workspaceId, Number(workspaceId))
-                ))
-                .where(and(
-                    eq(dotThi.workspaceId, Number(workspaceId)),
-                    eq(dotThi.id, Number(id))
-                ))
-                .limit(1);
-        } catch (error) {
-            if (!isMissingWorkspaceColumnError(error)) {
-                throw error;
-            }
-        }
-    }
-
-    if (!row) {
-        [row] = await db
-            .select({
-                id: dotThi.id,
-                cuocThiId: dotThi.cuocThiId,
-                ten: dotThi.ten,
-                moTa: dotThi.moTa,
-                soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
-                thoiGianThi: dotThi.thoiGianThi,
-                tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
-                thoiGianBatDau: dotThi.thoiGianBatDau,
-                thoiGianKetThuc: dotThi.thoiGianKetThuc,
-                coTronCauHoi: dotThi.coTronCauHoi,
-                choPhepLuuBai: dotThi.choPhepLuuBai,
-                duDoan: dotThi.duDoan,
-                trangThai: dotThi.trangThai,
-                createdAt: dotThi.createdAt,
-                cuoc_thi_id: cuocThi.id,
-                cuoc_thi_ten: cuocThi.ten,
-                cuoc_thi_mo_ta: cuocThi.moTa,
-                cuoc_thi_thoi_gian_bat_dau: cuocThi.thoiGianBatDau,
-                cuoc_thi_thoi_gian_ket_thuc: cuocThi.thoiGianKetThuc,
-                cuoc_thi_trang_thai: cuocThi.trangThai,
-                cuoc_thi_cho_phep_xem_lich_su: cuocThi.choPhepXemLichSu,
-                cuoc_thi_cho_phep_xem_lai_dap_an: cuocThi.choPhepXemLaiDapAn,
-                cuoc_thi_co_tu_luan: cuocThi.coTuLuan,
-                cuoc_thi_created_at: cuocThi.createdAt,
-            })
-            .from(dotThi)
-            .leftJoin(cuocThi, eq(dotThi.cuocThiId, cuocThi.id))
-            .where(eq(dotThi.id, Number(id)))
-            .limit(1);
-    }
+async function getDotThiWithCuocThi(id) {
+    const [row] = await db
+        .select({
+            id: dotThi.id,
+            cuocThiId: dotThi.cuocThiId,
+            ten: dotThi.ten,
+            moTa: dotThi.moTa,
+            soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
+            thoiGianThi: dotThi.thoiGianThi,
+            tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
+            thoiGianBatDau: dotThi.thoiGianBatDau,
+            thoiGianKetThuc: dotThi.thoiGianKetThuc,
+            coTronCauHoi: dotThi.coTronCauHoi,
+            choPhepLuuBai: dotThi.choPhepLuuBai,
+            duDoan: dotThi.duDoan,
+            trangThai: dotThi.trangThai,
+            createdAt: dotThi.createdAt,
+            cuoc_thi_id: cuocThi.id,
+            cuoc_thi_ten: cuocThi.ten,
+            cuoc_thi_mo_ta: cuocThi.moTa,
+            cuoc_thi_thoi_gian_bat_dau: cuocThi.thoiGianBatDau,
+            cuoc_thi_thoi_gian_ket_thuc: cuocThi.thoiGianKetThuc,
+            cuoc_thi_trang_thai: cuocThi.trangThai,
+            cuoc_thi_cho_phep_xem_lich_su: cuocThi.choPhepXemLichSu,
+            cuoc_thi_cho_phep_xem_lai_dap_an: cuocThi.choPhepXemLaiDapAn,
+            cuoc_thi_co_tu_luan: cuocThi.coTuLuan,
+            cuoc_thi_created_at: cuocThi.createdAt,
+        })
+        .from(dotThi)
+        .leftJoin(cuocThi, eq(dotThi.cuocThiId, cuocThi.id))
+        .where(eq(dotThi.id, Number(id)))
+        .limit(1);
 
     if (!row) {
         return null;
@@ -193,7 +129,6 @@ async function getDotThiWithCuocThi(workspaceId, id) {
 }
 
 exports.layDsDotThi = async (
-    workspaceId,
     cuocThiId,
     size,
     page,
@@ -203,10 +138,6 @@ exports.layDsDotThi = async (
 ) => {
     const paging = normalizePagination({page, size});
     const where = [eq(dotThi.cuocThiId, Number(cuocThiId))];
-
-    if (hasWorkspaceColumn(dotThi)) {
-        where.unshift(eq(dotThi.workspaceId, Number(workspaceId)));
-    }
 
     if (search?.trim()) {
         where.push(ilike(dotThi.ten, `%${search.trim()}%`));
@@ -228,61 +159,8 @@ exports.layDsDotThi = async (
 
     const condition = and(...where);
 
-    let rows;
-    let totalRow;
-
-    if (hasWorkspaceColumn(dotThi) && hasWorkspaceColumn(cuocThi)) {
-        try {
-            rows = await db
-                .select({
-                    id: dotThi.id,
-                    cuocThiId: dotThi.cuocThiId,
-                    ten: dotThi.ten,
-                    moTa: dotThi.moTa,
-                    soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
-                    thoiGianThi: dotThi.thoiGianThi,
-                    tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
-                    thoiGianBatDau: dotThi.thoiGianBatDau,
-                    thoiGianKetThuc: dotThi.thoiGianKetThuc,
-                    coTronCauHoi: dotThi.coTronCauHoi,
-                    choPhepLuuBai: dotThi.choPhepLuuBai,
-                    duDoan: dotThi.duDoan,
-                    trangThai: dotThi.trangThai,
-                    createdAt: dotThi.createdAt,
-                    cuoc_thi_id: cuocThi.id,
-                    cuoc_thi_ten: cuocThi.ten,
-                    cuoc_thi_mo_ta: cuocThi.moTa,
-                    cuoc_thi_thoi_gian_bat_dau: cuocThi.thoiGianBatDau,
-                    cuoc_thi_thoi_gian_ket_thuc: cuocThi.thoiGianKetThuc,
-                    cuoc_thi_trang_thai: cuocThi.trangThai,
-                    cuoc_thi_cho_phep_xem_lich_su: cuocThi.choPhepXemLichSu,
-                    cuoc_thi_cho_phep_xem_lai_dap_an: cuocThi.choPhepXemLaiDapAn,
-                    cuoc_thi_co_tu_luan: cuocThi.coTuLuan,
-                    cuoc_thi_created_at: cuocThi.createdAt,
-                })
-                .from(dotThi)
-                .leftJoin(cuocThi, and(
-                    eq(dotThi.cuocThiId, cuocThi.id),
-                    eq(cuocThi.workspaceId, Number(workspaceId))
-                ))
-                .where(condition)
-                .orderBy(sort.orderBy)
-                .limit(paging.size)
-                .offset(paging.offset);
-
-            [totalRow] = await db
-                .select({total: count()})
-                .from(dotThi)
-                .where(condition);
-        } catch (error) {
-            if (!isMissingWorkspaceColumnError(error)) {
-                throw error;
-            }
-        }
-    }
-
-    if (!rows) {
-        rows = await db
+    const [rows, totalRows] = await Promise.all([
+        db
             .select({
                 id: dotThi.id,
                 cuocThiId: dotThi.cuocThiId,
@@ -311,47 +189,33 @@ exports.layDsDotThi = async (
             })
             .from(dotThi)
             .leftJoin(cuocThi, eq(dotThi.cuocThiId, cuocThi.id))
-            .where(and(...where.filter(Boolean)))
+            .where(condition)
             .orderBy(sort.orderBy)
             .limit(paging.size)
-            .offset(paging.offset);
-
-        [totalRow] = await db
-            .select({total: count()})
-            .from(dotThi)
-            .where(and(...where.filter(Boolean)));
-    }
+            .offset(paging.offset),
+        db.select({total: count()}).from(dotThi).where(condition),
+    ]);
 
     return buildPagedResult({
         data: rows.map((row) => ({
             ...mapDotThi(row),
             cuoc_thi: mapCuocThi(row),
         })),
-        total: totalRow?.total || 0,
+        total: totalRows[0]?.total || 0,
         page: paging.page,
         size: paging.size,
     });
 };
 
-exports.layDotThiTheoId = async (workspaceId, dotThiId) => {
-    const info = await getDotThiWithCuocThi(workspaceId, dotThiId);
+exports.layDotThiTheoId = async (dotThiId) => {
+    const info = await getDotThiWithCuocThi(dotThiId);
 
     if (!info) {
         return null;
     }
 
-    const tracNghiemCondition = hasWorkspaceColumn(tracNghiemDotThi)
-        ? and(
-            eq(tracNghiemDotThi.workspaceId, Number(workspaceId)),
-            eq(tracNghiemDotThi.dotThiId, Number(dotThiId))
-        )
-        : eq(tracNghiemDotThi.dotThiId, Number(dotThiId));
-    const tuLuanCondition = hasWorkspaceColumn(tuLuanDotThi)
-        ? and(
-            eq(tuLuanDotThi.workspaceId, Number(workspaceId)),
-            eq(tuLuanDotThi.dotThiId, Number(dotThiId))
-        )
-        : eq(tuLuanDotThi.dotThiId, Number(dotThiId));
+    const tracNghiemCondition = eq(tracNghiemDotThi.dotThiId, Number(dotThiId));
+    const tuLuanCondition = eq(tuLuanDotThi.dotThiId, Number(dotThiId));
 
     const [tracNghiemRows, tuLuanRows] = await Promise.all([
         db.select().from(tracNghiemDotThi).where(tracNghiemCondition),
@@ -365,151 +229,11 @@ exports.layDotThiTheoId = async (workspaceId, dotThiId) => {
     };
 };
 
-exports.layDotThiHienTai = async (workspaceId) => {
+exports.layDotThiHienTai = async () => {
     const now = new Date();
-
     let row;
-    let attemptedWorkspaceQuery = false;
     let laSapDienRa = false;
-
-    if (hasWorkspaceColumn(dotThi) && hasWorkspaceColumn(cuocThi)) {
-        attemptedWorkspaceQuery = true;
-
-        try {
-            [row] = await db
-                .select({
-                    id: dotThi.id,
-                    cuocThiId: dotThi.cuocThiId,
-                    ten: dotThi.ten,
-                    moTa: dotThi.moTa,
-                    soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
-                    thoiGianThi: dotThi.thoiGianThi,
-                    tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
-                    thoiGianBatDau: dotThi.thoiGianBatDau,
-                    thoiGianKetThuc: dotThi.thoiGianKetThuc,
-                    coTronCauHoi: dotThi.coTronCauHoi,
-                    choPhepLuuBai: dotThi.choPhepLuuBai,
-                    duDoan: dotThi.duDoan,
-                    trangThai: dotThi.trangThai,
-                    createdAt: dotThi.createdAt,
-                    cuoc_thi_id: cuocThi.id,
-                    cuoc_thi_ten: cuocThi.ten,
-                    cuoc_thi_mo_ta: cuocThi.moTa,
-                    cuoc_thi_thoi_gian_bat_dau: cuocThi.thoiGianBatDau,
-                    cuoc_thi_thoi_gian_ket_thuc: cuocThi.thoiGianKetThuc,
-                    cuoc_thi_trang_thai: cuocThi.trangThai,
-                    cuoc_thi_cho_phep_xem_lich_su: cuocThi.choPhepXemLichSu,
-                    cuoc_thi_cho_phep_xem_lai_dap_an: cuocThi.choPhepXemLaiDapAn,
-                    cuoc_thi_co_tu_luan: cuocThi.coTuLuan,
-                    cuoc_thi_created_at: cuocThi.createdAt,
-                })
-                .from(dotThi)
-                .leftJoin(cuocThi, and(
-                    eq(dotThi.cuocThiId, cuocThi.id),
-                    eq(cuocThi.workspaceId, Number(workspaceId))
-                ))
-                .where(and(
-                    eq(dotThi.workspaceId, Number(workspaceId)),
-                    eq(dotThi.trangThai, true),
-                    eq(cuocThi.trangThai, true),
-                    lte(dotThi.thoiGianBatDau, now),
-                    gte(dotThi.thoiGianKetThuc, now)
-                ))
-                .orderBy(desc(dotThi.thoiGianBatDau))
-                .limit(1);
-
-            if (!row) {
-                [row] = await db
-                    .select({
-                        id: dotThi.id,
-                        cuocThiId: dotThi.cuocThiId,
-                        ten: dotThi.ten,
-                        moTa: dotThi.moTa,
-                        soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
-                        thoiGianThi: dotThi.thoiGianThi,
-                        tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
-                        thoiGianBatDau: dotThi.thoiGianBatDau,
-                        thoiGianKetThuc: dotThi.thoiGianKetThuc,
-                        coTronCauHoi: dotThi.coTronCauHoi,
-                        choPhepLuuBai: dotThi.choPhepLuuBai,
-                        duDoan: dotThi.duDoan,
-                        trangThai: dotThi.trangThai,
-                        createdAt: dotThi.createdAt,
-                        cuoc_thi_id: cuocThi.id,
-                        cuoc_thi_ten: cuocThi.ten,
-                        cuoc_thi_mo_ta: cuocThi.moTa,
-                        cuoc_thi_thoi_gian_bat_dau: cuocThi.thoiGianBatDau,
-                        cuoc_thi_thoi_gian_ket_thuc: cuocThi.thoiGianKetThuc,
-                        cuoc_thi_trang_thai: cuocThi.trangThai,
-                        cuoc_thi_cho_phep_xem_lich_su: cuocThi.choPhepXemLichSu,
-                        cuoc_thi_cho_phep_xem_lai_dap_an: cuocThi.choPhepXemLaiDapAn,
-                        cuoc_thi_co_tu_luan: cuocThi.coTuLuan,
-                        cuoc_thi_created_at: cuocThi.createdAt,
-                    })
-                    .from(dotThi)
-                    .leftJoin(cuocThi, and(
-                        eq(dotThi.cuocThiId, cuocThi.id),
-                        eq(cuocThi.workspaceId, Number(workspaceId))
-                    ))
-                    .where(and(
-                        eq(dotThi.workspaceId, Number(workspaceId)),
-                        eq(dotThi.trangThai, true),
-                        eq(cuocThi.trangThai, true),
-                        gte(dotThi.thoiGianBatDau, now)
-                    ))
-                    .orderBy(dotThi.thoiGianBatDau)
-                    .limit(1);
-
-                laSapDienRa = Boolean(row);
-            }
-        } catch (error) {
-            if (!isMissingWorkspaceColumnError(error)) {
-                throw error;
-            }
-        }
-    }
-
-    if (!row && !attemptedWorkspaceQuery) {
-        [row] = await db
-            .select({
-                id: dotThi.id,
-                cuocThiId: dotThi.cuocThiId,
-                ten: dotThi.ten,
-                moTa: dotThi.moTa,
-                soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
-                thoiGianThi: dotThi.thoiGianThi,
-                tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
-                thoiGianBatDau: dotThi.thoiGianBatDau,
-                thoiGianKetThuc: dotThi.thoiGianKetThuc,
-                coTronCauHoi: dotThi.coTronCauHoi,
-                choPhepLuuBai: dotThi.choPhepLuuBai,
-                duDoan: dotThi.duDoan,
-                trangThai: dotThi.trangThai,
-                createdAt: dotThi.createdAt,
-                cuoc_thi_id: cuocThi.id,
-                cuoc_thi_ten: cuocThi.ten,
-                cuoc_thi_mo_ta: cuocThi.moTa,
-                cuoc_thi_thoi_gian_bat_dau: cuocThi.thoiGianBatDau,
-                cuoc_thi_thoi_gian_ket_thuc: cuocThi.thoiGianKetThuc,
-                cuoc_thi_trang_thai: cuocThi.trangThai,
-                cuoc_thi_cho_phep_xem_lich_su: cuocThi.choPhepXemLichSu,
-                cuoc_thi_cho_phep_xem_lai_dap_an: cuocThi.choPhepXemLaiDapAn,
-                cuoc_thi_co_tu_luan: cuocThi.coTuLuan,
-                cuoc_thi_created_at: cuocThi.createdAt,
-            })
-            .from(dotThi)
-            .leftJoin(cuocThi, eq(dotThi.cuocThiId, cuocThi.id))
-            .where(and(
-                eq(dotThi.trangThai, true),
-                eq(cuocThi.trangThai, true),
-                lte(dotThi.thoiGianBatDau, now),
-                gte(dotThi.thoiGianKetThuc, now)
-            ))
-            .orderBy(desc(dotThi.thoiGianBatDau))
-            .limit(1);
-
-        if (!row) {
-            [row] = await db
+    [row] = await db
                 .select({
                     id: dotThi.id,
                     cuocThiId: dotThi.cuocThiId,
@@ -541,13 +265,51 @@ exports.layDotThiHienTai = async (workspaceId) => {
                 .where(and(
                     eq(dotThi.trangThai, true),
                     eq(cuocThi.trangThai, true),
-                    gte(dotThi.thoiGianBatDau, now)
+                    lte(dotThi.thoiGianBatDau, now),
+                    gte(dotThi.thoiGianKetThuc, now)
                 ))
-                .orderBy(dotThi.thoiGianBatDau)
+                .orderBy(desc(dotThi.thoiGianBatDau))
                 .limit(1);
 
-            laSapDienRa = Boolean(row);
-        }
+    if (!row) {
+        [row] = await db
+                    .select({
+                        id: dotThi.id,
+                        cuocThiId: dotThi.cuocThiId,
+                        ten: dotThi.ten,
+                        moTa: dotThi.moTa,
+                        soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
+                        thoiGianThi: dotThi.thoiGianThi,
+                        tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
+                        thoiGianBatDau: dotThi.thoiGianBatDau,
+                        thoiGianKetThuc: dotThi.thoiGianKetThuc,
+                        coTronCauHoi: dotThi.coTronCauHoi,
+                        choPhepLuuBai: dotThi.choPhepLuuBai,
+                        duDoan: dotThi.duDoan,
+                        trangThai: dotThi.trangThai,
+                        createdAt: dotThi.createdAt,
+                        cuoc_thi_id: cuocThi.id,
+                        cuoc_thi_ten: cuocThi.ten,
+                        cuoc_thi_mo_ta: cuocThi.moTa,
+                        cuoc_thi_thoi_gian_bat_dau: cuocThi.thoiGianBatDau,
+                        cuoc_thi_thoi_gian_ket_thuc: cuocThi.thoiGianKetThuc,
+                        cuoc_thi_trang_thai: cuocThi.trangThai,
+                        cuoc_thi_cho_phep_xem_lich_su: cuocThi.choPhepXemLichSu,
+                        cuoc_thi_cho_phep_xem_lai_dap_an: cuocThi.choPhepXemLaiDapAn,
+                        cuoc_thi_co_tu_luan: cuocThi.coTuLuan,
+                        cuoc_thi_created_at: cuocThi.createdAt,
+                    })
+                    .from(dotThi)
+                    .leftJoin(cuocThi, eq(dotThi.cuocThiId, cuocThi.id))
+                    .where(and(
+                        eq(dotThi.trangThai, true),
+                        eq(cuocThi.trangThai, true),
+                        gte(dotThi.thoiGianBatDau, now)
+                    ))
+                    .orderBy(dotThi.thoiGianBatDau)
+                    .limit(1);
+
+        laSapDienRa = Boolean(row);
     }
 
     if (!row) {
@@ -562,7 +324,6 @@ exports.layDotThiHienTai = async (workspaceId) => {
 };
 
 exports.themDotThi = async (
-    workspaceId,
     cuocThiId,
     ten,
     mota,
@@ -577,16 +338,10 @@ exports.themDotThi = async (
     trang_thai
 ) => {
     const existingCondition = buildDotThiDuplicateCondition({
-        workspaceId,
         cuocThiId,
         ten,
     });
-    const foundContestCondition = hasWorkspaceColumn(cuocThi)
-        ? and(
-            eq(cuocThi.workspaceId, Number(workspaceId)),
-            eq(cuocThi.id, Number(cuocThiId))
-        )
-        : eq(cuocThi.id, Number(cuocThiId));
+    const foundContestCondition = eq(cuocThi.id, Number(cuocThiId));
 
     const existing = await db
         .select({id: dotThi.id})
@@ -623,20 +378,15 @@ exports.themDotThi = async (
         trangThai: trang_thai,
     };
 
-    if (hasWorkspaceColumn(dotThi)) {
-        values.workspaceId = Number(workspaceId);
-    }
-
     const [created] = await db
         .insert(dotThi)
         .values(values)
         .returning({id: dotThi.id});
 
-    return getDotThiWithCuocThi(workspaceId, created.id);
+    return getDotThiWithCuocThi(created.id);
 };
 
 exports.suaDotThi = async (
-    workspaceId,
     id,
     ten,
     mota,
@@ -650,14 +400,13 @@ exports.suaDotThi = async (
     du_doan,
     trang_thai
 ) => {
-    const currentDotThi = await getDotThiWithCuocThi(workspaceId, id);
+    const currentDotThi = await getDotThiWithCuocThi(id);
 
     if (!currentDotThi) {
         throw "Đợt thi không tồn tại";
     }
 
     const existingCondition = buildDotThiDuplicateCondition({
-        workspaceId,
         cuocThiId: currentDotThi.cuoc_thi_id,
         ten,
         excludeId: id,
@@ -688,34 +437,20 @@ exports.suaDotThi = async (
             duDoan: du_doan,
             trangThai: trang_thai,
         })
-        .where(
-            hasWorkspaceColumn(dotThi)
-                ? and(
-                    eq(dotThi.workspaceId, Number(workspaceId)),
-                    eq(dotThi.id, Number(id))
-                )
-                : eq(dotThi.id, Number(id))
-        )
+        .where(eq(dotThi.id, Number(id)))
         .returning({id: dotThi.id});
 
     if (!updated) {
         throw "Đợt thi không tồn tại";
     }
 
-    return getDotThiWithCuocThi(workspaceId, updated.id);
+    return getDotThiWithCuocThi(updated.id);
 };
 
-exports.xoaDotThi = async (workspaceId, id) => {
+exports.xoaDotThi = async (id) => {
     await db
         .delete(dotThi)
-        .where(
-            hasWorkspaceColumn(dotThi)
-                ? and(
-                    eq(dotThi.workspaceId, Number(workspaceId)),
-                    eq(dotThi.id, Number(id))
-                )
-                : eq(dotThi.id, Number(id))
-        );
+        .where(eq(dotThi.id, Number(id)));
 
     return true;
 };

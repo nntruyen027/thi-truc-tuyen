@@ -31,8 +31,7 @@ router.post(
             const result =
                 await service.login(
                     validated.username,
-                    validated.password,
-                    req.workspace
+                    validated.password
                 )
 
             res.json(result)
@@ -111,7 +110,7 @@ router.post(
                 doiTuong,
             } = req.body
             const fieldConfig =
-                await cauHinhQuery.layCauHinh("user_profile_fields", req.workspace?.id || null);
+                await cauHinhQuery.layCauHinh("user_profile_fields");
             const validated =
                 validation.validateRegisterPayload({
                     username,
@@ -139,8 +138,7 @@ router.post(
                         tinhThanh: validated.tinhThanh,
                         ngheNghiep: validated.ngheNghiep,
                         doiTuong: validated.doiTuong,
-                    },
-                    req.workspace
+                    }
                 )
 
             res.json(result)
@@ -156,7 +154,8 @@ router.post(
 
 router.get("/me", authMiddleware, async (req, res) => {
     try {
-        const user = await service.layNguoiDungByUsername(req.user.username, req.user.workspace_id)
+        const user = await service.layNguoiDungByUsername(req.user.username)
+        
         resUtil.ok(res, user)
     } catch (e) {
         resUtil.error(res, e);
@@ -170,7 +169,7 @@ router.put("/profile", authMiddleware, async (req, res) => {
             validation.validateProfilePayload(req.body || {});
 
 
-        const user = await service.capNhatThongTinNguoiDung(req.user.username, validated, req.user.workspace_id)
+        const user = await service.capNhatThongTinNguoiDung(req.user.username, validated)
 
         resUtil.ok(res, user)
 
@@ -196,8 +195,7 @@ router.put("/password", authMiddleware, async (req, res) => {
 
         const found = await service.changePassword(req.user.username, validated.oldPassword,
             validated.newPassword,
-            validated.repeatPass,
-            req.user.workspace_id)
+            validated.repeatPass)
 
         resUtil.ok(res, found)
 

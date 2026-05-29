@@ -6,15 +6,13 @@ export function usePermission() {
     const role = user?.role || [];
 
     const isAdmin = () => {
-        return role === 'admin' || role === 'super_admin';
+        return role === 'admin';
     };
 
-    const isSuperAdmin = () => {
-        return role === 'super_admin';
-    };
+    const isSuperAdmin = () => false;
 
     return {
         isAdmin,
-        isSuperAdmin
+        isSuperAdmin,
     };
 }

@@ -14,7 +14,6 @@ const thiSchema = pgSchema("thi");
 
 const cuocThi = thiSchema.table("cuoc_thi", {
     id: serial("id").primaryKey(),
-    workspaceId: integer("workspace_id").notNull(),
     ten: varchar("ten", { length: 500 }),
     moTa: varchar("mo_ta", { length: 1000 }),
     thoiGianBatDau: timestamp("thoi_gian_bat_dau"),
@@ -28,7 +27,6 @@ const cuocThi = thiSchema.table("cuoc_thi", {
 
 const dotThi = thiSchema.table("dot_thi", {
     id: serial("id").primaryKey(),
-    workspaceId: integer("workspace_id").notNull(),
     cuocThiId: integer("cuoc_thi_id"),
     ten: varchar("ten", { length: 500 }),
     moTa: varchar("mo_ta", { length: 500 }),
@@ -46,7 +44,6 @@ const dotThi = thiSchema.table("dot_thi", {
 
 const tracNghiem = thiSchema.table("trac_nghiem", {
     id: serial("id").primaryKey(),
-    workspaceId: integer("workspace_id").notNull(),
     linhVucId: integer("linh_vuc_id"),
     nhomId: integer("nhom_id"),
     loaiCauHoi: varchar("loai_cau_hoi", { length: 50 }).default("chon_mot"),
@@ -63,7 +60,6 @@ const tracNghiem = thiSchema.table("trac_nghiem", {
 
 const tracNghiemDotThi = thiSchema.table("trac_nghiem_dot_thi", {
     id: serial("id").primaryKey(),
-    workspaceId: integer("workspace_id").notNull(),
     dotThiId: integer("dot_thi_id"),
     linhVucId: integer("linh_vuc_id"),
     nhomId: integer("nhom_id"),
@@ -73,7 +69,6 @@ const tracNghiemDotThi = thiSchema.table("trac_nghiem_dot_thi", {
 
 const tuLuanDotThi = thiSchema.table("tu_luan_dot_thi", {
     id: serial("id").primaryKey(),
-    workspaceId: integer("workspace_id").notNull(),
     dotThiId: integer("dot_thi_id"),
     cauHoi: text("cau_hoi"),
     goiY: text("goi_y").default(""),
@@ -81,7 +76,6 @@ const tuLuanDotThi = thiSchema.table("tu_luan_dot_thi", {
 
 const deThi = thiSchema.table("de_thi", {
     id: serial("id").primaryKey(),
-    workspaceId: integer("workspace_id").notNull(),
     dotThiId: integer("dot_thi_id"),
     thiSinhId: integer("thi_sinh_id"),
     lanThi: integer("lan_thi"),
@@ -98,7 +92,6 @@ const deThiCauHoi = thiSchema.table("de_thi_cau_hoi", {
 
 const baiThi = thiSchema.table("bai_thi", {
     id: serial("id").primaryKey(),
-    workspaceId: integer("workspace_id").notNull(),
     deThiId: integer("de_thi_id"),
     thiSinhId: integer("thi_sinh_id"),
     lanThi: integer("lan_thi"),

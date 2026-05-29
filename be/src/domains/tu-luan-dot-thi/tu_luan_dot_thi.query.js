@@ -11,23 +11,19 @@ function mapRow(row) {
     };
 }
 
-exports.layDsTuLuan = async (workspaceId, dotThiId) => {
+exports.layDsTuLuan = async (dotThiId) => {
     const rows = await db
         .select()
         .from(tuLuanDotThi)
-        .where(and(
-            eq(tuLuanDotThi.workspaceId, Number(workspaceId)),
-            eq(tuLuanDotThi.dotThiId, Number(dotThiId))
-        ));
+        .where(eq(tuLuanDotThi.dotThiId, Number(dotThiId)));
 
     return rows.map(mapRow);
 };
 
-exports.themTuLuan = async (workspaceId, dotThiId, cau_hoi, goi_y) => {
+exports.themTuLuan = async (dotThiId, cau_hoi, goi_y) => {
     const [created] = await db
         .insert(tuLuanDotThi)
         .values({
-            workspaceId: Number(workspaceId),
             dotThiId: Number(dotThiId),
             cauHoi: cau_hoi,
             goiY: goi_y,
@@ -37,29 +33,23 @@ exports.themTuLuan = async (workspaceId, dotThiId, cau_hoi, goi_y) => {
     return mapRow(created);
 };
 
-exports.suaTuLuan = async (workspaceId, id, cau_hoi, goi_y) => {
+exports.suaTuLuan = async (id, cau_hoi, goi_y) => {
     const [updated] = await db
         .update(tuLuanDotThi)
         .set({
             cauHoi: cau_hoi,
             goiY: goi_y,
         })
-        .where(and(
-            eq(tuLuanDotThi.workspaceId, Number(workspaceId)),
-            eq(tuLuanDotThi.id, Number(id))
-        ))
+        .where(eq(tuLuanDotThi.id, Number(id)))
         .returning();
 
     return mapRow(updated);
 };
 
-exports.xoaTuLuan = async (workspaceId, id) => {
+exports.xoaTuLuan = async (id) => {
     await db
         .delete(tuLuanDotThi)
-        .where(and(
-            eq(tuLuanDotThi.workspaceId, Number(workspaceId)),
-            eq(tuLuanDotThi.id, Number(id))
-        ));
+        .where(eq(tuLuanDotThi.id, Number(id)));
 
     return true;
 };

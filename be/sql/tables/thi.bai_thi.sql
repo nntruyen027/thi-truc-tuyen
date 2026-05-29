@@ -3,8 +3,6 @@ drop table if exists thi.bai_thi;
 create table thi.bai_thi
 (
     id                serial primary key,
-    workspace_id      int not null,
-
     de_thi_id         int references thi.de_thi (id) on delete cascade,
 
     thi_sinh_id       int,
@@ -29,5 +27,5 @@ alter table thi.bai_thi
 alter table thi.bai_thi
     add column so_du_doan int default null;
 
-create index bai_thi_workspace_thi_sinh_trang_thai_de_thi_idx
-    on thi.bai_thi (workspace_id, thi_sinh_id, trang_thai, de_thi_id);
+create index bai_thi_thi_sinh_trang_thai_de_thi_idx
+    on thi.bai_thi (thi_sinh_id, trang_thai, de_thi_id);

@@ -11,7 +11,6 @@ const buildSearchWhere = (search) => {
 };
 
 exports.create = async ({
-    workspaceId,
     ten,
     tenGoc,
     duongDan,
@@ -22,7 +21,6 @@ exports.create = async ({
     const [created] = await db
         .insert(files)
         .values({
-            workspaceId: Number(workspaceId),
             ten,
             tenGoc,
             duongDan,
@@ -36,21 +34,20 @@ exports.create = async ({
 };
 
 exports.findMany = async ({
-    workspaceId,
     page = 1,
     size = 10,
     search = "",
 }) => {
     const currentPage = Math.max(Number(page) || 1, 1);
     const pageSize = Math.max(Number(size) || 10, 1);
-    const clauses = [eq(files.workspaceId, Number(workspaceId))];
+    const clauses = [];
     const searchWhere = buildSearchWhere(search);
 
     if (searchWhere) {
         clauses.push(searchWhere);
     }
 
-    const where = and(...clauses);
+    const where = clauses.length === 1 ? clauses[0] : and(...clauses);
 
     const rowsQuery = db
             .select()
@@ -76,26 +73,20 @@ exports.findMany = async ({
     };
 };
 
-exports.findById = async (workspaceId, id) => {
+exports.findById = async (id) => {
     const [row] = await db
         .select()
         .from(files)
-        .where(and(
-            eq(files.workspaceId, Number(workspaceId)),
-            eq(files.id, Number(id))
-        ))
+        .where(eq(files.id, Number(id)))
         .limit(1);
 
     return row || null;
 };
 
-exports.removeById = async (workspaceId, id) => {
+exports.removeById = async (id) => {
     await db
         .delete(files)
-        .where(and(
-            eq(files.workspaceId, Number(workspaceId)),
-            eq(files.id, Number(id))
-        ));
+        .where(eq(files.id, Number(id)));
 
     return {
         ok: true,

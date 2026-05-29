@@ -1,24 +1,8 @@
 const path = require("path");
 const fs = require("fs/promises");
-const { and, eq, ne } = require("drizzle-orm");
+const { eq } = require("drizzle-orm");
 const db = require("../../db/client");
-const { baiViet, cauHinh, files, workspaceSettings } = require("../../db/schema");
-
-const TENANT_SCOPED_KEYS = new Set([
-    "theme_settings",
-    "user_profile_fields",
-    "favicon",
-    "banner_desktop",
-    "banner_mobile",
-    "footer_meta",
-    "left_footer",
-    "right_footer",
-    "van-ban-ban-quyen",
-    "ke_hoach",
-    "the_le",
-    "document",
-    "giai_thuong_cuoc_thi",
-]);
+const { baiViet, cauHinh, files } = require("../../db/schema");
 
 const FILE_SCOPED_KEYS = new Set([
     "favicon",
@@ -72,16 +56,11 @@ function extractUploadPaths(giaTri) {
     }
 }
 
-async function assertFilesBelongToWorkspace(paths, workspaceId) {
-    if (!workspaceId || !paths.length) {
-        return;
-    }
-
+async function ensureFilesExist(paths) {
     for (const duongDan of paths) {
         const [fileRow] = await db
             .select({
                 id: files.id,
-                workspaceId: files.workspaceId,
             })
             .from(files)
             .where(eq(files.duongDan, duongDan))
@@ -90,40 +69,19 @@ async function assertFilesBelongToWorkspace(paths, workspaceId) {
         if (!fileRow) {
             throw `File ${duongDan} không tồn tại trên hệ thống hiện tại.`;
         }
-
-        if (Number(fileRow.workspaceId) !== Number(workspaceId)) {
-            throw `File ${duongDan} không thuộc workspace hiện tại.`;
-        }
     }
 }
 
-async function isPathStillReferenced(duongDan, workspaceId, khoa) {
-    const otherWorkspaceConfigs = await db
-        .select({
-            id: workspaceSettings.id,
-            giaTri: workspaceSettings.giaTri,
-        })
-        .from(workspaceSettings)
-        .where(and(
-            eq(workspaceSettings.workspaceId, Number(workspaceId)),
-            ne(workspaceSettings.khoa, khoa)
-        ));
-
-    for (const row of otherWorkspaceConfigs) {
-        if (extractUploadPaths(row.giaTri).includes(duongDan)) {
-            return true;
-        }
-    }
-
+async function isPathStillReferenced(duongDan, khoa) {
     const globalConfigs = await db
         .select({
-            id: cauHinh.id,
+            khoa: cauHinh.khoa,
             giaTri: cauHinh.giaTri,
         })
         .from(cauHinh);
 
     for (const row of globalConfigs) {
-        if (extractUploadPaths(row.giaTri).includes(duongDan)) {
+        if (row.khoa !== khoa && extractUploadPaths(row.giaTri).includes(duongDan)) {
             return true;
         }
     }
@@ -133,8 +91,7 @@ async function isPathStillReferenced(duongDan, workspaceId, khoa) {
             anhDaiDien: baiViet.anhDaiDien,
             noiDung: baiViet.noiDung,
         })
-        .from(baiViet)
-        .where(eq(baiViet.workspaceId, Number(workspaceId)));
+        .from(baiViet);
 
     for (const row of baiVietRows) {
         if (row.anhDaiDien === duongDan) {
@@ -152,10 +109,9 @@ async function isPathStillReferenced(duongDan, workspaceId, khoa) {
 async function cleanupRemovedFiles({
     oldGiaTri,
     newGiaTri,
-    workspaceId,
     khoa,
 }) {
-    if (!workspaceId || !FILE_SCOPED_KEYS.has(khoa)) {
+    if (!FILE_SCOPED_KEYS.has(khoa)) {
         return;
     }
 
@@ -165,7 +121,7 @@ async function cleanupRemovedFiles({
 
     for (const duongDan of removedPaths) {
         const stillReferenced =
-            await isPathStillReferenced(duongDan, workspaceId, khoa);
+            await isPathStillReferenced(duongDan, khoa);
 
         if (stillReferenced) {
             continue;
@@ -174,14 +130,10 @@ async function cleanupRemovedFiles({
         const [existingFile] = await db
             .select({
                 id: files.id,
-                workspaceId: files.workspaceId,
                 duongDan: files.duongDan,
             })
             .from(files)
-            .where(and(
-                eq(files.workspaceId, Number(workspaceId)),
-                eq(files.duongDan, duongDan)
-            ))
+            .where(eq(files.duongDan, duongDan))
             .limit(1);
 
         if (!existingFile) {
@@ -205,13 +157,12 @@ function mapConfig(row) {
     return {
         khoa: row.khoa,
         gia_tri: row.giaTri,
-        workspace_id: row.workspaceId || null,
         created_at: row.createdAt || null,
         updated_at: row.updatedAt || null,
     };
 }
 
-async function layCauHinhGlobal(khoa) {
+exports.layCauHinh = async (khoa) => {
     const [row] = await db
         .select()
         .from(cauHinh)
@@ -219,77 +170,13 @@ async function layCauHinhGlobal(khoa) {
         .limit(1);
 
     return mapConfig(row);
-}
-
-async function layCauHinhTheoWorkspace(khoa, workspaceId) {
-    const [row] = await db
-        .select()
-        .from(workspaceSettings)
-        .where(and(
-            eq(workspaceSettings.khoa, khoa),
-            eq(workspaceSettings.workspaceId, Number(workspaceId))
-        ))
-        .limit(1);
-
-    return mapConfig(row);
-}
-
-exports.layCauHinh = async (khoa, workspaceId = null) => {
-    if (workspaceId) {
-        const workspaceValue =
-            await layCauHinhTheoWorkspace(khoa, workspaceId);
-
-        if (workspaceValue) {
-            return workspaceValue;
-        }
-
-        if (TENANT_SCOPED_KEYS.has(khoa)) {
-            return null;
-        }
-    }
-
-    return layCauHinhGlobal(khoa);
 };
 
-exports.suaCauHinh = async (khoa, giaTri, workspaceId = null) => {
-    if (TENANT_SCOPED_KEYS.has(khoa) && !workspaceId) {
-        throw "Không xác định được workspace hiện tại.";
-    }
+exports.suaCauHinh = async (khoa, giaTri) => {
+    const existing = await exports.layCauHinh(khoa);
+    const nextPaths = extractUploadPaths(giaTri);
 
-    if (workspaceId) {
-        const existing =
-            await layCauHinhTheoWorkspace(khoa, workspaceId);
-        const nextPaths = extractUploadPaths(giaTri);
-
-        await assertFilesBelongToWorkspace(nextPaths, workspaceId);
-
-        const [saved] = await db
-            .insert(workspaceSettings)
-            .values({
-                workspaceId: Number(workspaceId),
-                khoa,
-                giaTri,
-            })
-            .onConflictDoUpdate({
-                target: [workspaceSettings.workspaceId, workspaceSettings.khoa],
-                set: {
-                    giaTri,
-                    updatedAt: new Date(),
-                },
-            })
-            .returning();
-
-        await cleanupRemovedFiles({
-            oldGiaTri: existing?.gia_tri || "",
-            newGiaTri: giaTri,
-            workspaceId,
-            khoa,
-        });
-
-        return mapConfig(saved);
-    }
-
-    const existing = await layCauHinhGlobal(khoa);
+    await ensureFilesExist(nextPaths);
 
     if (!existing) {
         const [created] = await db
@@ -311,6 +198,11 @@ exports.suaCauHinh = async (khoa, giaTri, workspaceId = null) => {
         .where(eq(cauHinh.khoa, khoa))
         .returning();
 
+    await cleanupRemovedFiles({
+        oldGiaTri: existing?.gia_tri || "",
+        newGiaTri: giaTri,
+        khoa,
+    });
+
     return mapConfig(updated);
 };
-

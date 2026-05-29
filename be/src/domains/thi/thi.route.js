@@ -6,7 +6,6 @@ const validation = require("./thi.validation")
 
 const resUtil = require("../../core/utils/response")
 const auth = require("../../core/middlewares/auth")
-const { requireWorkspaceId } = require("../../core/utils/workspace-scope");
 
 
 /**
@@ -18,7 +17,6 @@ router.get(
     async (req, res) => {
 
         try {
-
             const {dotThiId} = req.query
             const thiSinhId = req.user.id
             const normalizedDotThiId =
@@ -26,7 +24,6 @@ router.get(
 
             const data =
                 await query.conDuocThi(
-                    requireWorkspaceId(req),
                     normalizedDotThiId,
                     thiSinhId,
                 )
@@ -52,7 +49,6 @@ router.get(
     async (req, res) => {
 
         try {
-
             const {dotThiId} = req.query
 
             const thiSinhId = req.user.id
@@ -61,7 +57,6 @@ router.get(
 
             const data =
                 await query.layBaiDangLam(
-                    requireWorkspaceId(req),
                     thiSinhId,
                     normalizedDotThiId,
                 )
@@ -87,7 +82,6 @@ router.post(
     async (req, res) => {
 
         try {
-
             const {dotThiId} = req.body
             const normalizedDotThiId =
                 validation.ensureRequiredId(dotThiId, "Đợt thi")
@@ -97,7 +91,6 @@ router.post(
 
             const data =
                 await query.taoDeThi(
-                    requireWorkspaceId(req),
                     normalizedDotThiId,
                     thiSinhId,
                 )
@@ -123,7 +116,6 @@ router.post(
     async (req, res) => {
 
         try {
-
             const {
                 deThiId,
             } = req.body
@@ -135,7 +127,6 @@ router.post(
 
             const data =
                 await query.batDauThi(
-                    requireWorkspaceId(req),
                     normalizedDeThiId,
                     thiSinhId,
                 )
@@ -161,7 +152,6 @@ router.get(
     async (req, res) => {
 
         try {
-
             const {
                 deThiId,
                 baiThiId,
@@ -173,7 +163,6 @@ router.get(
 
             const data =
                 await query.layCauHoiDeThi(
-                    requireWorkspaceId(req),
                     normalizedDeThiId,
                     normalizedBaiThiId
                 )
@@ -199,7 +188,6 @@ router.post(
     async (req, res) => {
 
         try {
-
             const {
                 baiThiId,
                 cauHoiId,
@@ -212,7 +200,6 @@ router.post(
 
             const data =
                 await query.luuCauTraLoi(
-                    requireWorkspaceId(req),
                     normalizedBaiThiId,
                     normalizedCauHoiId,
                     dapAn,
@@ -235,7 +222,6 @@ router.post(
     async (req, res) => {
 
         try {
-
             const {
                 baiThiId,
                 cauHoiId,
@@ -248,7 +234,6 @@ router.post(
 
             const choPhepTraLoiTuLuan =
                 await validation.coChoPhepTraLoiTuLuan(
-                    requireWorkspaceId(req),
                     normalizedBaiThiId
                 )
 
@@ -257,13 +242,11 @@ router.post(
             }
 
                 await validation.ensureTuLuanAnswerAllowed(
-                    requireWorkspaceId(req),
                     normalizedBaiThiId
                 )
 
             const data =
                 await query.luuCauTraLoiTuLuan(
-                    requireWorkspaceId(req),
                     normalizedBaiThiId,
                     normalizedCauHoiId,
                     dapAn,
@@ -290,7 +273,6 @@ router.post(
     async (req, res) => {
 
         try {
-
             const {
                 baiThiId,
             } = req.body
@@ -299,7 +281,6 @@ router.post(
 
             const data =
                 await query.nopBai(
-                    requireWorkspaceId(req),
                     normalizedBaiThiId,
                 )
 
@@ -324,7 +305,6 @@ router.get(
     async (req, res) => {
 
         try {
-
             const {dotThiId} =
                 req.query
 
@@ -335,7 +315,6 @@ router.get(
 
             const data =
                 await query.lichSuThi(
-                    requireWorkspaceId(req),
                     thiSinhId,
                     normalizedDotThiId,
                 )
@@ -357,7 +336,6 @@ router.post(
     async (req, res) => {
 
         try {
-
             const {dotThiId} =
                 req.body
             const normalizedDotThiId =
@@ -366,17 +344,16 @@ router.post(
             const thiSinhId =
                 req.user.id
 
-            await validation.ensureDotThiQuestionConfigValid(requireWorkspaceId(req), normalizedDotThiId)
+            await validation.ensureDotThiQuestionConfigValid(normalizedDotThiId)
 
             const result =
                 await query.startThi(
-                    requireWorkspaceId(req),
                     normalizedDotThiId,
                     thiSinhId,
                 )
 
             const tuLuanInfo =
-                await validation.layTrangThaiTuLuanTheoDotThi(requireWorkspaceId(req), normalizedDotThiId)
+                await validation.layTrangThaiTuLuanTheoDotThi(normalizedDotThiId)
 
             if (!tuLuanInfo.coTuLuan) {
                 result.tuLuan = []
@@ -405,20 +382,17 @@ router.post(
     async (req, res) => {
 
         try {
-
             const baiThiId = validation.ensureRequiredId(req.params.baiThiId, "Bài thi")
             const reason = req.body?.reason
 
             if (reason !== "submit") {
                 await validation.ensurePauseAllowed(
-                    requireWorkspaceId(req),
                     baiThiId
                 )
             }
 
             const data =
                 await query.pauseThi(
-                    requireWorkspaceId(req),
                     baiThiId
                 )
 
@@ -444,7 +418,7 @@ router.post("/du-doan/:baiThiId", auth, async (req, res) => {
         const baiThiId = validation.ensureRequiredId(req.params.baiThiId, "Bài thi");
         const soDuDoan = validation.normalizePredictionValue(req.body?.soDuDoan);
 
-        const data = await query.nopDuDoanKetQuan(requireWorkspaceId(req), baiThiId, soDuDoan);
+        const data = await query.nopDuDoanKetQuan(baiThiId, soDuDoan);
         resUtil.ok(res, data)
     } catch (err) {
         resUtil.error(res, err)
@@ -455,7 +429,7 @@ router.get("/ket-qua-trac-nghiem/dot-thi/:dotThiId/:top", async (req, res) => {
     try {
         const dotThiId = validation.ensureRequiredId(req.params.dotThiId, "Đợt thi");
         const top = validation.normalizeTopParam(req.params.top);
-        const data = await query.xepHangTracNghiemTheoDotThi(requireWorkspaceId(req), dotThiId, top);
+        const data = await query.xepHangTracNghiemTheoDotThi(dotThiId, top);
         resUtil.ok(res, data)
     } catch (err) {
         resUtil.error(res, err)
@@ -467,7 +441,7 @@ router.get("/ket-qua-trac-nghiem/cuoc-thi/:cuocThiId/:top", async (req, res) => 
     try {
         const cuocThiId = validation.ensureRequiredId(req.params.cuocThiId, "Cuộc thi");
         const top = validation.normalizeTopParam(req.params.top);
-        const data = await query.xepHangTracNghiemTheoCuocThi(requireWorkspaceId(req), cuocThiId, top);
+        const data = await query.xepHangTracNghiemTheoCuocThi(cuocThiId, top);
         resUtil.ok(res, data)
     } catch (err) {
         resUtil.error(res, err)
@@ -478,7 +452,7 @@ router.get("/bang-vang-don-vi/dot-thi/:dotThiId/:top", async (req, res) => {
     try {
         const dotThiId = validation.ensureRequiredId(req.params.dotThiId, "Đợt thi");
         const top = validation.normalizeTopParam(req.params.top);
-        const data = await query.xepHangDonViTheoDotThi(requireWorkspaceId(req), dotThiId, top);
+        const data = await query.xepHangDonViTheoDotThi(dotThiId, top);
         resUtil.ok(res, data)
     } catch (err) {
         resUtil.error(res, err)
@@ -489,7 +463,7 @@ router.get("/bang-vang-don-vi/cuoc-thi/:cuocThiId/:top", async (req, res) => {
     try {
         const cuocThiId = validation.ensureRequiredId(req.params.cuocThiId, "Cuộc thi");
         const top = validation.normalizeTopParam(req.params.top);
-        const data = await query.xepHangDonViTheoCuocThi(requireWorkspaceId(req), cuocThiId, top);
+        const data = await query.xepHangDonViTheoCuocThi(cuocThiId, top);
         resUtil.ok(res, data)
     } catch (err) {
         resUtil.error(res, err)

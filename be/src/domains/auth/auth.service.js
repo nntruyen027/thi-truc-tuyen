@@ -21,14 +21,12 @@ function toSessionUser(user) {
 
 exports.login = async (
     username,
-    password,
-    workspace
+    password
 ) => {
 
     const user =
         await query.getUserByUsername(
-            username,
-            workspace?.id || null
+            username
         )
 
     if (!user)
@@ -53,7 +51,6 @@ exports.login = async (
     const refresh =
         jwtUtil.signRefresh({
             id: user.id,
-            workspace_id: user.workspace_id || workspace?.id || null,
         })
 
 
@@ -69,7 +66,6 @@ exports.login = async (
     await query.saveRefresh(
         id,
         user.id,
-        user.workspace_id || workspace?.id || null,
         refresh,
         exp
     )
@@ -116,8 +112,7 @@ exports.register = async (
     password,
     repeatPass,
     donViId,
-    extraProfile,
-    workspace
+    extraProfile
 ) => {
     if (!repeatPass || repeatPass !== password)
         throw "Mật khẩu không khớp!"
@@ -132,17 +127,12 @@ exports.register = async (
             salt
         )
 
-    if (!workspace?.id) {
-        throw "Không xác định được workspace hiện tại."
-    }
-
     return await query.taoNguoiDung(
         {
             username,
             pass: hash,
             hoTen,
             donViId,
-            workspaceId: workspace?.id || null,
             ...extraProfile,
         }
     )
@@ -154,8 +144,7 @@ exports.changePassword = async (
     username,
     oldPassword,
     newPassword,
-    repeatPass,
-    workspaceId = null
+    repeatPass
 ) => {
 
     if (newPassword !== repeatPass)
@@ -164,8 +153,7 @@ exports.changePassword = async (
 
     const user =
         await query.getUserByUsername(
-            username,
-            workspaceId
+            username
         )
 
     if (!user)
@@ -197,8 +185,7 @@ exports.changePassword = async (
 
     await query.updatePassword(
         username,
-        hash,
-        workspaceId
+        hash
     )
 
 
@@ -206,15 +193,14 @@ exports.changePassword = async (
 }
 
 
-exports.capNhatThongTinNguoiDung = async (username, profile, workspaceId = null) => {
+exports.capNhatThongTinNguoiDung = async (username, profile) => {
     return toSessionUser(
-        await query.capNhatThongTinNguoiDung(username, profile, workspaceId)
+        await query.capNhatThongTinNguoiDung(username, profile)
     )
 }
 
-exports.layNguoiDungByUsername = async (username, workspaceId = null) => {
+exports.layNguoiDungByUsername = async (username) => {
     return toSessionUser(
-        await query.getUserByUsername(username, workspaceId)
+        await query.getUserByUsername(username)
     )
 }
-

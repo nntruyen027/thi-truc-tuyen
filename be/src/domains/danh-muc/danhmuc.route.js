@@ -7,7 +7,6 @@ const role = require("../../core/middlewares/role")
 const upload = require("../../core/utils/upload");
 const fs = require("fs/promises");
 const importService = require("./danhmuc_import.service");
-const { requireWorkspaceId } = require("../../core/utils/workspace-scope");
 
 router.get(
     "/:tenDm/import/template",
@@ -53,7 +52,6 @@ router.post(
             }
 
             const data = await importService.importWorkbook(
-                requireWorkspaceId(req),
                 tenDm,
                 uploadedPath
             );
@@ -89,7 +87,6 @@ router.get(
 
             const data =
                 await query.layDsDanhMuc(
-                    requireWorkspaceId(req),
                     tenDm,
                     Number(size),
                     Number(page),
@@ -126,7 +123,6 @@ router.post(
 
             const data =
                 await query.themDanhMuc(
-                    requireWorkspaceId(req),
                     tenDm,
                     value
                 )
@@ -165,7 +161,6 @@ router.put(
 
             const data =
                 await query.suaDanhMuc(
-                    requireWorkspaceId(req),
                     tenDm,
                     id,
                     value
@@ -203,7 +198,6 @@ router.delete(
 
             const data =
                 await query.xoaDanhMuc(
-                    requireWorkspaceId(req),
                     tenDm,
                     id
                 )

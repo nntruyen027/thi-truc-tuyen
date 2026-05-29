@@ -26,22 +26,9 @@ function mapCuocThi(row) {
     };
 }
 
-function isMissingWorkspaceColumnError(error) {
-    const message = String(error?.message || error || "").toLowerCase();
-    return message.includes("workspace_id") && message.includes("does not exist");
-}
-
-function hasWorkspaceColumn(table) {
-    return Boolean(table?.workspaceId);
-}
-
-exports.layDsCuocThi = async (workspaceId, size, page, search, sortField, sortType) => {
+exports.layDsCuocThi = async (size, page, search, sortField, sortType) => {
     const paging = normalizePagination({page, size});
     const conditions = [];
-
-    if (hasWorkspaceColumn(cuocThi)) {
-        conditions.push(eq(cuocThi.workspaceId, Number(workspaceId)));
-    }
 
     if (search?.trim()) {
         conditions.push(ilike(cuocThi.ten, `%${search.trim()}%`));
@@ -87,12 +74,8 @@ exports.layDsCuocThi = async (workspaceId, size, page, search, sortField, sortTy
     });
 };
 
-exports.themCuocThi = async (workspaceId, value) => {
+exports.themCuocThi = async (value) => {
     const conditions = [eq(cuocThi.ten, value.ten)];
-
-    if (hasWorkspaceColumn(cuocThi)) {
-        conditions.push(eq(cuocThi.workspaceId, Number(workspaceId)));
-    }
 
     const exists = await db
         .select({id: cuocThi.id})
@@ -107,7 +90,6 @@ exports.themCuocThi = async (workspaceId, value) => {
     const [created] = await db
         .insert(cuocThi)
         .values({
-            workspaceId: Number(workspaceId),
             ten: value.ten,
             moTa: value.mo_ta,
             thoiGianBatDau: value.thoi_gian_bat_dau,
@@ -122,12 +104,8 @@ exports.themCuocThi = async (workspaceId, value) => {
     return mapCuocThi(created);
 };
 
-exports.suaCuocThi = async (workspaceId, id, value) => {
+exports.suaCuocThi = async (id, value) => {
     const conditions = [eq(cuocThi.id, Number(id))];
-
-    if (hasWorkspaceColumn(cuocThi)) {
-        conditions.push(eq(cuocThi.workspaceId, Number(workspaceId)));
-    }
 
     const [updated] = await db
         .update(cuocThi)
@@ -151,12 +129,8 @@ exports.suaCuocThi = async (workspaceId, id, value) => {
     return mapCuocThi(updated);
 };
 
-exports.xoaCuocThi = async (workspaceId, id) => {
+exports.xoaCuocThi = async (id) => {
     const conditions = [eq(cuocThi.id, Number(id))];
-
-    if (hasWorkspaceColumn(cuocThi)) {
-        conditions.push(eq(cuocThi.workspaceId, Number(workspaceId)));
-    }
 
     await db
         .delete(cuocThi)
@@ -165,12 +139,8 @@ exports.xoaCuocThi = async (workspaceId, id) => {
     return true;
 };
 
-exports.layCuocThiTheoId = async (workspaceId, cuocThiId) => {
+exports.layCuocThiTheoId = async (cuocThiId) => {
     const conditions = [eq(cuocThi.id, Number(cuocThiId))];
-
-    if (hasWorkspaceColumn(cuocThi)) {
-        conditions.push(eq(cuocThi.workspaceId, Number(workspaceId)));
-    }
 
     const [row] = await db
         .select()
@@ -181,99 +151,34 @@ exports.layCuocThiTheoId = async (workspaceId, cuocThiId) => {
     return mapCuocThi(row);
 };
 
-exports.layThoiGianConLaiCuaCuocThi = async (workspaceId) => {
+exports.layThoiGianConLaiCuaCuocThi = async () => {
     const now = new Date();
     let row;
-    let attemptedWorkspaceQuery = false;
     let mocThoiGian = "ket_thuc";
+    [row] = await db
+        .select()
+        .from(cuocThi)
+        .where(and(
+            eq(cuocThi.trangThai, true),
+            lte(cuocThi.thoiGianBatDau, now),
+            gte(cuocThi.thoiGianKetThuc, now),
+        ))
+        .orderBy(asc(cuocThi.thoiGianKetThuc))
+        .limit(1);
 
-    if (hasWorkspaceColumn(cuocThi)) {
-        attemptedWorkspaceQuery = true;
-
-        try {
-            [row] = await db
-                .select()
-                .from(cuocThi)
-                .where(and(
-                    eq(cuocThi.workspaceId, Number(workspaceId)),
-                    eq(cuocThi.trangThai, true),
-                    lte(cuocThi.thoiGianBatDau, now),
-                    gte(cuocThi.thoiGianKetThuc, now),
-                ))
-                .orderBy(asc(cuocThi.thoiGianKetThuc))
-                .limit(1);
-
-            if (!row) {
-                [row] = await db
-                    .select()
-                    .from(cuocThi)
-                    .where(and(
-                        eq(cuocThi.workspaceId, Number(workspaceId)),
-                        eq(cuocThi.trangThai, true),
-                        gte(cuocThi.thoiGianBatDau, now),
-                    ))
-                    .orderBy(asc(cuocThi.thoiGianBatDau))
-                    .limit(1);
-
-                if (row) {
-                    mocThoiGian = "bat_dau";
-                }
-            }
-        } catch (error) {
-            if (!isMissingWorkspaceColumnError(error)) {
-                throw error;
-            }
-        }
-    }
-
-    if (!row && !attemptedWorkspaceQuery) {
+    if (!row) {
         [row] = await db
-            .select({
-                id: cuocThi.id,
-                ten: cuocThi.ten,
-                moTa: cuocThi.moTa,
-                thoiGianBatDau: cuocThi.thoiGianBatDau,
-                thoiGianKetThuc: cuocThi.thoiGianKetThuc,
-                trangThai: cuocThi.trangThai,
-                choPhepXemLichSu: cuocThi.choPhepXemLichSu,
-                choPhepXemLaiDapAn: cuocThi.choPhepXemLaiDapAn,
-                coTuLuan: cuocThi.coTuLuan,
-                createdAt: cuocThi.createdAt,
-            })
+            .select()
             .from(cuocThi)
             .where(and(
                 eq(cuocThi.trangThai, true),
-                lte(cuocThi.thoiGianBatDau, now),
-                gte(cuocThi.thoiGianKetThuc, now),
+                gte(cuocThi.thoiGianBatDau, now),
             ))
-            .orderBy(asc(cuocThi.thoiGianKetThuc))
+            .orderBy(asc(cuocThi.thoiGianBatDau))
             .limit(1);
 
-        if (!row) {
-            [row] = await db
-                .select({
-                    id: cuocThi.id,
-                    ten: cuocThi.ten,
-                    moTa: cuocThi.moTa,
-                    thoiGianBatDau: cuocThi.thoiGianBatDau,
-                    thoiGianKetThuc: cuocThi.thoiGianKetThuc,
-                    trangThai: cuocThi.trangThai,
-                    choPhepXemLichSu: cuocThi.choPhepXemLichSu,
-                    choPhepXemLaiDapAn: cuocThi.choPhepXemLaiDapAn,
-                    coTuLuan: cuocThi.coTuLuan,
-                    createdAt: cuocThi.createdAt,
-                })
-                .from(cuocThi)
-                .where(and(
-                    eq(cuocThi.trangThai, true),
-                    gte(cuocThi.thoiGianBatDau, now),
-                ))
-                .orderBy(asc(cuocThi.thoiGianBatDau))
-                .limit(1);
-
-            if (row) {
-                mocThoiGian = "bat_dau";
-            }
+        if (row) {
+            mocThoiGian = "bat_dau";
         }
     }
 
@@ -316,64 +221,9 @@ exports.layThoiGianConLaiCuaCuocThi = async (workspaceId) => {
     };
 };
 
-exports.layTongLuotThiCuaCuocThiHienTai = async (workspaceId) => {
+exports.layTongLuotThiCuaCuocThiHienTai = async () => {
     const now = new Date();
     let activeContest;
-    let attemptedWorkspaceQuery = false;
-
-    if (
-        hasWorkspaceColumn(cuocThi)
-        && hasWorkspaceColumn(deThi)
-        && hasWorkspaceColumn(dotThi)
-        && hasWorkspaceColumn(baiThi)
-    ) {
-        attemptedWorkspaceQuery = true;
-
-        try {
-            [activeContest] = await db
-                .select({ id: cuocThi.id })
-                .from(cuocThi)
-                .where(and(
-                    eq(cuocThi.workspaceId, Number(workspaceId)),
-                    eq(cuocThi.trangThai, true),
-                    lte(cuocThi.thoiGianBatDau, now),
-                    gte(cuocThi.thoiGianKetThuc, now),
-                ))
-                .orderBy(asc(cuocThi.thoiGianKetThuc))
-                .limit(1);
-
-            if (!activeContest?.id) {
-                return 0;
-            }
-
-            const [row] = await db
-                .select({
-                    total: count(baiThi.id),
-                })
-                .from(baiThi)
-                .innerJoin(deThi, and(
-                    eq(deThi.id, baiThi.deThiId),
-                    eq(deThi.workspaceId, Number(workspaceId))
-                ))
-                .innerJoin(dotThi, and(
-                    eq(dotThi.id, deThi.dotThiId),
-                    eq(dotThi.workspaceId, Number(workspaceId)),
-                    eq(dotThi.trangThai, true),
-                    eq(dotThi.cuocThiId, Number(activeContest.id))
-                ))
-                .where(eq(baiThi.workspaceId, Number(workspaceId)));
-
-            return Number(row?.total || 0);
-        } catch (error) {
-            if (!isMissingWorkspaceColumnError(error)) {
-                throw error;
-            }
-        }
-    }
-
-    if (attemptedWorkspaceQuery) {
-        return 0;
-    }
 
     [activeContest] = await db
         .select({ id: cuocThi.id })

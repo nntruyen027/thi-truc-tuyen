@@ -154,7 +154,7 @@ export default function RootLayout({children}) {
 
     const {SetIsUpdatePassOpen, setIsEditOpen} = useModal();
     const {user, clearAuth} = useAuthStore();
-    const isElevatedAdmin = user?.role === "admin" || user?.role === "super_admin";
+    const isElevatedAdmin = user?.role === "admin";
 
     const normalizedMenu = useMemo(
         () => normalizeMenu(menuConfig),
@@ -244,14 +244,6 @@ export default function RootLayout({children}) {
             icon: <UserOutlined/>,
             onClick: () => router.push("/user"),
         },
-        ...(user?.role === "super_admin"
-            ? [{
-                key: "super-admin",
-                label: "Quản trị hệ thống",
-                icon: <SettingOutlined/>,
-                onClick: () => router.push("/super-admin"),
-            }]
-            : []),
         {
             key: "logout",
             label: "Đăng xuất",
@@ -390,7 +382,7 @@ export default function RootLayout({children}) {
                                     {user?.hoTen || user?.ho_ten || "Người dùng"}
                                 </Typography.Text>
                                 <div className="text-xs uppercase tracking-[0.14em] text-blue-100/80">
-                                    {user?.role === "super_admin" ? "Super Admin" : "Quản trị viên"}
+                                    Quản trị viên
                                 </div>
                             </div>
                         </div>

@@ -9,7 +9,6 @@ export default function BannerEditor({
     title,
     khoa,
     aspectRatio = "16/9",
-    workspaceId = null,
     disabled = false,
 }) {
     const {message} = App.useApp();
@@ -23,7 +22,7 @@ export default function BannerEditor({
 
         const load = async () => {
             try {
-                const res = await layCauHinh(khoa, {workspaceId});
+                const res = await layCauHinh(khoa);
 
                 if (!active) {
                     return;
@@ -55,7 +54,7 @@ export default function BannerEditor({
         return () => {
             active = false;
         };
-    }, [khoa, message, workspaceId]);
+    }, [khoa, message]);
 
     const save = async (
         duongDan,
@@ -70,14 +69,13 @@ export default function BannerEditor({
                 zoom: nextZoom,
                 positionX: nextPositionX,
                 positionY: nextPositionY,
-            }),
-            {workspaceId}
+            })
         );
     };
 
     const handleUpload = async (file) => {
         try {
-            const res = await uploadFile(file, {workspaceId});
+            const res = await uploadFile(file);
             const duongDan = res?.duongDan || res?.duong_dan || res?.url || "";
 
             setImage(duongDan);

@@ -4,12 +4,7 @@ const BASE_PATH = "/cau-hinh";
 
 export async function layCauHinh(khoa, options = {}){
     try {
-        const res = await api.get(BASE_PATH + "/" + khoa, {
-            skipWorkspaceHost: true,
-            params: {
-                ...(options.workspaceId ? {workspaceId: options.workspaceId} : {}),
-            },
-        });
+        const res = await api.get(BASE_PATH + "/" + khoa);
         return res.data;
     }
     catch (e) {
@@ -21,7 +16,6 @@ export async function suaCauHinh(khoa, giaTri, options = {}){
     try {
         const res = await api.post(BASE_PATH + "/" + khoa, {
             giaTri,
-            ...(options.workspaceId ? {workspaceId: options.workspaceId} : {}),
         });
         return res.data;
     }
