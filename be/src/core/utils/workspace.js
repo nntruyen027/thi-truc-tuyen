@@ -27,6 +27,8 @@ function extractWorkspaceHostname(value) {
 function resolveWorkspaceHost(req) {
     return normalizeWorkspaceHost(
         req.headers["x-workspace-host"]
+        || req.headers.origin
+        || req.headers.referer
         || req.headers["x-forwarded-host"]
         || req.headers.host
         || ""

@@ -3,7 +3,9 @@ import api from "~/services/api";
 const BASE_PATH = "/workspaces";
 
 export async function layWorkspaceHienTai() {
-    const res = await api.get(`${BASE_PATH}/current`);
+    const res = await api.get(`${BASE_PATH}/current`, {
+        skipWorkspaceHost: true,
+    });
     return res.data.data;
 }
 

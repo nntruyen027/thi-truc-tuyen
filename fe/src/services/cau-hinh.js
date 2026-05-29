@@ -5,6 +5,7 @@ const BASE_PATH = "/cau-hinh";
 export async function layCauHinh(khoa, options = {}){
     try {
         const res = await api.get(BASE_PATH + "/" + khoa, {
+            skipWorkspaceHost: true,
             params: {
                 ...(options.workspaceId ? {workspaceId: options.workspaceId} : {}),
             },
