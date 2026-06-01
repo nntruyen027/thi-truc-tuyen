@@ -16,7 +16,7 @@ export default function CountDown({time}) {
     }, [time]);
 
     useEffect(() => {
-        if (!t?.dem_nguoc) {
+        if (!time) {
             return undefined;
         }
 
@@ -100,7 +100,7 @@ export default function CountDown({time}) {
 
         return () => clearInterval(timer);
 
-    }, [t?.dem_nguoc]);
+    }, [time]);
 
 
     if (!t) return null;
@@ -128,7 +128,7 @@ export default function CountDown({time}) {
                 background: titleBackground,
                 margin: '0'
             }} className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white md:text-base">
-                {t?.dem_nguoc === false
+                {t?.moc_thoi_gian === "bat_dau" || t?.dem_nguoc === false
                     ? "Cuộc thi sắp diễn ra"
                     : "Thời gian còn lại của cuộc thi"}
             </h3>
