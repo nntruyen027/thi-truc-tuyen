@@ -1,6 +1,7 @@
 'use client'
 
-import {App, Button, Card, Col, Form, Input, Row, Select, theme} from "antd";
+import {App, Button, Card, Col, Collapse, Form, Input, Row, Select, theme} from "antd";
+import {DownOutlined} from "@ant-design/icons";
 import {useEffect, useMemo, useState} from "react";
 import {useAuthStore} from "~/store/auth";
 import {thayDoiThongTinCaNhan} from "~/services/auth";
@@ -114,124 +115,146 @@ export default function Profile() {
     }
 
     return <Card className="rounded-3xl border border-slate-200 shadow-sm" styles={{body: {padding: 24}}}>
-        <div className="mb-5">
-            <div className="text-xs font-semibold uppercase tracking-[0.2em]" style={{color: token.colorPrimary}}>Thông tin tài khoản</div>
-            <div className="mt-1 text-2xl font-bold text-slate-900">Hồ sơ thí sinh</div>
-            <div className="mt-2 text-sm text-slate-500">Cập nhật các thông tin mà workspace hiện tại đang yêu cầu thu thập.</div>
-        </div>
-
-        <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-            disabled={configLoading}
-        >
-            <Row gutter={[16, 0]}>
-                <Col xs={24} md={12}>
-                    <Form.Item label="Số điện thoại">
-                        <Input value={user?.so_dien_thoai || user?.username || ""} disabled />
-                    </Form.Item>
-                </Col>
-
-                {showField(USER_PROFILE_FIELD_KEYS.hoTen) ? (
-                    <Col xs={24} md={12}>
-                        <Form.Item
-                            label="Họ và tên"
-                            name="hoTen"
-                            rules={[{required: true, message: "Vui lòng nhập họ và tên"}]}
+        <Collapse
+            ghost
+            defaultActiveKey={[]}
+            expandIcon={({isActive}) => (
+                <DownOutlined
+                    style={{
+                        color: token.colorPrimary,
+                        fontSize: 14,
+                        transform: isActive ? "rotate(180deg)" : "rotate(0deg)",
+                        transition: "transform 0.2s ease",
+                    }}
+                />
+            )}
+            items={[
+                {
+                    key: "profile",
+                    label: (
+                        <div>
+                            <div className="text-xs font-semibold uppercase tracking-[0.2em]" style={{color: token.colorPrimary}}>
+                                Thông tin tài khoản
+                            </div>
+                            <div className="mt-1 text-2xl font-bold text-slate-900">Hồ sơ thí sinh</div>
+                        </div>
+                    ),
+                    children: (
+                        <Form
+                            form={form}
+                            layout="vertical"
+                            onFinish={handleSubmit}
+                            disabled={configLoading}
                         >
-                            <Input maxLength={120} />
-                        </Form.Item>
-                    </Col>
-                ) : null}
-            </Row>
+                            <Row gutter={[16, 0]}>
+                                <Col xs={24} md={12}>
+                                    <Form.Item label="Số điện thoại">
+                                        <Input value={user?.so_dien_thoai || user?.username || ""} disabled />
+                                    </Form.Item>
+                                </Col>
 
-            {showField(USER_PROFILE_FIELD_KEYS.diaChiDong1) ? (
-                <Form.Item
-                    label="Địa chỉ thường trú"
-                    name="diaChiDong1"
-                    rules={[{required: true, message: "Vui lòng nhập số nhà, đường, ấp/khu vực"}]}
-                    extra="Dòng 1: Số nhà, đường, ấp/khu vực"
-                >
-                    <Input maxLength={500} />
-                </Form.Item>
-            ) : null}
+                                {showField(USER_PROFILE_FIELD_KEYS.hoTen) ? (
+                                    <Col xs={24} md={12}>
+                                        <Form.Item
+                                            label="Họ và tên"
+                                            name="hoTen"
+                                            rules={[{required: true, message: "Vui lòng nhập họ và tên"}]}
+                                        >
+                                            <Input maxLength={120} />
+                                        </Form.Item>
+                                    </Col>
+                                ) : null}
+                            </Row>
 
-            <Row gutter={[16, 0]}>
-                {showField(USER_PROFILE_FIELD_KEYS.tinhThanh) ? (
-                    <Col xs={24} md={12}>
-                        <Form.Item
-                            label="Tỉnh/Thành phố thường trú"
-                            name="tinhThanh"
-                            rules={[{required: true, message: "Vui lòng chọn tỉnh/thành phố thường trú"}]}
-                        >
-                            <Select options={TINH_THANH_OPTIONS} />
-                        </Form.Item>
-                    </Col>
-                ) : null}
-            </Row>
+                            {showField(USER_PROFILE_FIELD_KEYS.diaChiDong1) ? (
+                                <Form.Item
+                                    label="Địa chỉ thường trú"
+                                    name="diaChiDong1"
+                                    rules={[{required: true, message: "Vui lòng nhập số nhà, đường, ấp/khu vực"}]}
+                                >
+                                    <Input maxLength={500} />
+                                </Form.Item>
+                            ) : null}
 
-            <Row gutter={[16, 0]}>
-                {showField(USER_PROFILE_FIELD_KEYS.ngheNghiep) ? (
-                    <Col xs={24} md={12}>
-                        <Form.Item
-                            label="Nghề nghiệp"
-                            name="ngheNghiep"
-                            rules={[{required: true, message: "Vui lòng chọn nghề nghiệp"}]}
-                        >
-                            <Select options={NGHE_NGHIEP_OPTIONS} />
-                        </Form.Item>
-                    </Col>
-                ) : null}
+                            <Row gutter={[16, 0]}>
+                                {showField(USER_PROFILE_FIELD_KEYS.tinhThanh) ? (
+                                    <Col xs={24} md={12}>
+                                        <Form.Item
+                                            label="Tỉnh/Thành phố thường trú"
+                                            name="tinhThanh"
+                                            rules={[{required: true, message: "Vui lòng chọn tỉnh/thành phố thường trú"}]}
+                                        >
+                                            <Select options={TINH_THANH_OPTIONS} />
+                                        </Form.Item>
+                                    </Col>
+                                ) : null}
+                            </Row>
 
-                {showField(USER_PROFILE_FIELD_KEYS.doiTuong) ? (
-                    <Col xs={24} md={12}>
-                        <Form.Item
-                            label="Đối tượng"
-                            name="doiTuong"
-                            rules={[{required: true, message: "Vui lòng chọn đối tượng"}]}
-                        >
-                            <Select options={DOI_TUONG_OPTIONS} />
-                        </Form.Item>
-                    </Col>
-                ) : null}
-            </Row>
+                            <Row gutter={[16, 0]}>
+                                {showField(USER_PROFILE_FIELD_KEYS.ngheNghiep) ? (
+                                    <Col xs={24} md={12}>
+                                        <Form.Item
+                                            label="Nghề nghiệp"
+                                            name="ngheNghiep"
+                                            rules={[{required: true, message: "Vui lòng chọn nghề nghiệp"}]}
+                                        >
+                                            <Select options={NGHE_NGHIEP_OPTIONS} />
+                                        </Form.Item>
+                                    </Col>
+                                ) : null}
 
-            {showField(USER_PROFILE_FIELD_KEYS.donViId) ? (
-                <Form.Item
-                    label="Đăng ký dự thi cho địa phương, đơn vị"
-                    name="donViId"
-                    rules={[{required: true, message: "Vui lòng chọn địa phương, đơn vị"}]}
-                >
-                    <Select
-                        showSearch
-                        allowClear
-                        placeholder="Chọn địa phương, đơn vị"
-                        loading={donViLoading}
-                        filterOption={false}
-                        options={dsDonVi.map((item) => ({
-                            label: item.ten,
-                            value: item.id,
-                        }))}
-                        onSearch={setSearchDonVi}
-                        onPopupScroll={(e) => {
-                            const target = e.target
+                                {showField(USER_PROFILE_FIELD_KEYS.doiTuong) ? (
+                                    <Col xs={24} md={12}>
+                                        <Form.Item
+                                            label="Đối tượng"
+                                            name="doiTuong"
+                                            rules={[{required: true, message: "Vui lòng chọn đối tượng"}]}
+                                        >
+                                            <Select options={DOI_TUONG_OPTIONS} />
+                                        </Form.Item>
+                                    </Col>
+                                ) : null}
+                            </Row>
 
-                            if (
-                                target.scrollTop +
-                                target.offsetHeight >=
-                                target.scrollHeight - 10
-                            ) {
-                                loadMore()
-                            }
-                        }}
-                    />
-                </Form.Item>
-            ) : null}
+                            {showField(USER_PROFILE_FIELD_KEYS.donViId) ? (
+                                <Form.Item
+                                    label="Đăng ký dự thi cho địa phương, đơn vị"
+                                    name="donViId"
+                                    rules={[{required: true, message: "Vui lòng chọn địa phương, đơn vị"}]}
+                                >
+                                    <Select
+                                        showSearch
+                                        allowClear
+                                        placeholder="Chọn địa phương, đơn vị"
+                                        loading={donViLoading}
+                                        filterOption={false}
+                                        options={dsDonVi.map((item) => ({
+                                            label: item.ten,
+                                            value: item.id,
+                                        }))}
+                                        onSearch={setSearchDonVi}
+                                        onPopupScroll={(e) => {
+                                            const target = e.target
 
-            <Button type="primary" htmlType="submit" loading={loading || configLoading}>
-                Cập nhật hồ sơ
-            </Button>
-        </Form>
+                                            if (
+                                                target.scrollTop +
+                                                target.offsetHeight >=
+                                                target.scrollHeight - 10
+                                            ) {
+                                                loadMore()
+                                            }
+                                        }}
+                                    />
+                                </Form.Item>
+                            ) : null}
+
+                            <Button type="primary" htmlType="submit" loading={loading || configLoading}>
+                                Cập nhật hồ sơ
+                            </Button>
+                        </Form>
+                    ),
+                },
+            ]}
+        />
     </Card>
 }

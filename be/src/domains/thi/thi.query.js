@@ -37,6 +37,7 @@ function withLegacyKeys(data) {
         ...(data.tuLuan !== undefined ? {tu_luan: data.tuLuan} : {}),
         ...(data.thiSinhId !== undefined ? {thi_sinh_id: data.thiSinhId} : {}),
         ...(data.lanThi !== undefined ? {lan_thi: data.lanThi} : {}),
+        ...(data.thoiGianThi !== undefined ? {thoi_gian_thi: data.thoiGianThi} : {}),
         ...(data.thoiGianBatDau !== undefined ? {thoi_gian_bat_dau: data.thoiGianBatDau} : {}),
         ...(data.thoiGianNop !== undefined ? {thoi_gian_nop: data.thoiGianNop} : {}),
         ...(data.trangThai !== undefined ? {trang_thai: data.trangThai} : {}),
