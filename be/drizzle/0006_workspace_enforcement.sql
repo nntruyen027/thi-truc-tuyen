@@ -4,8 +4,6 @@ ALTER TABLE "dm_chung"."linh_vuc" ALTER COLUMN "workspace_id" SET NOT NULL;
 --> statement-breakpoint
 ALTER TABLE "dm_chung"."nhom_cau_hoi" ALTER COLUMN "workspace_id" SET NOT NULL;
 --> statement-breakpoint
-ALTER TABLE "bai_viet" ALTER COLUMN "workspace_id" SET NOT NULL;
---> statement-breakpoint
 ALTER TABLE "file"."file" ALTER COLUMN "workspace_id" SET NOT NULL;
 --> statement-breakpoint
 ALTER TABLE "thi"."cuoc_thi" ALTER COLUMN "workspace_id" SET NOT NULL;
@@ -27,8 +25,6 @@ ALTER TABLE "dm_chung"."don_vi" ADD CONSTRAINT "don_vi_workspace_id_fk" FOREIGN 
 ALTER TABLE "dm_chung"."linh_vuc" ADD CONSTRAINT "linh_vuc_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "platform"."workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 --> statement-breakpoint
 ALTER TABLE "dm_chung"."nhom_cau_hoi" ADD CONSTRAINT "nhom_cau_hoi_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "platform"."workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
---> statement-breakpoint
-ALTER TABLE "bai_viet" ADD CONSTRAINT "bai_viet_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "platform"."workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 --> statement-breakpoint
 ALTER TABLE "file"."file" ADD CONSTRAINT "file_workspace_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "platform"."workspaces"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 --> statement-breakpoint

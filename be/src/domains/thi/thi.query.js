@@ -172,6 +172,41 @@ async function getBaiThiChiTietColumnSupport() {
     return baiThiChiTietColumnsPromise;
 }
 
+async function upsertBaiThiChiTietAnswer(values, columnSupport) {
+    const columns = ["bai_thi_id", "cau_hoi_id", "dap_an_chon"];
+    const params = [
+        Number(values.baiThiId),
+        Number(values.cauHoiId),
+        values.dapAnChon ?? null,
+    ];
+
+    if (columnSupport.hasDapAnChonNhieu) {
+        columns.push("dap_an_chon_nhieu");
+        params.push(values.dapAnChonNhieu ?? null);
+    }
+
+    if (columnSupport.hasDapAnTuDo) {
+        columns.push("dap_an_tu_do");
+        params.push(values.dapAnTuDo ?? null);
+    }
+
+    const placeholders = columns.map((_, index) => `$${index + 1}`);
+    const updateColumns = columns.filter((column) => !["bai_thi_id", "cau_hoi_id"].includes(column));
+    const updateClause = updateColumns
+        .map((column) => `"${column}" = excluded."${column}"`)
+        .join(", ");
+
+    await pool.query(
+        `
+            insert into "thi"."bai_thi_chi_tiet" (${columns.map((column) => `"${column}"`).join(", ")})
+            values (${placeholders.join(", ")})
+            on conflict ("bai_thi_id", "cau_hoi_id")
+            do update set ${updateClause}
+        `,
+        params
+    );
+}
+
 function mapBaiThi(row) {
     if (!row) {
         return {};
@@ -664,13 +699,7 @@ exports.luuCauTraLoi = async (baiThiId, cauHoiId, dapAn) => {
         values.dapAnTuDo = String(dapAn || "").trim() || null;
     }
 
-    await db
-        .insert(baiThiChiTiet)
-        .values(values)
-        .onConflictDoUpdate({
-            target: [baiThiChiTiet.baiThiId, baiThiChiTiet.cauHoiId],
-            set: values,
-        });
+    await upsertBaiThiChiTietAnswer(values, columnSupport);
 
     return null;
 };

@@ -4,8 +4,6 @@ ALTER TABLE "dm_chung"."linh_vuc" ADD COLUMN IF NOT EXISTS "workspace_id" intege
 --> statement-breakpoint
 ALTER TABLE "dm_chung"."nhom_cau_hoi" ADD COLUMN IF NOT EXISTS "workspace_id" integer;
 --> statement-breakpoint
-ALTER TABLE "bai_viet" ADD COLUMN IF NOT EXISTS "workspace_id" integer;
---> statement-breakpoint
 ALTER TABLE "file"."file" ADD COLUMN IF NOT EXISTS "workspace_id" integer;
 --> statement-breakpoint
 ALTER TABLE "thi"."cuoc_thi" ADD COLUMN IF NOT EXISTS "workspace_id" integer;
@@ -39,12 +37,6 @@ SET "workspace_id" = w."id"
 FROM "platform"."workspaces" w
 WHERE w."code" = 'demo'
   AND d."workspace_id" IS NULL;
---> statement-breakpoint
-UPDATE "bai_viet" b
-SET "workspace_id" = w."id"
-FROM "platform"."workspaces" w
-WHERE w."code" = 'demo'
-  AND b."workspace_id" IS NULL;
 --> statement-breakpoint
 UPDATE "file"."file" f
 SET "workspace_id" = w."id"
@@ -102,9 +94,6 @@ ON "dm_chung"."linh_vuc" USING btree ("workspace_id", "ten");
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "nhom_cau_hoi_workspace_ten_idx"
 ON "dm_chung"."nhom_cau_hoi" USING btree ("workspace_id", "ten");
---> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "bai_viet_workspace_trang_thai_ngay_dang_idx"
-ON "bai_viet" USING btree ("workspace_id", "trang_thai", "ngay_dang", "id");
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "file_workspace_thoi_gian_tao_idx"
 ON "file"."file" USING btree ("workspace_id", "thoi_gian_tao", "id");

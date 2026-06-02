@@ -1,7 +1,5 @@
 begin;
 
-alter table if exists public.bai_viet
-    drop constraint if exists bai_viet_workspace_id_fk;
 alter table if exists file.file
     drop constraint if exists file_workspace_id_fk;
 alter table if exists dm_chung.don_vi
@@ -30,7 +28,6 @@ drop index if exists auth.auth_refresh_tokens_workspace_id_idx;
 drop index if exists dm_chung.don_vi_workspace_ten_idx;
 drop index if exists dm_chung.linh_vuc_workspace_ten_idx;
 drop index if exists dm_chung.nhom_cau_hoi_workspace_ten_idx;
-drop index if exists public.bai_viet_workspace_trang_thai_ngay_dang_idx;
 drop index if exists file.file_workspace_thoi_gian_tao_idx;
 drop index if exists thi.cuoc_thi_workspace_thoi_gian_idx;
 drop index if exists thi.cuoc_thi_workspace_ten_idx;
@@ -52,8 +49,6 @@ alter table if exists dm_chung.don_vi
 alter table if exists dm_chung.linh_vuc
     drop column if exists workspace_id;
 alter table if exists dm_chung.nhom_cau_hoi
-    drop column if exists workspace_id;
-alter table if exists public.bai_viet
     drop column if exists workspace_id;
 alter table if exists file.file
     drop column if exists workspace_id;

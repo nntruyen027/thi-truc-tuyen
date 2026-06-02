@@ -10,8 +10,6 @@ alter table if exists dm_chung.linh_vuc
     alter column workspace_id set default 1;
 alter table if exists dm_chung.nhom_cau_hoi
     alter column workspace_id set default 1;
-alter table if exists public.bai_viet
-    alter column workspace_id set default 1;
 alter table if exists file.file
     alter column workspace_id set default 1;
 alter table if exists thi.cuoc_thi

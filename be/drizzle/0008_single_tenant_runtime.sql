@@ -85,7 +85,6 @@ where workspace_id is distinct from 1;
 update dm_chung.don_vi set workspace_id = 1 where workspace_id is distinct from 1;
 update dm_chung.linh_vuc set workspace_id = 1 where workspace_id is distinct from 1;
 update dm_chung.nhom_cau_hoi set workspace_id = 1 where workspace_id is distinct from 1;
-update public.bai_viet set workspace_id = 1 where workspace_id is distinct from 1;
 update file.file set workspace_id = 1 where workspace_id is distinct from 1;
 
 update thi.cuoc_thi set workspace_id = 1 where workspace_id is distinct from 1;
