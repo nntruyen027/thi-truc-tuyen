@@ -1,5 +1,6 @@
 const { and, asc, eq, inArray, sql } = require("drizzle-orm");
 const db = require("../../db/client");
+const pool = require("../../core/config/db");
 const {
     baiThi,
     baiThiChiTiet,
@@ -19,6 +20,8 @@ const LOAI_CAU_HOI = {
     CHON_NHIEU: "chon_nhieu",
     DIEN_TU: "dien_tu",
 };
+
+let baiThiChiTietColumnsPromise = null;
 
 function withLegacyKeys(data) {
     if (!data || typeof data !== "object" || Array.isArray(data)) {
@@ -143,6 +146,30 @@ function serializeAnswerList(value) {
 
 function normalizeTextAnswer(value) {
     return String(value || "").trim().toLocaleLowerCase("vi");
+}
+
+async function getBaiThiChiTietColumnSupport() {
+    if (!baiThiChiTietColumnsPromise) {
+        baiThiChiTietColumnsPromise = pool.query(`
+            select column_name
+            from information_schema.columns
+            where table_schema = 'thi'
+              and table_name = 'bai_thi_chi_tiet'
+              and column_name in ('dap_an_chon_nhieu', 'dap_an_tu_do')
+        `).then((result) => {
+            const columns = new Set(result.rows.map((row) => row.column_name));
+
+            return {
+                hasDapAnChonNhieu: columns.has("dap_an_chon_nhieu"),
+                hasDapAnTuDo: columns.has("dap_an_tu_do"),
+            };
+        }).catch(() => ({
+            hasDapAnChonNhieu: false,
+            hasDapAnTuDo: false,
+        }));
+    }
+
+    return baiThiChiTietColumnsPromise;
 }
 
 function mapBaiThi(row) {
@@ -360,6 +387,7 @@ async function layThoiGianThiTheoDeThi(tx, deThiId) {
 }
 
 async function layCauHoiDeThiInternal(tx, deThiId, baiThiId) {
+    const columnSupport = await getBaiThiChiTietColumnSupport();
     const rows = await tx
         .select({
             deThiId: deThi.id,
@@ -373,8 +401,12 @@ async function layCauHoiDeThiInternal(tx, deThiId, baiThiId) {
             diem: tracNghiem.diem,
             thuTu: deThiCauHoi.thuTu,
             dapAnChon: baiThiChiTiet.dapAnChon,
-            dapAnChonNhieu: baiThiChiTiet.dapAnChonNhieu,
-            dapAnTuDo: baiThiChiTiet.dapAnTuDo,
+            dapAnChonNhieu: columnSupport.hasDapAnChonNhieu
+                ? baiThiChiTiet.dapAnChonNhieu
+                : sql`null`,
+            dapAnTuDo: columnSupport.hasDapAnTuDo
+                ? baiThiChiTiet.dapAnTuDo
+                : sql`null`,
             coTronDapAn: sql`${deThi.lanThi} > 1 and ${dotThi.coTronCauHoi} = true`,
         })
         .from(deThiCauHoi)
@@ -589,6 +621,7 @@ exports.batDauThi = async (deThiId, thiSinhId) => {
 
 exports.luuCauTraLoi = async (baiThiId, cauHoiId, dapAn) => {
     await ensureEntityExists(db, baiThi, baiThiId, "Bài thi không tồn tại.");
+    const columnSupport = await getBaiThiChiTietColumnSupport();
 
     const [question] = await db
         .select({
@@ -608,20 +641,26 @@ exports.luuCauTraLoi = async (baiThiId, cauHoiId, dapAn) => {
         baiThiId: Number(baiThiId),
         cauHoiId: Number(cauHoiId),
         dapAnChon: null,
-        dapAnChonNhieu: null,
-        dapAnTuDo: null,
     };
+
+    if (columnSupport.hasDapAnChonNhieu) {
+        values.dapAnChonNhieu = null;
+    }
+
+    if (columnSupport.hasDapAnTuDo) {
+        values.dapAnTuDo = null;
+    }
 
     if (loaiCauHoi === LOAI_CAU_HOI.CHON_MOT) {
         const normalized = Number(dapAn);
         values.dapAnChon = Number.isInteger(normalized) ? normalized : null;
     }
 
-    if (loaiCauHoi === LOAI_CAU_HOI.CHON_NHIEU) {
+    if (loaiCauHoi === LOAI_CAU_HOI.CHON_NHIEU && columnSupport.hasDapAnChonNhieu) {
         values.dapAnChonNhieu = serializeAnswerList(dapAn);
     }
 
-    if (loaiCauHoi === LOAI_CAU_HOI.DIEN_TU) {
+    if (loaiCauHoi === LOAI_CAU_HOI.DIEN_TU && columnSupport.hasDapAnTuDo) {
         values.dapAnTuDo = String(dapAn || "").trim() || null;
     }
 
@@ -662,14 +701,19 @@ exports.luuCauTraLoiTuLuan = async (baiThiId, cauHoiId, dapAn) => {
 exports.nopBai = async (baiThiIdValue) => {
     return db.transaction(async (tx) => {
         await ensureEntityExists(tx, baiThi, baiThiIdValue, "Bài thi không tồn tại.");
+        const columnSupport = await getBaiThiChiTietColumnSupport();
 
         const chiTietRows = await tx
             .select({
                 id: baiThiChiTiet.id,
                 loaiCauHoi: tracNghiem.loaiCauHoi,
                 dapAnChon: baiThiChiTiet.dapAnChon,
-                dapAnChonNhieu: baiThiChiTiet.dapAnChonNhieu,
-                dapAnTuDo: baiThiChiTiet.dapAnTuDo,
+                dapAnChonNhieu: columnSupport.hasDapAnChonNhieu
+                    ? baiThiChiTiet.dapAnChonNhieu
+                    : sql`null`,
+                dapAnTuDo: columnSupport.hasDapAnTuDo
+                    ? baiThiChiTiet.dapAnTuDo
+                    : sql`null`,
                 dapAn: tracNghiem.dapAn,
                 dapAnNhieu: tracNghiem.dapAnNhieu,
                 dapAnText: tracNghiem.dapAnText,
