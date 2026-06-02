@@ -253,23 +253,11 @@ export default function Page() {
             >
                 <div className="grid gap-5 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)]">
                     <div className="space-y-4">
-                        <div
-                            className="inline-flex w-fit items-center rounded-full border bg-white px-4 py-1 text-xs font-semibold uppercase tracking-[0.24em] shadow-sm"
-                            style={{
-                                borderColor: "rgba(var(--workspace-primary-rgb), 0.18)",
-                                color: token.colorPrimary,
-                            }}
-                        >
-                            Khu vực thí sinh
-                        </div>
-
+                        
                         <div className="space-y-2">
                             <Title className="!mb-0 !text-3xl !leading-tight !text-slate-900 md:!text-4xl">
                                 Theo dõi cuộc thi và quản lý quá trình làm bài
                             </Title>
-                            <Text className="!text-base !leading-7 !text-slate-600">
-                                Lịch sử thi, trạng thái bài làm và thông tin tài khoản được gom lại trong một màn hình để thao tác nhanh hơn trên cả desktop lẫn mobile.
-                            </Text>
                         </div>
 
                         <div className="flex flex-wrap gap-3">
