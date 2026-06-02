@@ -343,12 +343,7 @@ export default function Page() {
                         <Text className="!text-xs !font-semibold !uppercase !tracking-[0.2em]" style={{color: token.colorPrimary}}>
                             Lịch sử làm bài
                         </Text>
-                        <Title level={3} className="!mb-0 !mt-1">
-                            Theo dõi từng lần tham gia thi
-                        </Title>
-                        <Text className="!mt-2 !block !text-slate-500">
-                            Danh sách được chia trang để dễ đọc hơn khi có nhiều lần thi trong cùng một đợt.
-                        </Text>
+                        
                     </div>
 
                     <Space wrap>
