@@ -8,6 +8,7 @@ import FaviconEditor from "~/app/admin/cai-dat-chung/FaviconEditor";
 import FooterMetaEditor from "~/app/admin/cai-dat-chung/FooterMetaEditor";
 import ColorThemeEditor from "~/app/admin/cai-dat-chung/ColorThemeEditor";
 import UserProfileFieldsEditor from "~/app/admin/cai-dat-chung/UserProfileFieldsEditor";
+import HomePageDisplayEditor from "~/app/admin/cai-dat-chung/HomePageDisplayEditor";
 
 export default function WorkspaceSettingsPanel() {
     return (
@@ -42,6 +43,10 @@ export default function WorkspaceSettingsPanel() {
 
             <Col md={24} lg={12}>
                 <UserProfileFieldsEditor />
+            </Col>
+
+            <Col md={24} lg={12}>
+                <HomePageDisplayEditor />
             </Col>
 
             <Col md={24} lg={12}>

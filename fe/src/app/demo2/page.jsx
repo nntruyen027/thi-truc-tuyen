@@ -31,6 +31,7 @@ import {
     DEMO_TIMELINE,
     DEMO_TOTAL_ATTEMPTS,
 } from "~/app/demo1/demo-data";
+import useDemoRouteAccess from "~/hooks/useDemoRouteAccess";
 
 const {Title, Paragraph, Text} = Typography;
 
@@ -80,7 +81,8 @@ function buildInfoCards(contestMeta, dotThi) {
     ];
 }
 
-export default function Demo2Page() {
+export default function Demo2Page({skipDemoAccessCheck = false}) {
+    const canRender = useDemoRouteAccess("demo2", skipDemoAccessCheck);
     const [image, setImage] = useState(DEMO_BANNER_CONFIG.image);
     const [zoom, setZoom] = useState(DEMO_BANNER_CONFIG.zoom);
     const [bannerPositionX, setBannerPositionX] = useState(DEMO_BANNER_CONFIG.positionX);
@@ -271,6 +273,10 @@ export default function Demo2Page() {
 
         router.push("/user");
     };
+
+    if (!canRender) {
+        return null;
+    }
 
     return (
         <div className="w-full overflow-x-hidden bg-[#fff7ed]">

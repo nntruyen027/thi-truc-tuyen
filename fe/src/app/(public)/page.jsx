@@ -3,7 +3,7 @@
 import {layCauHinh} from "~/services/cau-hinh";
 import {useEffect, useMemo, useRef, useState} from "react";
 import {layDotThi} from "~/services/thi/dot-thi";
-import {Col, Row, Typography, theme} from "antd";
+import {Col, Row, Spin, Typography, theme} from "antd";
 import {layCuocThi} from "~/services/thi/cuoc-thi";
 import {useRouter} from "next/navigation";
 import KetQuaCongBo from "~/app/(public)/KetQuaCongBo";
@@ -20,6 +20,10 @@ import PublicContestOverview from "~/app/(public)/components/PublicContestOvervi
 import PublicContestTimeline from "~/app/(public)/components/PublicContestTimeline";
 import PublicPageSectionDivider from "~/app/(public)/components/PublicPageSectionDivider";
 import dayjs from "dayjs";
+import Demo1Page from "~/app/demo1/page";
+import Demo2Page from "~/app/demo2/page";
+import Demo3Page from "~/app/demo3/page";
+import {layCauHinhTrangChu} from "~/services/trang-chu";
 
 const {Text} = Typography;
 
@@ -150,7 +154,7 @@ function taoThongTinDemNguoc(cuocThi) {
     };
 }
 
-export default function Page() {
+export function DefaultPublicHomePage() {
     const [image, setImage] = useState(null);
     const [zoom, setZoom] = useState(1);
     const [bannerPositionX, setBannerPositionX] = useState(50);
@@ -578,4 +582,59 @@ export default function Page() {
             `}</style>
         </div>
     );
+}
+
+export default function Page() {
+    const [selectedDemo, setSelectedDemo] = useState("demo0");
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let active = true;
+
+        const load = async () => {
+            try {
+                const res = await layCauHinhTrangChu();
+
+                if (active) {
+                    setSelectedDemo(res.data.selectedDemo);
+                }
+            } catch {
+                if (active) {
+                    setSelectedDemo("demo0");
+                }
+            } finally {
+                if (active) {
+                    setLoading(false);
+                }
+            }
+        };
+
+        void load();
+
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-[#fffdf4]">
+                <Spin size="large" />
+            </div>
+        );
+    }
+
+    if (selectedDemo === "demo1") {
+        return <Demo1Page skipDemoAccessCheck />;
+    }
+
+    if (selectedDemo === "demo2") {
+        return <Demo2Page skipDemoAccessCheck />;
+    }
+
+    if (selectedDemo === "demo3") {
+        return <Demo3Page skipDemoAccessCheck />;
+    }
+
+    return <DefaultPublicHomePage />;
 }

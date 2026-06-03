@@ -18,6 +18,7 @@ import PublicContestOverview from "~/app/demo1/components/PublicContestOverview"
 import PublicContestTimeline from "~/app/demo1/components/PublicContestTimeline";
 import PublicPageSectionDivider from "~/app/demo1/components/PublicPageSectionDivider";
 import PublicHonorBoard from "~/app/demo1/components/PublicHonorBoard";
+import useDemoRouteAccess from "~/hooks/useDemoRouteAccess";
 import {
     DEMO_BANNER_CONFIG,
     DEMO_DOCUMENTS,
@@ -32,7 +33,8 @@ import {
 
 const {Text} = Typography;
 
-export default function Page() {
+export default function Page({skipDemoAccessCheck = false}) {
+    const canRender = useDemoRouteAccess("demo1", skipDemoAccessCheck);
     const [image, setImage] = useState(DEMO_BANNER_CONFIG.image);
     const [zoom, setZoom] = useState(DEMO_BANNER_CONFIG.zoom);
     const [bannerPositionX, setBannerPositionX] = useState(DEMO_BANNER_CONFIG.positionX);
@@ -167,6 +169,10 @@ export default function Page() {
             behavior: "smooth",
         });
     };
+
+    if (!canRender) {
+        return null;
+    }
 
     return (
         <div className="w-full bg-[#fffdf4]">
