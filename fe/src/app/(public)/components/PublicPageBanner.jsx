@@ -5,7 +5,6 @@ import {getPublicFileUrl} from "~/services/file";
 
 export default function PublicPageBanner({
     image,
-    zoom,
     positionX = 50,
     positionY = 50,
     isMobileViewport,
@@ -24,14 +23,12 @@ export default function PublicPageBanner({
                             src={getPublicFileUrl(image)}
                             alt=""
                             style={{
-                                width: `${100 * zoom}%`,
-                                height: `${100 * zoom}%`,
-                                objectFit: "cover",
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "contain",
                                 objectPosition: `${positionX}% ${positionY}%`,
                                 position: "absolute",
-                                left: "50%",
-                                top: "50%",
-                                transform: "translate(-50%, -50%)",
+                                inset: 0,
                             }}
                         />
                         ) : null}
