@@ -29,10 +29,10 @@ export default function Demo4Layout({children}) {
             >
                 <Layout
                     className="public-font bg-[#fffaf5] text-slate-900"
-                    style={{minHeight: "100vh"}}
+                    style={{minHeight: "100vh", overflow: "visible"}}
                 >
                     <UserInteractionGuard disableCopy />
-                    <Layout.Content className="flex-1">
+                    <Layout.Content className="flex-1" style={{overflow: "visible"}}>
                         {children}
                     </Layout.Content>
                     <div

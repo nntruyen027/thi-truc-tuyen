@@ -11,8 +11,8 @@ export default function PublicPageBanner({
     isMobileViewport,
 }) {
     return (
-        <Reveal animation="soft">
-            <div className="w-full">
+        <div className="w-full overflow-hidden">
+            <Reveal animation="soft">
                 <div
                     className="relative w-full overflow-hidden bg-[#fdf7df] shadow-sm"
                     style={{
@@ -34,9 +34,9 @@ export default function PublicPageBanner({
                                 transform: "translate(-50%, -50%)",
                             }}
                         />
-                    ) : null}
+                        ) : null}
                 </div>
-            </div>
-        </Reveal>
+            </Reveal>
+        </div>
     );
 }

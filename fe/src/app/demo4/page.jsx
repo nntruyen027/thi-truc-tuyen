@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useMemo, useState} from "react";
+import {useEffect, useMemo, useRef, useState} from "react";
 import dayjs from "dayjs";
 import {ArrowRightOutlined, TrophyFilled, UserOutlined} from "@ant-design/icons";
 import {Button, Card, Col, Empty, QRCode, Row, Spin, Statistic, Typography, theme} from "antd";
@@ -23,6 +23,11 @@ import useDemoRouteAccess from "~/hooks/useDemoRouteAccess";
 import {alphaColor, darkenColor, parseMediaConfig} from "~/utils/workspaceTheme";
 
 const {Title, Text} = Typography;
+const DEMO4_BACKGROUND_IMAGES = {
+    cantho: "/bg_cantho.jpg",
+    soctrang: "/bg_soctrang.jpg",
+    haugiang: "/bg_haugiang.jpg",
+};
 
 function chonCuocThiGanNhat(dsCuocThi = []) {
     const now = dayjs();
@@ -306,6 +311,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     const [bannerPositionY, setBannerPositionY] = useState(DEMO_BANNER_CONFIG.positionY);
     const [isMobileViewport, setIsMobileViewport] = useState(false);
     const [showFloatingCta, setShowFloatingCta] = useState(false);
+    const [activeBackground, setActiveBackground] = useState("cantho");
     const [scrollY, setScrollY] = useState(0);
     const [countdown, setCountdown] = useState(null);
     const [dotThi, setDotThi] = useState(null);
@@ -320,41 +326,8 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     const {colorPrimary} = token;
     const deepPrimary = darkenColor(colorPrimary, 0.12);
     const rankingHeaderBackground = `linear-gradient(135deg, ${alphaColor(colorPrimary, 0.18)} 0%, ${alphaColor(colorPrimary, 0.32)} 100%)`;
-    const parallaxLayers = [
-        {
-            key: "cantho",
-            src: "/bg_cantho.jpg",
-            top: "96vh",
-            left: "-4vw",
-            width: "52vw",
-            height: "42vh",
-            speed: 0.05,
-            opacity: 0.42,
-            mobileOpacity: 0.32,
-        },
-        {
-            key: "soctrang",
-            src: "/bg_soctrang.jpg",
-            top: "142vh",
-            right: "-2vw",
-            width: "48vw",
-            height: "38vh",
-            speed: 0.08,
-            opacity: 0.44,
-            mobileOpacity: 0.34,
-        },
-        {
-            key: "haugiang",
-            src: "/bg_haugiang.jpg",
-            top: "196vh",
-            left: "10vw",
-            width: "62vw",
-            height: "42vh",
-            speed: 0.11,
-            opacity: 0.4,
-            mobileOpacity: 0.3,
-        },
-    ];
+    const timelineSectionRef = useRef(null);
+    const giaiTapTheSectionRef = useRef(null);
     const router = useRouter();
     const user = useAuthStore((state) => state.user);
 
@@ -631,6 +604,22 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
         const handleScroll = () => {
             setScrollY(window.scrollY);
             setShowFloatingCta(window.scrollY > (isMobileViewport ? 280 : 360));
+
+            const threshold = 0;
+            const timelineTop = timelineSectionRef.current?.getBoundingClientRect().top ?? Number.POSITIVE_INFINITY;
+            const giaiTapTheTop = giaiTapTheSectionRef.current?.getBoundingClientRect().top ?? Number.POSITIVE_INFINITY;
+
+            if (giaiTapTheTop <= threshold) {
+                setActiveBackground("haugiang");
+                return;
+            }
+
+            if (timelineTop <= threshold) {
+                setActiveBackground("soctrang");
+                return;
+            }
+
+            setActiveBackground("cantho");
         };
 
         handleScroll();
@@ -670,23 +659,24 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     }
 
     return (
-        <div className="relative w-full overflow-x-hidden bg-[#fffaf5]">
-            <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-                {parallaxLayers.map((layer) => (
+        <div
+            className="relative w-full bg-[#fffaf5]"
+            style={{overflowX: "hidden", overflowY: "clip"}}
+        >
+            <div
+                aria-hidden="true"
+                className="pointer-events-none fixed inset-0 z-0"
+                style={{overflow: "clip", contain: "paint"}}
+            >
+                {Object.entries(DEMO4_BACKGROUND_IMAGES).map(([key, src]) => (
                     <div
-                        key={layer.key}
-                        className="demo4-parallax-layer"
+                        key={key}
+                        className={`demo4-background-layer ${activeBackground === key ? "is-active" : ""}`}
                         style={{
-                            top: layer.top,
-                            left: layer.left,
-                            right: layer.right,
-                            width: layer.width,
-                            height: layer.height,
-                            opacity: isMobileViewport ? layer.mobileOpacity : layer.opacity,
-                            transform: `translate3d(0, ${Math.round(scrollY * layer.speed)}px, 0)`,
+                            transform: `translate3d(0, ${Math.round(scrollY * -0.08)}px, 0) scale(1.08)`,
                             backgroundImage: `
-                                linear-gradient(180deg, rgba(255, 250, 245, 0.16) 0%, rgba(255, 250, 245, 0.34) 100%),
-                                url(${layer.src})
+                                linear-gradient(180deg, rgba(255, 250, 245, 0.16) 0%, rgba(255, 250, 245, 0.28) 28%, rgba(255, 250, 245, 0.42) 64%, rgba(255, 250, 245, 0.56) 100%),
+                                url(${src})
                             `,
                         }}
                     />
@@ -694,7 +684,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 <div
                     className="absolute inset-0"
                     style={{
-                        background: `linear-gradient(180deg, rgba(255, 250, 245, 0) 0%, rgba(255, 250, 245, 0.1) 28%, rgba(255, 250, 245, 0.24) 62%, rgba(255, 250, 245, 0.42) 100%)`,
+                        background: `linear-gradient(180deg, rgba(255, 250, 245, 0.04) 0%, rgba(255, 250, 245, 0.08) 22%, rgba(255, 250, 245, 0.16) 58%, rgba(255, 250, 245, 0.24) 100%)`,
                     }}
                 />
             </div>
@@ -833,6 +823,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 <div className="mt-8 space-y-8">
                     <Reveal delay={170}>
                         <div
+                            ref={timelineSectionRef}
                             className="rounded-[32px] border bg-white p-5 shadow-[0_22px_48px_rgba(15,23,42,0.08)] md:p-6"
                             style={{borderColor: alphaColor(colorPrimary, 0.12)}}
                         >
@@ -845,7 +836,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                             <Title level={2} className="!mb-0 !text-3xl !font-black" style={{color: colorPrimary}}>
                                 Cơ cấu giải thưởng
                             </Title>
-                            <GiaiThuongCuocThi />
+                            <GiaiThuongCuocThi giaiTapTheRef={giaiTapTheSectionRef} />
                         </section>
                     </Reveal>
 
@@ -881,15 +872,22 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             ) : null}
 
             <style>{`
-                .demo4-parallax-layer {
+                .demo4-background-layer {
                     position: absolute;
-                    border-radius: 44px;
+                    inset: -8vh -4vw;
                     background-position: center;
                     background-repeat: no-repeat;
                     background-size: cover;
-                    filter: saturate(1) contrast(1.02);
-                    will-change: transform;
-                    box-shadow: 0 30px 80px rgba(148, 163, 184, 0.14);
+                    contain: paint;
+                    backface-visibility: hidden;
+                    opacity: 0;
+                    transition: opacity 0.55s ease, transform 0.25s linear;
+                    will-change: opacity, transform;
+                    image-rendering: auto;
+                }
+
+                .demo4-background-layer.is-active {
+                    opacity: 1;
                 }
 
                 .join-exam-pulse {
@@ -937,14 +935,6 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 .demo4-scroll::-webkit-scrollbar-track {
                     background: rgba(248, 250, 252, 0.92);
                     border-radius: 999px;
-                }
-
-                @media (max-width: 767px) {
-                    .demo4-parallax-layer {
-                        width: 84vw !important;
-                        height: 24vh !important;
-                        border-radius: 28px;
-                    }
                 }
 
                 @keyframes join-exam-heartbeat {

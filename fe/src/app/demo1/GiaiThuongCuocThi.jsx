@@ -218,7 +218,7 @@ function PrizeGroup({
     );
 }
 
-export default function GiaiThuongCuocThi({demoData = null}) {
+export default function GiaiThuongCuocThi({demoData = null, giaiTapTheRef = null}) {
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState(null);
     const {token} = theme.useToken();
@@ -297,11 +297,12 @@ export default function GiaiThuongCuocThi({demoData = null}) {
                     />
             
         </Card>
-        <Card
-            className="overflow-hidden rounded-3xl! border border-slate-200 shadow-sm"
-            styles={{body: {padding: 24, background: `repeating-linear-gradient(-32deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 20px), ${token.colorPrimary}`}}}
-            loading={loading}
-        >
+        <div ref={giaiTapTheRef}>
+            <Card
+                className="overflow-hidden rounded-3xl! border border-slate-200 shadow-sm"
+                styles={{body: {padding: 24, background: `repeating-linear-gradient(-32deg, rgba(255,255,255,0.05) 0, rgba(255,255,255,0.05) 1px, transparent 1px, transparent 20px), ${token.colorPrimary}`}}}
+                loading={loading}
+            >
                 {/* Nhom giai tap the */}
                 <PrizeGroup
                     title="Giải tập thể"
@@ -315,7 +316,8 @@ export default function GiaiThuongCuocThi({demoData = null}) {
                         color: "#d97706",
                     }}
                 />
-        </Card>
+            </Card>
+        </div>
         {!hasPrize ? (
                     <div className="flex min-h-[10rem] items-center justify-center rounded-[24px] bg-slate-50">
                         <Empty description="Chưa có cơ cấu giải thưởng được cập nhật"/>

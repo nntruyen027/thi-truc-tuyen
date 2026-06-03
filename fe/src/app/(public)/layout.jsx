@@ -9,11 +9,12 @@ export default function PublicLayout({children}) {
         <Layout
             className="public-font bg-slate-50 text-slate-900"
             style={{
-                minHeight: "100vh"
+                minHeight: "100vh",
+                overflow: "visible",
             }}
         >
             <UserInteractionGuard disableCopy />
-            <Layout.Content className="flex-1">
+            <Layout.Content className="flex-1" style={{overflow: "visible"}}>
                 {children}
             </Layout.Content>
 

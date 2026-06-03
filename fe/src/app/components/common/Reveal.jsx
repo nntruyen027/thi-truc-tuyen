@@ -53,6 +53,7 @@ export default function Reveal({
             className={`${animationClass} ${visible ? "is-visible" : ""} ${className}`.trim()}
             style={{
                 transitionDelay: `${delay}ms`,
+                overflow: visible ? "visible" : "clip",
             }}
         >
             {children}
