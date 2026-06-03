@@ -23,6 +23,7 @@ import dayjs from "dayjs";
 import Demo1Page from "~/app/demo1/page";
 import Demo2Page from "~/app/demo2/page";
 import Demo3Page from "~/app/demo3/page";
+import Demo4Page from "~/app/demo4/page";
 import {layCauHinhTrangChu} from "~/services/trang-chu";
 
 const {Text} = Typography;
@@ -634,6 +635,10 @@ export default function Page() {
 
     if (selectedDemo === "demo3") {
         return <Demo3Page skipDemoAccessCheck />;
+    }
+
+    if (selectedDemo === "demo4") {
+        return <Demo4Page skipDemoAccessCheck />;
     }
 
     return <DefaultPublicHomePage />;

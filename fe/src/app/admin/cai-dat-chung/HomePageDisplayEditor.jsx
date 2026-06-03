@@ -81,7 +81,7 @@ export default function HomePageDisplayEditor() {
 
                 <div className="mb-4 rounded-[24px] border border-slate-200 bg-slate-50 p-4">
                     <Text className="!block !text-sm !leading-6 !text-slate-600">
-                        Khi tắt tùy chọn này, các đường dẫn `/demo1`, `/demo2`, `/demo3` sẽ tự chuyển về trang chủ đang được chọn.
+                        Khi tắt tùy chọn này, các đường dẫn `/demo1`, `/demo2`, `/demo3`, `/demo4` sẽ tự chuyển về trang chủ đang được chọn.
                     </Text>
                 </div>
 

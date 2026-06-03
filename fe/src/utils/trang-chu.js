@@ -21,6 +21,11 @@ export const TUY_CHON_TRANG_CHU = [
         label: "Demo 3",
         path: "/demo3",
     },
+    {
+        key: "demo4",
+        label: "Demo 4",
+        path: "/demo4",
+    },
 ];
 
 export function taoCauHinhTrangChuMacDinh() {

@@ -21,7 +21,7 @@ function parseJsonValue(value, fallback) {
     }
 }
 
-export default function Footer() {
+export default function Footer({backgroundColor, bottomBackgroundColor}) {
     const [leftFooter, setLeftFooter] = useState({
         tieuDe: "",
         noiDung: ""
@@ -105,18 +105,27 @@ export default function Footer() {
         }
     ]).filter((item) => item.value), [footerMeta]);
 
-    const footerBottomColor = footerMeta?.primaryColor
-        ? darkenColor(footerMeta.primaryColor, 0.42)
-        : "rgba(7, 12, 24, 0.38)";
+    const footerBackground = backgroundColor || "var(--workspace-primary-color)";
+    const footerBottomColor = bottomBackgroundColor || (
+        footerMeta?.primaryColor
+            ? darkenColor(footerMeta.primaryColor, 0.42)
+            : "rgba(7, 12, 24, 0.38)"
+    );
 
     return (
         <Layout.Footer
-            className="text-white! py-0! overflow-hidden mx-auto w-full px-4 sm:px-10 md:px-10 lg:px-30 xl:px-50 2xl:px-70"
+            className="relative text-white! py-0! overflow-hidden mx-auto w-full px-4 sm:px-10 md:px-10 lg:px-30 xl:px-50 2xl:px-70"
             style={{
-                background: "var(--workspace-primary-color)",
+                backgroundColor: footerBackground,
+                backgroundImage: "none",
             }}
         >
-            <div className="mx-auto w-full max-w-7xl">
+            <div
+                className="pointer-events-none absolute inset-0 z-0"
+                style={{background: footerBackground}}
+            />
+
+            <div className="relative z-10 mx-auto w-full max-w-7xl">
                 <div className="py-8 lg:py-10">
                     <div className="grid gap-8 lg:grid-cols-3 lg:gap-10">
                         <div className="space-y-4">
