@@ -25,7 +25,7 @@ export default function PublicPageBanner({
                             style={{
                                 width: "100%",
                                 height: "100%",
-                                objectFit: "contain",
+                                objectFit: "cover",
                                 objectPosition: `${positionX}% ${positionY}%`,
                                 position: "absolute",
                                 inset: 0,
