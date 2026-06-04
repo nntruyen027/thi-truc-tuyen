@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useRef, useState} from "react";
 import dayjs from "dayjs";
-import {ArrowRightOutlined, TrophyFilled, UserOutlined} from "@ant-design/icons";
+import {ArrowRightOutlined, ClockCircleFilled, TrophyFilled, UserOutlined} from "@ant-design/icons";
 import {Button, Card, Col, Empty, QRCode, Row, Spin, Statistic, Typography, theme} from "antd";
 import {useRouter} from "next/navigation";
 
@@ -60,15 +60,6 @@ function chonDotThiDaiDien(dsDotThi = []) {
         return null;
     }
 
-    const dsSapDienRa =
-        dsDotThi.filter((item) => dayjs(item.thoi_gian_bat_dau).isAfter(now));
-
-    if (dsSapDienRa.length) {
-        return [...dsSapDienRa].sort(
-            (a, b) => dayjs(a.thoi_gian_bat_dau).valueOf() - dayjs(b.thoi_gian_bat_dau).valueOf()
-        )[0];
-    }
-
     const dangDienRa = dsDotThi.find((item) => {
         const batDau = dayjs(item.thoi_gian_bat_dau);
         const ketThuc = dayjs(item.thoi_gian_ket_thuc);
@@ -77,6 +68,15 @@ function chonDotThiDaiDien(dsDotThi = []) {
 
     if (dangDienRa) {
         return dangDienRa;
+    }
+
+    const dsSapDienRa =
+        dsDotThi.filter((item) => dayjs(item.thoi_gian_bat_dau).isAfter(now));
+
+    if (dsSapDienRa.length) {
+        return [...dsSapDienRa].sort(
+            (a, b) => dayjs(a.thoi_gian_bat_dau).valueOf() - dayjs(b.thoi_gian_bat_dau).valueOf()
+        )[0];
     }
 
     return [...dsDotThi].sort(
@@ -291,7 +291,7 @@ function RankingColumn({
                             className="rounded-[24px] border bg-[linear-gradient(180deg,#ffffff_0%,#fff7f2_100%)] px-4 py-4"
                             style={{borderColor: alphaColor(colorPrimary, 0.1)}}
                         >
-                            <div className="flex items-start gap-3">
+                            <div className="flex items-center gap-3">
                                 <div
                                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-black"
                                     style={{
@@ -730,21 +730,26 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                                 style={{borderColor: alphaColor(colorPrimary, 0.16)}}
                                 styles={{body: {padding: 0, height: "100%"}}}
                             >
-                                <div
-                                    className="flex h-full flex-col px-5 py-6 text-center md:px-2! md:py-8"
-                                    style={{
-                                        background: rankingHeaderBackground,
-                                    }}
-                                >
-                                    <div className="flex h-full flex-col justify-around gap-6">
-                                        <div className="px-2 text-center">
-                                            <Title level={3} className="!mb-0 !text-2xl !font-black !text-slate-900 md:!text-3xl">
-                                                {dotThi?.la_sap_dien_ra
-                                                    ? "Cuộc thi sắp diễn ra"
-                                                    : (dotThi?.ten || "")}
-                                            </Title>
-                                        </div>
+                                <div className="flex h-full flex-col">
+                                    <div
+                                        className="flex items-center justify-center gap-3 px-5 py-4 text-center text-sm font-black uppercase tracking-[0.18em]"
+                                        style={{
+                                            background: alphaColor(colorPrimary, 0.32),
+                                            color: deepPrimary,
+                                        }}
+                                    >
+                                        <ClockCircleFilled />
+                                        {dotThi?.ten || "Cuộc thi sắp diễn ra"}
+                                    </div>
 
+                                    <div
+                                        className="flex h-full flex-col px-5 py-6 text-center md:px-2! md:py-8"
+                                        style={{
+                                            background: alphaColor(colorPrimary, 0.12),
+                                        }}
+                                    >
+                                    <div className="flex h-full flex-col justify-around gap-6">
+                                        
                                         <div className="mx-auto grid max-w-[540px] grid-cols-4 gap-3 md:grid-cols-4">
                                         {countdownCards.map((item, index) => (
                                             <Reveal key={item.label} delay={140 + (index * 40)}>
@@ -817,6 +822,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                                             </div>
                                         </div>
                                     </div>
+                                </div>
                                 </div>
                             </Card>
                         </Reveal>
