@@ -722,13 +722,13 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                                 styles={{body: {padding: 0, height: "100%"}}}
                             >
                                 <div
-                                    className="flex h-full flex-col px-5 py-6 text-center md:px-7 md:py-8"
+                                    className="flex h-full flex-col px-5 py-6 text-center md:px-2! md:py-8"
                                     style={{
                                         background: rankingHeaderBackground,
                                     }}
                                 >
                                     <div className="flex h-full flex-col justify-around gap-6">
-                                        <div className="mx-auto grid max-w-[540px] grid-cols-2 gap-3 md:grid-cols-4">
+                                        <div className="mx-auto grid max-w-[540px] grid-cols-4 gap-3 md:grid-cols-4">
                                         {countdownCards.map((item, index) => (
                                             <Reveal key={item.label} delay={140 + (index * 40)}>
                                                 <div
