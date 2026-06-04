@@ -651,7 +651,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             return;
         }
 
-        router.push("/user/thi");
+        router.push("/user");
     };
 
     if (!canRender) {
