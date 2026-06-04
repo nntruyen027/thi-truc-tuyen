@@ -728,6 +728,14 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                                     }}
                                 >
                                     <div className="flex h-full flex-col justify-around gap-6">
+                                        <div className="px-2 text-center">
+                                            <Title level={3} className="!mb-0 !text-2xl !font-black !text-slate-900 md:!text-3xl">
+                                                {dotThi?.la_sap_dien_ra
+                                                    ? "Cuộc thi sắp diễn ra"
+                                                    : (dotThi?.ten || "")}
+                                            </Title>
+                                        </div>
+
                                         <div className="mx-auto grid max-w-[540px] grid-cols-4 gap-3 md:grid-cols-4">
                                         {countdownCards.map((item, index) => (
                                             <Reveal key={item.label} delay={140 + (index * 40)}>
