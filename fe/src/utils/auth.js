@@ -17,10 +17,36 @@ export function isPublicPath(pathname) {
     return PUBLIC_ROUTES.includes(pathname);
 }
 
+function decodeJwtPayload(token) {
+    const payload = token?.split(".")?.[1];
+
+    if (!payload) {
+        return null;
+    }
+
+    const normalizedPayload =
+        payload
+            .replace(/-/g, "+")
+            .replace(/_/g, "/");
+
+    const paddedPayload =
+        normalizedPayload.padEnd(
+            normalizedPayload.length + ((4 - (normalizedPayload.length % 4)) % 4),
+            "="
+        );
+
+    return JSON.parse(atob(paddedPayload));
+}
+
 export function isTokenExpired(token) {
     if (!token) return true;
     try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const payload = decodeJwtPayload(token);
+
+        if (!payload?.exp) {
+            return true;
+        }
+
         return Date.now() >= payload.exp * 1000;
     } catch {
         return true;

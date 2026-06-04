@@ -69,7 +69,9 @@ export default function Page() {
                 }
             } catch (error) {
                 setData([]);
-                message.error(error?.message || "Không thể tải lịch sử thi");
+                if (error?.status !== 401) {
+                    message.error(error?.message || "Không thể tải lịch sử thi");
+                }
             }
             finally {
 

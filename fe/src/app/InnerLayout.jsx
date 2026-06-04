@@ -12,6 +12,7 @@ export default function InnerLayout({ children }) {
 
     const { setAuth, clearAuth } = useAuthStore();
     const [loading, setLoading] = useState(true);
+    const [isAuthorized, setIsAuthorized] = useState(false);
 
     useEffect(() => {
         const initAuth = async () => {
@@ -32,6 +33,7 @@ export default function InnerLayout({ children }) {
 
             if (!access || !userLocal || isTokenExpired(access)) {
                 clearAuth();
+                setIsAuthorized(isPublic);
 
                 if (!isPublic) {
                     router.replace("/");
@@ -49,18 +51,25 @@ export default function InnerLayout({ children }) {
                     user: me,
                     refresh
                 });
+                setIsAuthorized(true);
 
             } catch (error) {
                 const status = error?.response?.status;
 
                 if (status === 401 || !parsedUser) {
                     clearAuth();
+                    setIsAuthorized(isPublic);
+
+                    if (!isPublic) {
+                        router.replace("/");
+                    }
                 } else {
                     setAuth({
                         access,
                         user: parsedUser,
                         refresh,
                     });
+                    setIsAuthorized(true);
                 }
             }
 
@@ -70,7 +79,7 @@ export default function InnerLayout({ children }) {
         void initAuth();
     }, [clearAuth, pathname, router, setAuth]);
 
-    if (loading) return null;
+    if (loading || !isAuthorized) return null;
 
     return <>{children}</>;
 }

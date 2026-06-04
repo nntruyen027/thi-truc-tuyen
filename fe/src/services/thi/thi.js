@@ -291,10 +291,11 @@ export async function lichSuThi(
 
     }
     catch (e) {
-
-        throw new Error(
-            e?.response?.data?.message
-        )
+        const error = new Error(
+            e?.response?.data?.message || "Không thể tải lịch sử thi"
+        );
+        error.status = e?.response?.status;
+        throw error;
 
     }
 
@@ -520,10 +521,11 @@ export async function xepHangDonViTheoDotThi(
 
     }
     catch (e) {
-
-        throw new Error(
-            e?.response?.data?.message
-        )
+        const error = new Error(
+            e?.response?.data?.message || "Không thể tải lịch sử thi"
+        );
+        error.status = e?.response?.status;
+        throw error;
 
     }
 }
