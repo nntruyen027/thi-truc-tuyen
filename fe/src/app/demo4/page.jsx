@@ -881,20 +881,30 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
 
             {showFloatingCta ? (
                 <div className="fixed bottom-5 right-5 z-40 md:bottom-7 md:right-7">
-                    <Button
-                        type="primary"
-                        size="large"
-                        onClick={handleJoinExam}
-                        icon={<ArrowRightOutlined />}
-                        className="!h-13 !rounded-full !border-0 !px-6 !text-sm !font-black md:!text-base"
-                        style={{
-                            background: colorPrimary,
-                            color: "#ffffff",
-                            boxShadow: `0 18px 36px ${alphaColor(colorPrimary, 0.28)}`,
-                        }}
-                    >
-                        Tham gia thi
-                    </Button>
+                    <div className="floating-join-pulse relative inline-flex items-center justify-center">
+                        <span
+                            className="floating-join-pulse__ring floating-join-pulse__ring--outer"
+                            style={{"--floating-pulse-color": alphaColor("#ef4444", 0.26)}}
+                        />
+                        <span
+                            className="floating-join-pulse__ring floating-join-pulse__ring--inner"
+                            style={{"--floating-pulse-color": alphaColor("#ef4444", 0.38)}}
+                        />
+                        <Button
+                            type="primary"
+                            size="large"
+                            onClick={handleJoinExam}
+                            icon={<ArrowRightOutlined />}
+                            className="floating-join-pulse__button !h-13 !rounded-full !border-0 !px-6 !text-sm !font-black md:!text-base"
+                            style={{
+                                background: "#ffffff",
+                                borderColor: "#ffffff",
+                                color: "#ef4444",
+                            }}
+                        >
+                            Tham gia thi
+                        </Button>
+                    </div>
                 </div>
             ) : null}
 
@@ -948,6 +958,41 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
 
                 .join-exam-pulse__ring--outer {
                     animation: join-exam-wave-outer 2.8s ease-out infinite 0.42s;
+                }
+
+                .floating-join-pulse {
+                    isolation: isolate;
+                }
+
+                .floating-join-pulse__button {
+                    position: relative;
+                    z-index: 2;
+                    animation: floating-join-heartbeat 1.55s ease-in-out infinite;
+                    box-shadow:
+                        0 0 0 1px ${alphaColor("#ef4444", 0.18)},
+                        0 0 0 4px ${alphaColor("#ffffff", 0.4)},
+                        0 0 24px ${alphaColor("#ef4444", 0.34)},
+                        0 0 54px ${alphaColor("#ef4444", 0.3)},
+                        0 16px 30px ${alphaColor("#991b1b", 0.24)};
+                }
+
+                .floating-join-pulse__ring {
+                    position: absolute;
+                    inset: -3px;
+                    border-radius: 999px;
+                    background: var(--floating-pulse-color);
+                    z-index: 1;
+                    pointer-events: none;
+                    transform-origin: center;
+                    filter: blur(3px);
+                }
+
+                .floating-join-pulse__ring--inner {
+                    animation: floating-join-wave-inner 1.55s ease-out infinite;
+                }
+
+                .floating-join-pulse__ring--outer {
+                    animation: floating-join-wave-outer 1.55s ease-out infinite 0.24s;
                 }
 
                 .demo4-scroll::-webkit-scrollbar {
@@ -1007,6 +1052,52 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     100% {
                         opacity: 0;
                         transform: scale(1.5);
+                    }
+                }
+
+                @keyframes floating-join-heartbeat {
+                    0%, 100% {
+                        transform: scale(1);
+                    }
+                    16% {
+                        transform: scale(1.06);
+                    }
+                    30% {
+                        transform: scale(0.985);
+                    }
+                    46% {
+                        transform: scale(1.08);
+                    }
+                    62% {
+                        transform: scale(0.992);
+                    }
+                }
+
+                @keyframes floating-join-wave-inner {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.95);
+                    }
+                    18% {
+                        opacity: 0.62;
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: scale(1.38);
+                    }
+                }
+
+                @keyframes floating-join-wave-outer {
+                    0% {
+                        opacity: 0;
+                        transform: scale(0.98);
+                    }
+                    22% {
+                        opacity: 0.42;
+                    }
+                    100% {
+                        opacity: 0;
+                        transform: scale(1.62);
                     }
                 }
             `}</style>
