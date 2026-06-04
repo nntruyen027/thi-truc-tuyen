@@ -160,7 +160,7 @@ export default function PublicHonorBoard({dotThi, colorPrimary, deepPrimary}) {
 
                                             <div className="shrink-0 text-right leading-none">
                                                 <Text className="!block !text-[11px] !font-semibold !uppercase !tracking-[0.14em] !text-slate-400">
-                                                    Thí sinh
+                                                    Lượt thi
                                                 </Text>
                                                 <div className="mt-1 text-[1.75rem] font-bold leading-none" style={{color: colorPrimary}}>
                                                     {Intl.NumberFormat("vi-VN").format(soLuongThiSinh)}

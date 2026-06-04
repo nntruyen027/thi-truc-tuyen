@@ -1117,7 +1117,7 @@ async function layXepHangDonViTheoDieuKien(whereClause) {
         .select({
             donViId: donVi.id,
             tenDonVi: donVi.ten,
-            soLuongThiSinh: sql`count(distinct ${baiThi.thiSinhId})::int`,
+            soLuongThiSinh: sql`count(${baiThi.id})::int`,
         })
         .from(baiThi)
         .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))

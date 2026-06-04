@@ -189,21 +189,35 @@ function normalizeRankingParticipants(rows = []) {
 }
 
 function normalizeUnitRankings(rows = []) {
-    return rows.map((item, index) => ({
-        id: item?.donViId || item?.don_vi_id || item?.id || index,
-        tenDonVi: getTenDonVi(item),
-        diem: Number(item?.soLuongThiSinh ?? item?.so_luong_thi_sinh ?? 0),
-    }));
+    return rows
+        .map((item, index) => ({
+            id: item?.donViId || item?.don_vi_id || item?.id || index,
+            tenDonVi: getTenDonVi(item),
+            diem: Number(item?.soLuongThiSinh ?? item?.so_luong_thi_sinh ?? 0),
+        }))
+        .sort(compareUnitRankingItem);
 }
 
 function normalizeAlphabetUnits(rows = []) {
     return [...rows]
-        .sort((a, b) => String(a?.ten || "").localeCompare(String(b?.ten || ""), "vi"))
+        .sort((a, b) => String(a?.ten || "").localeCompare(String(b?.ten || ""), "vi", {sensitivity: "base"}))
         .map((item, index) => ({
             id: item?.id || index,
             tenDonVi: item?.ten || "-",
             diem: null,
         }));
+}
+
+function compareUnitRankingItem(a, b) {
+    const byDiem = Number(b?.diem || 0) - Number(a?.diem || 0);
+
+    if (byDiem !== 0) {
+        return byDiem;
+    }
+
+    return String(a?.tenDonVi || "").localeCompare(String(b?.tenDonVi || ""), "vi", {
+        sensitivity: "base",
+    });
 }
 
 function resolveLuotThiValue(payload) {
@@ -816,7 +830,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     <Col xs={24} xl={8} className="order-2 xl:order-3">
                         <Reveal delay={140} className="h-full">
                             <RankingColumn
-                                title="Đơn vị có nhiều thí sinh tham gia"
+                                title="Đơn vị có nhiều lượt tham gia"
                                 icon={<TrophyFilled />}
                                 items={topUnits}
                                 colorPrimary={colorPrimary}
