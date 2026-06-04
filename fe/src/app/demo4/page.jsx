@@ -808,7 +808,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     <Col xs={24} xl={8} className="order-2 xl:order-3">
                         <Reveal delay={140} className="h-full">
                             <RankingColumn
-                                title="Top đơn vị điểm cao"
+                                title="Đơn vị có nhiều thí sinh tham gia"
                                 icon={<TrophyFilled />}
                                 items={topUnits}
                                 colorPrimary={colorPrimary}
