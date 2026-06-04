@@ -20,6 +20,15 @@ export default function InnerLayout({ children }) {
             const access = localStorage.getItem("access");
             const refresh = localStorage.getItem("refresh");
             const userLocal = localStorage.getItem("user");
+            let parsedUser = null;
+
+            if (userLocal) {
+                try {
+                    parsedUser = JSON.parse(userLocal);
+                } catch {
+                    parsedUser = null;
+                }
+            }
 
             if (!access || !userLocal || isTokenExpired(access)) {
                 clearAuth();
@@ -41,12 +50,21 @@ export default function InnerLayout({ children }) {
                     refresh
                 });
 
-            } catch {
+            } catch (error) {
+                const status = error?.response?.status;
 
-                clearAuth();
+                if (status === 401 || !parsedUser) {
+                    clearAuth();
 
-                if (!isPublic) {
-                    router.replace("/");
+                    if (!isPublic) {
+                        router.replace("/");
+                    }
+                } else {
+                    setAuth({
+                        access,
+                        user: parsedUser,
+                        refresh,
+                    });
                 }
             }
 
