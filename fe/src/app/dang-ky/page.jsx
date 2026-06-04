@@ -265,10 +265,10 @@ export default function DangKy() {
                                     <Form.Item
                                         label="Địa chỉ thường trú"
                                         name="diaChiDong1"
-                                        rules={[{ required: true, message: "Vui lòng nhập số nhà, đường, ấp/khu vực" }]}
+                                                                                rules={[{ required: true, message: "Vui lòng nhập số nhà, đường, ấp/khu vực" }]}
                                         className="!mb-4"
                                     >
-                                        <Input maxLength={500} />
+                                        <Input maxLength={500} placeholder="Số nhà, đường, ấp/khu vực, xã/phường, tỉnh/thành phố thường trú" />
                                     </Form.Item>
                                 </Col>
                             ) : null}

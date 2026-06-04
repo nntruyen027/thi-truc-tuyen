@@ -48,6 +48,30 @@ export default function Demo4Layout({children}) {
                         />
                     </div>
                 </Layout>
+                <style>{`
+                    html {
+                        scrollbar-width: thin;
+                        scrollbar-color: rgba(185, 28, 28, 0.92) rgba(255, 250, 245, 0.38);
+                    }
+
+                    html::-webkit-scrollbar,
+                    body::-webkit-scrollbar {
+                        width: 6px;
+                        height: 6px;
+                    }
+
+                    html::-webkit-scrollbar-thumb,
+                    body::-webkit-scrollbar-thumb {
+                        background: linear-gradient(180deg, rgba(239, 68, 68, 0.96) 0%, rgba(185, 28, 28, 0.96) 100%);
+                        border-radius: 999px;
+                        border: 1px solid rgba(255, 250, 245, 0.75);
+                    }
+
+                    html::-webkit-scrollbar-track,
+                    body::-webkit-scrollbar-track {
+                        background: rgba(255, 250, 245, 0.28);
+                    }
+                `}</style>
             </div>
         </ConfigProvider>
     );

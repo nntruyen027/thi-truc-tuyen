@@ -11,7 +11,9 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-    const access = useAuthStore.getState().access; // ✅ ĐÚNG
+    const access =
+        useAuthStore.getState().access
+        || (typeof window !== "undefined" ? localStorage.getItem("access") : null);
 
     if (typeof FormData !== "undefined" && config.data instanceof FormData) {
         config.headers = config.headers || {};
