@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import {CheckCircleFilled, ClockCircleFilled} from "@ant-design/icons";
 import {alphaColor} from "~/utils/workspaceTheme";
 
-export default function PublicContestTimeline({items, colorPrimary}) {
+export default function PublicContestTimeline({items, colorPrimary, onItemClick}) {
     if (!items.length) {
         return null;
     }
@@ -20,6 +20,7 @@ export default function PublicContestTimeline({items, colorPrimary}) {
                 const isDone = item.tone === "done";
                 const isCurrent = item.tone === "current";
                 const accentColor = isDone ? "#94a3b8" : colorPrimary;
+                const clickable = typeof onItemClick === "function";
 
                 return (
                     <div key={item.id} className="relative min-w-0">
@@ -56,10 +57,24 @@ export default function PublicContestTimeline({items, colorPrimary}) {
                             </div>
 
                             <div
-                                className="relative min-w-0 flex-1 rounded-[24px] border bg-white px-4 py-4 transition-all duration-300 sm:px-5 xl:min-h-[170px]"
+                                className={`relative min-w-0 flex-1 rounded-[24px] border px-4 py-4 transition-all duration-300 sm:px-5 xl:min-h-[170px] ${clickable ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2" : ""}`}
+                                role={clickable ? "button" : undefined}
+                                tabIndex={clickable ? 0 : undefined}
+                                onClick={clickable ? () => onItemClick(item) : undefined}
+                                onKeyDown={clickable ? (event) => {
+                                    if (event.key === "Enter" || event.key === " ") {
+                                        event.preventDefault();
+                                        onItemClick(item);
+                                    }
+                                } : undefined}
                                 style={{
+                                    background: isCurrent
+                                        ? `linear-gradient(180deg, ${alphaColor(colorPrimary, 0.1)} 0%, #ffffff 100%)`
+                                        : "#ffffff",
                                     borderColor: isCurrent ? alphaColor(colorPrimary, 0.34) : alphaColor(accentColor, 0.14),
-                                    boxShadow: isCurrent ? `0 16px 32px ${alphaColor(colorPrimary, 0.12)}` : undefined,
+                                    boxShadow: isCurrent
+                                        ? `0 18px 36px ${alphaColor(colorPrimary, 0.18)}`
+                                        : undefined,
                                 }}
                             >
                                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -72,9 +87,13 @@ export default function PublicContestTimeline({items, colorPrimary}) {
                                     <div
                                         className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]"
                                         style={{
-                                            background: isDone ? "rgba(148,163,184,0.12)" : alphaColor(colorPrimary, isCurrent ? 0.14 : 0.08),
-                                            color: isDone ? "#64748b" : colorPrimary,
-                                            border: `1px solid ${isDone ? "rgba(148,163,184,0.18)" : alphaColor(colorPrimary, isCurrent ? 0.2 : 0.12)}`,
+                                            background: isDone
+                                                ? "rgba(148,163,184,0.12)"
+                                                : isCurrent
+                                                    ? colorPrimary
+                                                    : alphaColor(colorPrimary, 0.08),
+                                            color: isDone ? "#64748b" : isCurrent ? "#ffffff" : colorPrimary,
+                                            border: `1px solid ${isDone ? "rgba(148,163,184,0.18)" : isCurrent ? colorPrimary : alphaColor(colorPrimary, 0.12)}`,
                                         }}
                                     >
                                         {item.status}
@@ -82,7 +101,13 @@ export default function PublicContestTimeline({items, colorPrimary}) {
                                 </div>
 
                                 <div className="mt-4 space-y-3">
-                                    <div className="space-y-2 rounded-2xl border px-4 py-3 text-sm text-slate-600" style={{borderColor: alphaColor(accentColor, 0.12)}}>
+                                    <div
+                                        className="space-y-2 rounded-2xl border px-4 py-3 text-sm text-slate-600"
+                                        style={{
+                                            borderColor: isCurrent ? alphaColor(colorPrimary, 0.24) : alphaColor(accentColor, 0.12),
+                                            background: isCurrent ? alphaColor(colorPrimary, 0.05) : "#ffffff",
+                                        }}
+                                    >
                                         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
                                             <span className="font-medium text-slate-500">Bắt đầu</span>
                                             <span className="font-semibold text-slate-900">

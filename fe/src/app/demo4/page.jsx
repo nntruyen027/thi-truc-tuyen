@@ -28,6 +28,7 @@ const DEMO4_BACKGROUND_IMAGES = {
     soctrang: "/bg_soctrang.jpg",
     haugiang: "/bg_haugiang.jpg",
 };
+const UNIT_RANKING_LIMIT = 100;
 
 function chonCuocThiGanNhat(dsCuocThi = []) {
     const now = dayjs();
@@ -198,14 +199,21 @@ function normalizeUnitRankings(rows = []) {
         .sort(compareUnitRankingItem);
 }
 
-function normalizeAlphabetUnits(rows = []) {
-    return [...rows]
-        .sort((a, b) => String(a?.ten || "").localeCompare(String(b?.ten || ""), "vi", {sensitivity: "base"}))
+function mergeUnitRankings(allUnits = [], rankingRows = []) {
+    const rankingMap = new Map(
+        rankingRows.map((item) => [
+            Number(item?.id),
+            Number(item?.diem ?? 0),
+        ])
+    );
+
+    return [...allUnits]
         .map((item, index) => ({
             id: item?.id || index,
             tenDonVi: item?.ten || "-",
-            diem: null,
-        }));
+            diem: rankingMap.get(Number(item?.id)) ?? 0,
+        }))
+        .sort(compareUnitRankingItem);
 }
 
 function compareUnitRankingItem(a, b) {
@@ -487,9 +495,15 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             setParticipantLoading(true);
             setUnitLoading(true);
 
-            const [participantsResult, unitsResult] = await Promise.allSettled([
+            const [participantsResult, unitsResult, allUnitsResult] = await Promise.allSettled([
                 xepHangTracNghiemTheoCuocThi(dotThi.cuoc_thi_id, 20),
-                xepHangDonViTheoCuocThi(dotThi.cuoc_thi_id, 1000),
+                xepHangDonViTheoCuocThi(dotThi.cuoc_thi_id, UNIT_RANKING_LIMIT),
+                getDonVi({
+                    page: 1,
+                    size: 1000,
+                    sortField: "id",
+                    sortType: "asc",
+                }),
             ]);
 
             if (!active) {
@@ -505,35 +519,16 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             const unitRows = unitsResult.status === "fulfilled"
                 ? normalizeUnitRankings(unitsResult.value || [])
                 : [];
+            const allUnits = allUnitsResult.status === "fulfilled"
+                ? allUnitsResult.value?.data || []
+                : [];
 
-            if (unitRows.length) {
-                setTopUnits(unitRows);
-                setUnitLoading(false);
-                return;
-            }
-
-            try {
-                const allUnits = await getDonVi({
-                    page: 1,
-                    size: 1000,
-                    sortField: "ten",
-                    sortType: "asc",
-                });
-
-                if (!active) {
-                    return;
-                }
-
-                setTopUnits(normalizeAlphabetUnits(allUnits?.data || []));
-            } catch {
-                if (active) {
-                    setTopUnits([]);
-                }
-            } finally {
-                if (active) {
-                    setUnitLoading(false);
-                }
-            }
+            setTopUnits(
+                allUnits.length
+                    ? mergeUnitRankings(allUnits, unitRows)
+                    : unitRows
+            );
+            setUnitLoading(false);
         };
 
         void loadRankings();
@@ -849,7 +844,11 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                             className="rounded-[32px] border bg-white p-5 shadow-[0_22px_48px_rgba(15,23,42,0.08)] md:p-6"
                             style={{borderColor: alphaColor(colorPrimary, 0.12)}}
                         >
-                            <PublicContestTimeline items={timelineItems} colorPrimary={colorPrimary} />
+                            <PublicContestTimeline
+                                items={timelineItems}
+                                colorPrimary={colorPrimary}
+                                onItemClick={handleJoinExam}
+                            />
                         </div>
                     </Reveal>
 
