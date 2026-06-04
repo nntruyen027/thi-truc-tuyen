@@ -4,6 +4,13 @@ import {useAuthStore} from "~/store/auth";
 
 const BASE_PATH = "/thi";
 
+function getAccessToken() {
+    return useAuthStore.getState().access
+        || (typeof window !== "undefined"
+            ? localStorage.getItem("access")
+            : null);
+}
+
 
 /**
  * còn được thi không
@@ -267,12 +274,16 @@ export async function lichSuThi(
 ) {
 
     try {
+        const access = getAccessToken();
 
         const res =
             await api.get(
                 BASE_PATH + "/lich-su",
                 {
-                    params: { dotThiId }
+                    params: { dotThiId },
+                    headers: access
+                        ? {Authorization: `Bearer ${access}`}
+                        : undefined,
                 }
             )
 

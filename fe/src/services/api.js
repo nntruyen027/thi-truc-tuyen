@@ -44,8 +44,9 @@ api.interceptors.response.use(
         const status = error?.response?.status;
         const hasAuthHeader =
             Boolean(error?.config?.headers?.Authorization);
+        const requestUrl = String(error?.config?.url || "");
 
-        if (status === 401 && hasAuthHeader) {
+        if (status === 401 && hasAuthHeader && requestUrl.includes("/auth/me")) {
             useAuthStore.getState().clearAuth();
 
             if (typeof window !== "undefined" && !isPublicPath(window.location.pathname)) {

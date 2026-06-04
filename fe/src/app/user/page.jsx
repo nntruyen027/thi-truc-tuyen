@@ -3,6 +3,7 @@
 import {useEffect, useState} from "react";
 
 import {
+    App,
     Button,
     Card,
     Empty,
@@ -31,6 +32,7 @@ export default function Page() {
 
     const router = useRouter();
     const {SetIsUpdatePassOpen} = useModal();
+    const {message} = App.useApp();
 
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -65,6 +67,9 @@ export default function Page() {
                         )
                     );
                 }
+            } catch (error) {
+                setData([]);
+                message.error(error?.message || "Không thể tải lịch sử thi");
             }
             finally {
 
@@ -76,7 +81,7 @@ export default function Page() {
 
         void load();
 
-    }, []);
+    }, [message]);
 
 
     function trangThaiTag(v) {

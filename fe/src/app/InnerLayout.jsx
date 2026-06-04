@@ -55,10 +55,6 @@ export default function InnerLayout({ children }) {
 
                 if (status === 401 || !parsedUser) {
                     clearAuth();
-
-                    if (!isPublic) {
-                        router.replace("/");
-                    }
                 } else {
                     setAuth({
                         access,
