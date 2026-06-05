@@ -65,6 +65,28 @@ body.copy-guard .ql-editor {
   margin-bottom: 0;
 }
 
+.footer-rich,
+.footer-rich * {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.footer-rich--light,
+.footer-rich--light p,
+.footer-rich--light span,
+.footer-rich--light div,
+.footer-rich--light li,
+.footer-rich--light strong,
+.footer-rich--light b,
+.footer-rich--light h1,
+.footer-rich--light h2,
+.footer-rich--light h3,
+.footer-rich--light h4,
+.footer-rich--light h5,
+.footer-rich--light h6 {
+  color: #ffffff !important;
+}
+
 .footer-rich a {
   color: var(--workspace-primary-color);
   font-weight: 600;
