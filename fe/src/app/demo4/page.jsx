@@ -295,7 +295,7 @@ function RankingColumn({
                                 <div
                                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-black"
                                     style={{
-                                        background: index < 3 ? alphaColor(colorPrimary, 0.16) : "#f8fafc",
+                                        background: "#f8fafc",
                                         color: colorPrimary,
                                     }}
                                 >
@@ -712,7 +712,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     <Col xs={24} xl={8} className="order-3 xl:order-1">
                         <Reveal delay={80} className="h-full">
                             <RankingColumn
-                                title="Top 20 người tham gia"
+                                title="Top thí sinh dẫn đầu"
                                 icon={<UserOutlined />}
                                 items={topParticipants}
                                 colorPrimary={colorPrimary}
@@ -831,7 +831,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     <Col xs={24} xl={8} className="order-2 xl:order-3">
                         <Reveal delay={140} className="h-full">
                             <RankingColumn
-                                title="Đơn vị có nhiều lượt tham gia"
+                                title="Top đơn vị có nhiều lượt thi"
                                 icon={<TrophyFilled />}
                                 items={topUnits}
                                 colorPrimary={colorPrimary}
