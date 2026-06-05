@@ -111,14 +111,10 @@ function taoDotThiTheoCuocThi(cuocThi, dsDotThi = []) {
     };
 }
 
-function taoThongTinDemNguoc(cuocThi) {
-    if (!cuocThi) {
-        return null;
-    }
-
+function taoThongTinDemNguoc(dotThi, cuocThi) {
     const now = dayjs();
-    const batDau = dayjs(cuocThi.thoi_gian_bat_dau);
-    const ketThuc = dayjs(cuocThi.thoi_gian_ket_thuc);
+    const batDau = dayjs(dotThi?.thoi_gian_bat_dau || cuocThi?.thoi_gian_bat_dau);
+    const ketThuc = dayjs(dotThi?.thoi_gian_ket_thuc || cuocThi?.thoi_gian_ket_thuc);
 
     if (!batDau.isValid() || !ketThuc.isValid() || ketThuc.isBefore(now)) {
         return null;
@@ -358,6 +354,9 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
         [dotThi?.id, dsDotThi]
     );
     const countdownCards = useMemo(() => buildCountdownCards(countdown), [countdown]);
+    const dotThiStatusText = dotThi?.ten
+        ? `${dotThi.ten}: ${dotThi.la_sap_dien_ra ? "Sắp diễn ra" : "Đang diễn ra"}`
+        : "Cuộc thi sắp diễn ra";
     const qrValue = typeof window !== "undefined"
         ? `${window.location.origin}/login`
         : "";
@@ -459,7 +458,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 if (active) {
                     setDotThi(selectedDotThi);
                     setDsDotThi(danhSachDotThi);
-                    setCountdown(taoThongTinDemNguoc(selectedCuocThi));
+                    setCountdown(taoThongTinDemNguoc(selectedDotThi, selectedCuocThi));
                 }
             } catch {
                 if (active) {
@@ -539,75 +538,36 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     }, [dotThi?.cuoc_thi_id]);
 
     useEffect(() => {
-        if (!countdown?.dem_nguoc) {
+        const cuocThi = dotThi?.cuoc_thi;
+
+        if (!cuocThi) {
             return undefined;
         }
 
-        const timer = setInterval(() => {
-            setCountdown((prev) => {
-                if (!prev) {
-                    return prev;
-                }
+        const capNhatDemNguoc = () => {
+            const dotThiMoi = taoDotThiTheoCuocThi(cuocThi, dsDotThi);
+            const countdownMoi = taoThongTinDemNguoc(dotThiMoi, cuocThi);
 
-                let nextThang = prev.thang ?? 0;
-                let nextTuan = prev.tuan ?? 0;
-                let nextNgay = prev.ngay ?? 0;
-                let nextGio = prev.gio ?? 0;
-                let nextPhut = prev.phut ?? 0;
-                let nextGiay = prev.giay ?? 0;
-
+            setDotThi((prev) => {
                 if (
-                    nextThang === 0 &&
-                    nextTuan === 0 &&
-                    nextNgay === 0 &&
-                    nextGio === 0 &&
-                    nextPhut === 0 &&
-                    nextGiay === 0
+                    prev?.id === dotThiMoi?.id &&
+                    prev?.la_sap_dien_ra === dotThiMoi?.la_sap_dien_ra &&
+                    prev?.thoi_gian_bat_dau === dotThiMoi?.thoi_gian_bat_dau &&
+                    prev?.thoi_gian_ket_thuc === dotThiMoi?.thoi_gian_ket_thuc
                 ) {
                     return prev;
                 }
 
-                nextGiay--;
-
-                if (nextGiay < 0) {
-                    nextGiay = 59;
-                    nextPhut--;
-                }
-
-                if (nextPhut < 0) {
-                    nextPhut = 59;
-                    nextGio--;
-                }
-
-                if (nextGio < 0) {
-                    nextGio = 23;
-                    nextNgay--;
-                }
-
-                if (nextNgay < 0) {
-                    nextNgay = 6;
-                    nextTuan--;
-                }
-
-                if (nextTuan < 0) {
-                    nextTuan = 3;
-                    nextThang--;
-                }
-
-                return {
-                    ...prev,
-                    thang: nextThang,
-                    tuan: nextTuan,
-                    ngay: nextNgay,
-                    gio: nextGio,
-                    phut: nextPhut,
-                    giay: nextGiay,
-                };
+                return dotThiMoi;
             });
-        }, 1000);
+            setCountdown(countdownMoi);
+        };
+
+        capNhatDemNguoc();
+        const timer = setInterval(capNhatDemNguoc, 1000);
 
         return () => clearInterval(timer);
-    }, [countdown?.dem_nguoc]);
+    }, [dotThi?.cuoc_thi, dsDotThi]);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -739,7 +699,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                                         }}
                                     >
                                         <ClockCircleFilled />
-                                        {dotThi?.ten || "Cuộc thi sắp diễn ra"}
+                                        {dotThiStatusText}
                                     </div>
 
                                     <div
@@ -831,7 +791,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     <Col xs={24} xl={8} className="order-2 xl:order-3">
                         <Reveal delay={140} className="h-full">
                             <RankingColumn
-                                title="Top đơn vị có nhiều lượt thi"
+                                title="Đơn vị có nhiều người tham gia"
                                 icon={<TrophyFilled />}
                                 items={topUnits}
                                 colorPrimary={colorPrimary}
