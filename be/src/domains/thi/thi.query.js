@@ -341,16 +341,16 @@ function compareRankingRow(left, right) {
         return byDiem;
     }
 
-    const byThoiGian = compareNullableAsc(left.thoiGian, right.thoiGian);
-
-    if (byThoiGian !== 0) {
-        return byThoiGian;
-    }
-
     const bySaiSo = compareNullableAsc(left.saiSo, right.saiSo);
 
     if (bySaiSo !== 0) {
         return bySaiSo;
+    }
+
+    const byThoiGian = compareNullableAsc(left.thoiGian, right.thoiGian);
+
+    if (byThoiGian !== 0) {
+        return byThoiGian;
     }
 
     return Number(left.baiThiId) - Number(right.baiThiId);
