@@ -4,11 +4,9 @@ const query = require("./trac_nghiem.query")
 const resUtil = require("../../core/utils/response");
 const auth = require("../../core/middlewares/auth");
 const role = require("../../core/middlewares/role");
-const path = require("path")
 const upload = require("../../core/utils/upload")
-
-const XLSX =
-    require("xlsx")
+const fs = require("fs/promises");
+const importService = require("./trac_nghiem_import.service");
 
 
 router.get(
@@ -145,61 +143,50 @@ router.delete(
 
 router.get(
     "/template",
+    auth,
+    role(["admin"]),
     async (req, res) => {
+        try {
+            const result = await importService.generateTemplate();
 
-        const file =
-            path.resolve(
-                process.cwd(),
-                "uploads/template/trac_nghiem.xlsx"
-            )
+            res.setHeader(
+                "Content-Type",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            );
+            res.setHeader(
+                "Content-Disposition",
+                `attachment; filename="${result.fileName}"`
+            );
 
-        res.download(file)
-
+            res.send(Buffer.from(result.buffer));
+        } catch (error) {
+            resUtil.error(res, error);
+        }
     }
 )
 
 router.post(
     "/import",
+    auth,
+    role(["admin"]),
     upload.single("file"),
     async (req, res) => {
+        const uploadedPath = req.file?.path;
 
         try {
-
-            const file =
-                req.file.path
-
-            const wb =
-                XLSX.readFile(file)
-
-            const sheet =
-                wb.Sheets[
-                    wb.SheetNames[0]
-                    ]
-
-            const rows =
-                XLSX.utils.sheet_to_json(
-                    sheet,
-                    {defval: ""}
-                )
-
-            for (const r of rows) {
-
-                await query.themTracNghiemImport(
-                    r
-                )
-
+            if (!uploadedPath) {
+                throw "Vui lòng chọn file Excel để import.";
             }
 
-            res.json({
-                ok: true
-            })
+            const data = await importService.importWorkbook(uploadedPath);
 
-        } catch (e) {
-
-            res.json({
-                error: e.message
-            })
-
+            resUtil.ok(res, data);
+        } catch (error) {
+            resUtil.error(res, error);
+        } finally {
+            if (uploadedPath) {
+                await fs.unlink(uploadedPath).catch(() => null);
+            }
         }
 
     }

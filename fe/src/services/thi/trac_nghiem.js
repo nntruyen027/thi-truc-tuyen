@@ -57,27 +57,30 @@ export async function xoaTracNghiem(id) {
 
 export async function taiTemplate() {
     try {
-        const res = await api.get(BASE_PATH + "/template");
+        const res = await api.get(BASE_PATH + "/template", {
+            responseType: "blob",
+        });
         return res.data;
     }
     catch (e) {
-        throw new Error(e?.response?.data?.message);
+        throw new Error(e?.response?.data?.message || "Không thể tải file mẫu");
     }
 }
 
 export async function importTracNghiem(file) {
-    ensureUploadableFile(file);
+    const normalizedFile = ensureUploadableFile(file);
 
     const form =
         new FormData()
 
     form.append(
         "file",
-        file
+        normalizedFile
     )
 
-    const res =
-        await api.post(
+    try {
+        const res =
+            await api.post(
             "/trac-nghiem/import",
             form,
             {
@@ -87,6 +90,10 @@ export async function importTracNghiem(file) {
             }
         )
 
-    return res.data
+        return res.data.data
+    }
+    catch (e) {
+        throw new Error(e?.response?.data?.message || e?.message);
+    }
 
 }
