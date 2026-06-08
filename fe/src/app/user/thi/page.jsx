@@ -7,6 +7,7 @@ import {useRouter} from "next/navigation"
 
 import CountDown from "../CountDown"
 import {
+    autoSubmitKeepAlive,
     nopBai,
     nopKetQuaDuDoan,
     pauseThi,
@@ -19,6 +20,7 @@ import {layDotThiHienTai} from "~/services/thi/dot-thi"
 
 const {Sider, Content} = Layout
 const {Title, Paragraph, Text} = Typography
+const RELOAD_EXIT_MARKER_KEY = "thi_reload_exit_marker"
 const LOAI_CAU_HOI = {
     CHON_MOT: "chon_mot",
     CHON_NHIEU: "chon_nhieu",
@@ -89,6 +91,42 @@ function isAnswered(question) {
     return Boolean((question.dap_an || "").trim())
 }
 
+function markReloadExit() {
+    if (typeof window === "undefined") {
+        return
+    }
+
+    try {
+        window.sessionStorage.setItem(
+            RELOAD_EXIT_MARKER_KEY,
+            JSON.stringify({
+                expiresAt: Date.now() + 15000
+            })
+        )
+    } catch {}
+}
+
+function consumeReloadExitMarker() {
+    if (typeof window === "undefined") {
+        return false
+    }
+
+    try {
+        const raw = window.sessionStorage.getItem(RELOAD_EXIT_MARKER_KEY)
+
+        if (!raw) {
+            return false
+        }
+
+        window.sessionStorage.removeItem(RELOAD_EXIT_MARKER_KEY)
+        const parsed = JSON.parse(raw)
+
+        return Number(parsed?.expiresAt || 0) > Date.now()
+    } catch {
+        return false
+    }
+}
+
 export default function Thi() {
     const router = useRouter()
     const {message} = App.useApp()
@@ -108,6 +146,8 @@ export default function Thi() {
     const savingRef = useRef(false)
     const pausedRef = useRef(false)
     const finishingRef = useRef(false)
+    const cauHoiRef = useRef([])
+    const ketQuaDuDoanRef = useRef("")
     const debounceRef = useRef(null)
     const pendingTuLuanRef = useRef(null)
     const pendingDienTuRef = useRef(null)
@@ -133,6 +173,11 @@ export default function Thi() {
 
         const init = async () => {
             try {
+                if (consumeReloadExitMarker()) {
+                    router.replace("/user")
+                    return
+                }
+
                 const dot =
                     await layDotThiHienTai()
 
@@ -163,6 +208,7 @@ export default function Thi() {
 
                 setBaiThiId(data.baiThiId)
                 setTimeLeft(data.timeLeft || 0)
+                cauHoiRef.current = normalizedQuestions
                 setCauHoi(normalizedQuestions)
             } catch (error) {
                 message.error(error.message || "Không thể bắt đầu bài thi.")
@@ -177,34 +223,68 @@ export default function Thi() {
     }, [message, router])
 
     useEffect(() => {
-        const pauseWhenLeave = () => {
+        const handleLeaveAttempt = (trigger) => {
+            const isReloadLikeTrigger =
+                trigger === "beforeunload" || trigger === "pagehide"
+
+            if (
+                typeof document !== "undefined" &&
+                trigger === "visibilitychange" &&
+                (
+                    !document.visibilityState ||
+                    document.visibilityState !== "hidden" ||
+                    document.hasFocus()
+                )
+            ) {
+                return
+            }
+
+            if (!baiThiId || pausedRef.current || finishingRef.current) {
+                return
+            }
+
+            if (isReloadLikeTrigger) {
+                markReloadExit()
+            }
+
             if (
                 dotThi?.cho_phep_luu_bai &&
-                baiThiId &&
-                !pausedRef.current &&
-                !finishingRef.current
+                pauseThiKeepAlive(
+                    baiThiId,
+                    {reason: "save"}
+                )
             ) {
-                pauseThiKeepAlive(baiThiId)
+                return
+            }
+
+            if (
+                !dotThi?.cho_phep_luu_bai &&
+                trigger !== "visibilitychange"
+            ) {
+                const payload = buildAutoSubmitPayload()
+
+                if (autoSubmitKeepAlive(baiThiId, payload)) {
+                    pausedRef.current = true
+                }
             }
         }
 
-        window.addEventListener("beforeunload", pauseWhenLeave)
-        window.addEventListener("pagehide", pauseWhenLeave)
+        const handleBeforeUnload = () => handleLeaveAttempt("beforeunload")
+        const handlePageHide = () => handleLeaveAttempt("pagehide")
+        const handleVisibilityChange = () => handleLeaveAttempt("visibilitychange")
+
+        window.addEventListener("beforeunload", handleBeforeUnload)
+        window.addEventListener("pagehide", handlePageHide)
+        document.addEventListener("visibilitychange", handleVisibilityChange)
 
         return () => {
-            window.removeEventListener("beforeunload", pauseWhenLeave)
-            window.removeEventListener("pagehide", pauseWhenLeave)
+            window.removeEventListener("beforeunload", handleBeforeUnload)
+            window.removeEventListener("pagehide", handlePageHide)
+            document.removeEventListener("visibilitychange", handleVisibilityChange)
 
-            if (
-                dotThi?.cho_phep_luu_bai &&
-                baiThiId &&
-                !pausedRef.current &&
-                !finishingRef.current
-            ) {
-                pauseThiKeepAlive(baiThiId)
-            }
+            handleLeaveAttempt("cleanup")
         }
-    }, [baiThiId, dotThi?.cho_phep_luu_bai])
+    }, [baiThiId, dotThi?.cho_phep_luu_bai, dotThi?.du_doan])
 
     useEffect(() => {
         if (!isMobile || loading) {
@@ -243,6 +323,18 @@ export default function Thi() {
     const progressPercent =
         totalSlots ? Math.round((Math.min(index + 1, totalSlots) / totalSlots) * 100) : 0
 
+    function updateQuestions(updater) {
+        setCauHoi((old) => {
+            const next =
+                typeof updater === "function"
+                    ? updater(old)
+                    : updater
+
+            cauHoiRef.current = next
+            return next
+        })
+    }
+
     async function chon(clientKey, questionId, dapAn) {
         if (savingRef.current) return
 
@@ -255,7 +347,7 @@ export default function Thi() {
                 dapAn
             )
 
-            setCauHoi((old) =>
+            updateQuestions((old) =>
                 old.map((item) =>
                     item.clientKey === clientKey
                         ? {
@@ -284,7 +376,7 @@ export default function Thi() {
                 dapAn
             )
 
-            setCauHoi((old) =>
+            updateQuestions((old) =>
                 old.map((item) =>
                     item.clientKey === clientKey
                         ? {
@@ -308,7 +400,7 @@ export default function Thi() {
             val
         }
 
-        setCauHoi((old) =>
+        updateQuestions((old) =>
             old.map((item) =>
                 item.clientKey === clientKey
                     ? {
@@ -345,7 +437,7 @@ export default function Thi() {
             val
         }
 
-        setCauHoi((old) =>
+        updateQuestions((old) =>
             old.map((item) =>
                 item.clientKey === clientKey
                     ? {
@@ -430,7 +522,10 @@ export default function Thi() {
 
         if (keepalive) {
             pausedRef.current = true
-            return pauseThiKeepAlive(baiThiId)
+            return pauseThiKeepAlive(
+                baiThiId,
+                {reason}
+            )
         }
 
         await pauseThi(
@@ -440,6 +535,81 @@ export default function Thi() {
 
         pausedRef.current = true
         return true
+    }
+
+    function buildAutoSubmitPayload() {
+        const answers = cauHoiRef.current.flatMap((question) => {
+            if (!question?.questionId) {
+                return []
+            }
+
+            if (question.loai === 2) {
+                const dapAn = String(question.dap_an || "")
+
+                if (!dapAn.trim()) {
+                    return []
+                }
+
+                return [{
+                    loai: 2,
+                    questionId: question.questionId,
+                    dapAn,
+                }]
+            }
+
+            if (question.loai_cau_hoi === LOAI_CAU_HOI.CHON_NHIEU) {
+                const dapAnChonNhieu =
+                    Array.isArray(question.dap_an_chon_nhieu)
+                        ? question.dap_an_chon_nhieu
+                        : []
+
+                if (!dapAnChonNhieu.length) {
+                    return []
+                }
+
+                return [{
+                    loai: 1,
+                    questionId: question.questionId,
+                    dapAnChonNhieu,
+                }]
+            }
+
+            if (question.loai_cau_hoi === LOAI_CAU_HOI.DIEN_TU) {
+                const dapAnTuDo = String(question.dap_an_tu_do || "")
+
+                if (!dapAnTuDo.trim()) {
+                    return []
+                }
+
+                return [{
+                    loai: 1,
+                    questionId: question.questionId,
+                    dapAnTuDo,
+                }]
+            }
+
+            if (question.dap_an_chon == null) {
+                return []
+            }
+
+            return [{
+                loai: 1,
+                questionId: question.questionId,
+                dapAnChon: question.dap_an_chon,
+            }]
+        })
+
+        const payload = {answers}
+
+        if (dotThi?.du_doan) {
+            const prediction = ketQuaDuDoanRef.current
+
+            if (String(prediction || "").trim() !== "") {
+                payload.prediction = prediction
+            }
+        }
+
+        return payload
     }
 
     function gotoQuestion(nextIndex) {
@@ -764,7 +934,10 @@ export default function Thi() {
                                         value={ketQuaDuDoan}
                                         placeholder="Nhập số lượng dự đoán"
                                         className="!rounded-[20px]"
-                                        onChange={(e) => setKetQuaDuDoan(e.target.value)}
+                                        onChange={(e) => {
+                                            ketQuaDuDoanRef.current = e.target.value
+                                            setKetQuaDuDoan(e.target.value)
+                                        }}
                                     />
                                 </div>
                             )}
@@ -981,14 +1154,15 @@ export default function Thi() {
                                 </div>
 
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                    <Button
-                                        size="large"
-                                        onClick={luuThoat}
-                                        className="!h-12 !rounded-2xl !border-slate-300 !px-6"
-                                        disabled={!dotThi?.cho_phep_luu_bai}
-                                    >
-                                        Lưu và thoát
-                                    </Button>
+                                    {dotThi?.cho_phep_luu_bai && (
+                                        <Button
+                                            size="large"
+                                            onClick={luuThoat}
+                                            className="!h-12 !rounded-2xl !border-slate-300 !px-6"
+                                        >
+                                            Lưu và thoát
+                                        </Button>
+                                    )}
 
                                     <Button
                                         danger

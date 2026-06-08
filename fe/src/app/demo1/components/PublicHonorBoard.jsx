@@ -4,12 +4,9 @@ import {useEffect, useMemo, useState} from "react";
 import {Card, Empty, Segmented, Spin, Typography} from "antd";
 import {TrophyFilled} from "@ant-design/icons";
 
-import {
-    xepHangDonViTheoCuocThi,
-    xepHangDonViTheoDotThi,
-} from "~/services/thi/thi";
 import Reveal from "~/app/components/common/Reveal";
 import {alphaColor} from "~/utils/workspaceTheme";
+import {getCachedPublicRankings, loadPublicRankings} from "~/services/thi/public-rankings-cache";
 
 const {Text} = Typography;
 const HONOR_BOARD_LIMIT = 5;
@@ -58,18 +55,26 @@ export default function PublicHonorBoard({dotThi, colorPrimary, deepPrimary, dem
         }
 
         let active = true;
+        const cached = getCachedPublicRankings("honor-board", dotThi.id, dotThi.cuoc_thi_id, HONOR_BOARD_LIMIT);
+
+        if (cached) {
+            setData(cached[scope] || []);
+            setLoading(false);
+        } else {
+            setLoading(true);
+        }
 
         const load = async () => {
-            setLoading(true);
-
             try {
-                const res =
-                    scope === "cuoc-thi"
-                        ? await xepHangDonViTheoCuocThi(dotThi.cuoc_thi_id, HONOR_BOARD_LIMIT)
-                        : await xepHangDonViTheoDotThi(dotThi.id, HONOR_BOARD_LIMIT);
+                const res = await loadPublicRankings(
+                    "honor-board",
+                    dotThi.id,
+                    dotThi.cuoc_thi_id,
+                    HONOR_BOARD_LIMIT
+                );
 
                 if (active) {
-                    setData(res || []);
+                    setData(res?.[scope] || []);
                 }
             } finally {
                 if (active) {

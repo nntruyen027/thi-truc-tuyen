@@ -47,9 +47,8 @@ export default function ChangePasswordModal() {
             footer={null}
             width={520}
             forceRender
-            destroyOnHidden
         >
-            <Space direction="vertical" size={18} className="w-full">
+            <Space orientation="vertical" size={18} className="w-full">
                 <div className="rounded-2xl bg-slate-50 px-4 py-3">
                     <Text className="text-slate-500">
                         Mật khẩu mới nên có ít nhất 6 ký tự và không trùng với mật khẩu cũ.

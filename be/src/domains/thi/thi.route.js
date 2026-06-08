@@ -11,6 +11,8 @@ const role = require("../../core/middlewares/role")
 
 const EXAM_FLOW_DEBUG = process.env.EXAM_FLOW_DEBUG === "1";
 const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
+const PUBLIC_RANKINGS_CACHE_TTL_MS = Number(process.env.PUBLIC_RANKINGS_CACHE_TTL_MS || 30000);
+const publicRankingsCache = new Map();
 
 function createRouteTrace(name, meta = {}) {
     const startedAt = Date.now();
@@ -47,6 +49,37 @@ function createRouteTrace(name, meta = {}) {
             );
         },
     };
+}
+
+function getPublicRankingsCacheKey(dotThiId, cuocThiId, rankingTop, honorTop) {
+    return [
+        Number(dotThiId || 0),
+        Number(cuocThiId || 0),
+        Number(rankingTop || 0),
+        Number(honorTop || 0),
+    ].join(":");
+}
+
+function readPublicRankingsCache(key) {
+    const entry = publicRankingsCache.get(key);
+
+    if (!entry) {
+        return null;
+    }
+
+    if ((Date.now() - entry.createdAt) > PUBLIC_RANKINGS_CACHE_TTL_MS) {
+        publicRankingsCache.delete(key);
+        return null;
+    }
+
+    return entry.data;
+}
+
+function writePublicRankingsCache(key, data) {
+    publicRankingsCache.set(key, {
+        createdAt: Date.now(),
+        data,
+    });
 }
 
 
@@ -357,6 +390,39 @@ router.post(
     }
 )
 
+router.post(
+    "/auto-submit/:baiThiId",
+    auth,
+    async (req, res) => {
+        const trace = createRouteTrace("POST /thi/auto-submit/:baiThiId", {
+            userId: Number(req.user?.id || 0),
+        });
+
+        try {
+            const baiThiId =
+                validation.ensureRequiredId(req.params.baiThiId, "Bài thi");
+            const payload =
+                validation.normalizeAutoSubmitPayload(req.body);
+            trace.step("validated", {
+                baiThiId,
+                answerCount: payload.answers.length,
+            });
+
+            const data = await query.autoSubmitBaiThi(
+                baiThiId,
+                payload
+            );
+            trace.finish({
+                baiThiId,
+            });
+
+            resUtil.ok(res, data)
+        } catch (err) {
+            resUtil.error(res, err)
+        }
+    }
+)
+
 
 /**
  * lịch sử thi
@@ -517,6 +583,50 @@ router.get("/ket-qua-trac-nghiem/export", auth, role(["admin"]), async (req, res
         );
 
         res.send(Buffer.from(result.buffer));
+    } catch (err) {
+        resUtil.error(res, err)
+    }
+})
+
+router.get("/public-rankings", async (req, res) => {
+    try {
+        const dotThiId = validation.ensureRequiredId(req.query?.dotThiId, "Đợt thi");
+        const cuocThiId = validation.ensureRequiredId(req.query?.cuocThiId, "Cuộc thi");
+        const rankingTop = validation.normalizeTopParam(req.query?.rankingTop ?? 10);
+        const honorTop = validation.normalizeTopParam(req.query?.honorTop ?? 5);
+        const cacheKey = getPublicRankingsCacheKey(dotThiId, cuocThiId, rankingTop, honorTop);
+        const cached = readPublicRankingsCache(cacheKey);
+
+        if (cached) {
+            return resUtil.ok(res, cached);
+        }
+
+        const [
+            rankingsDotThi,
+            rankingsCuocThi,
+            honorDotThi,
+            honorCuocThi,
+        ] = await Promise.all([
+            query.xepHangTracNghiemTheoDotThi(dotThiId, rankingTop),
+            query.xepHangTracNghiemTheoCuocThi(cuocThiId, rankingTop),
+            query.xepHangDonViTheoDotThi(dotThiId, honorTop),
+            query.xepHangDonViTheoCuocThi(cuocThiId, honorTop),
+        ]);
+
+        const data = {
+            rankings: {
+                "dot-thi": rankingsDotThi,
+                "cuoc-thi": rankingsCuocThi,
+            },
+            honorBoard: {
+                "dot-thi": honorDotThi,
+                "cuoc-thi": honorCuocThi,
+            },
+        };
+
+        writePublicRankingsCache(cacheKey, data);
+
+        resUtil.ok(res, data)
     } catch (err) {
         resUtil.error(res, err)
     }

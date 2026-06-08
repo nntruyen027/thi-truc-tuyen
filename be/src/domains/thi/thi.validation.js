@@ -194,6 +194,72 @@ exports.normalizePredictionValue = (soDuDoan) => {
     });
 };
 
+function normalizeAutoSubmitAnswer(answer = {}) {
+    const loai = Number(answer?.loai);
+    const questionId = normalizeRequiredId(answer?.questionId, "Câu hỏi");
+
+    if (loai === 2) {
+        return {
+            loai: 2,
+            questionId,
+            dapAn: typeof answer?.dapAn === "string"
+                ? answer.dapAn
+                : "",
+        };
+    }
+
+    const normalized = {
+        loai: 1,
+        questionId,
+    };
+
+    if (answer?.dapAnChon != null && answer?.dapAnChon !== "") {
+        const dapAnChon = Number(answer.dapAnChon);
+
+        if (!Number.isInteger(dapAnChon) || dapAnChon < 1 || dapAnChon > 4) {
+            throw "Đáp án trắc nghiệm không hợp lệ.";
+        }
+
+        normalized.dapAnChon = dapAnChon;
+    }
+
+    if (Array.isArray(answer?.dapAnChonNhieu)) {
+        normalized.dapAnChonNhieu = [...new Set(
+            answer.dapAnChonNhieu
+                .map((item) => Number(item))
+                .filter((item) => Number.isInteger(item) && item >= 1 && item <= 4)
+        )].sort((left, right) => left - right);
+    }
+
+    if (typeof answer?.dapAnTuDo === "string") {
+        normalized.dapAnTuDo = answer.dapAnTuDo;
+    }
+
+    return normalized;
+}
+
+exports.normalizeAutoSubmitPayload = (payload = {}) => {
+    const answers =
+        Array.isArray(payload?.answers)
+            ? payload.answers.map(normalizeAutoSubmitAnswer)
+            : [];
+    const hasPrediction =
+        Object.prototype.hasOwnProperty.call(payload || {}, "prediction");
+
+    if (answers.length > 1000) {
+        throw "Số lượng câu trả lời gửi lên không hợp lệ.";
+    }
+
+    return {
+        answers,
+        ...(hasPrediction
+            ? {
+                prediction: exports.normalizePredictionValue(payload?.prediction),
+            }
+            : {}),
+    };
+};
+
 exports.ensureRequiredId = normalizeRequiredId;
 exports.ensureOptionalId = normalizeOptionalId;
 

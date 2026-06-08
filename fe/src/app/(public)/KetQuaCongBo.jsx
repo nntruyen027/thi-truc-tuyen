@@ -4,10 +4,7 @@ import {useEffect, useMemo, useState} from "react";
 import {Card, Empty, Segmented, Spin, Table, Tag, Typography} from "antd";
 import {TrophyOutlined} from "@ant-design/icons";
 
-import {
-    xepHangTracNghiemTheoCuocThi,
-    xepHangTracNghiemTheoDotThi
-} from "~/services/thi/thi";
+import {getCachedPublicRankings, loadPublicRankings} from "~/services/thi/public-rankings-cache";
 
 const {Text, Title} = Typography;
 
@@ -55,21 +52,29 @@ export default function KetQuaCongBo({dotThi}) {
         }
 
         let active = true;
+        const cached = getCachedPublicRankings("rankings", dotThi.id, dotThi.cuoc_thi_id, 10);
+
+        if (cached) {
+            setData(cached[scope] || []);
+            setLoading(false);
+        } else {
+            setLoading(true);
+        }
 
         const load = async () => {
-            setLoading(true);
-
             try {
-                const res =
-                    scope === "cuoc-thi"
-                        ? await xepHangTracNghiemTheoCuocThi(dotThi.cuoc_thi_id, 10)
-                        : await xepHangTracNghiemTheoDotThi(dotThi.id, 10);
+                const res = await loadPublicRankings(
+                    "rankings",
+                    dotThi.id,
+                    dotThi.cuoc_thi_id,
+                    10
+                );
 
                 if (!active) {
                     return;
                 }
 
-                setData(res || []);
+                setData(res?.[scope] || []);
             } finally {
                 if (active) {
                     setLoading(false);

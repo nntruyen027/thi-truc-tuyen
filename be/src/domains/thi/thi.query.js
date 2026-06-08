@@ -17,6 +17,7 @@ const {
 
 const EXAM_FLOW_DEBUG = process.env.EXAM_FLOW_DEBUG === "1";
 const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
+const RANKING_CACHE_TTL_MS = Number(process.env.RANKING_CACHE_TTL_MS || 30000);
 
 const LOAI_CAU_HOI = {
     CHON_MOT: "chon_mot",
@@ -25,6 +26,7 @@ const LOAI_CAU_HOI = {
 };
 
 let baiThiChiTietColumnsPromise = null;
+const rankingCache = new Map();
 
 function createExamTrace(name, meta = {}) {
     const startedAt = process.hrtime.bigint();
@@ -65,6 +67,32 @@ function createExamTrace(name, meta = {}) {
             );
         },
     };
+}
+
+function getRankingCacheKey(kind, scopeId, top) {
+    return [kind, Number(scopeId || 0), Number(top || 0)].join(":");
+}
+
+function readRankingCache(key) {
+    const entry = rankingCache.get(key);
+
+    if (!entry) {
+        return null;
+    }
+
+    if ((Date.now() - entry.createdAt) > RANKING_CACHE_TTL_MS) {
+        rankingCache.delete(key);
+        return null;
+    }
+
+    return entry.data;
+}
+
+function writeRankingCache(key, data) {
+    rankingCache.set(key, {
+        createdAt: Date.now(),
+        data,
+    });
 }
 
 function withLegacyKeys(data) {
@@ -277,6 +305,228 @@ async function batchUpdateBaiThiChiTietScores(tx, items) {
             "diem" = case target."id" ${diemCaseSql} else target."diem" end
         where target."id" in (${idListSql})
     `);
+}
+
+async function pauseThiWithExecutor(executor, baiThiIdValue) {
+    const [row] = await executor
+        .select({
+            lanBatDau: baiThi.lanBatDau,
+            tongThoiGianDaLam: baiThi.tongThoiGianDaLam,
+        })
+        .from(baiThi)
+        .where(eq(baiThi.id, Number(baiThiIdValue)))
+        .limit(1);
+
+    if (!row?.lanBatDau) {
+        return false;
+    }
+
+    const diff = Math.floor((Date.now() - new Date(row.lanBatDau).getTime()) / 1000);
+
+    await executor
+        .update(baiThi)
+        .set({
+            tongThoiGianDaLam: Number(row.tongThoiGianDaLam || 0) + diff,
+            dangLam: false,
+            lanBatDau: null,
+        })
+        .where(eq(baiThi.id, Number(baiThiIdValue)));
+
+    return true;
+}
+
+async function finalizeBaiThiSubmission(tx, baiThiIdValue, columnSupport, trace = null) {
+    const chiTietRows = await tx
+        .select({
+            id: baiThiChiTiet.id,
+            loaiCauHoi: tracNghiem.loaiCauHoi,
+            dapAnChon: baiThiChiTiet.dapAnChon,
+            dapAnChonNhieu: columnSupport.hasDapAnChonNhieu
+                ? baiThiChiTiet.dapAnChonNhieu
+                : sql`null`,
+            dapAnTuDo: columnSupport.hasDapAnTuDo
+                ? baiThiChiTiet.dapAnTuDo
+                : sql`null`,
+            dapAn: tracNghiem.dapAn,
+            dapAnNhieu: tracNghiem.dapAnNhieu,
+            dapAnText: tracNghiem.dapAnText,
+            diemCauHoi: tracNghiem.diem,
+        })
+        .from(baiThiChiTiet)
+        .innerJoin(tracNghiem, eq(tracNghiem.id, baiThiChiTiet.cauHoiId))
+        .where(eq(baiThiChiTiet.baiThiId, Number(baiThiIdValue)));
+
+    trace?.step("loadAnswers", {
+        answerCount: chiTietRows.length,
+    });
+
+    let tongDiem = 0;
+    const scoreUpdates = chiTietRows.map((item) => {
+        const loaiCauHoi = normalizeLoaiCauHoi(item.loaiCauHoi);
+        let dung = false;
+
+        if (loaiCauHoi === LOAI_CAU_HOI.CHON_MOT) {
+            dung = item.dapAnChon === item.dapAn;
+        }
+
+        if (loaiCauHoi === LOAI_CAU_HOI.CHON_NHIEU) {
+            dung =
+                serializeAnswerList(item.dapAnChonNhieu) ===
+                serializeAnswerList(item.dapAnNhieu);
+        }
+
+        if (loaiCauHoi === LOAI_CAU_HOI.DIEN_TU) {
+            dung =
+                normalizeTextAnswer(item.dapAnTuDo) !== "" &&
+                normalizeTextAnswer(item.dapAnTuDo) === normalizeTextAnswer(item.dapAnText);
+        }
+
+        const diem = dung ? Number(item.diemCauHoi || 0) : 0;
+        tongDiem += diem;
+
+        return {
+            id: Number(item.id),
+            dung,
+            diem,
+        };
+    });
+
+    await batchUpdateBaiThiChiTietScores(tx, scoreUpdates);
+    trace?.step("updateAnswerScores");
+
+    await tx
+        .update(baiThi)
+        .set({
+            trangThai: 1,
+            thoiGianNop: new Date(),
+            diem: tongDiem,
+        })
+        .where(eq(baiThi.id, Number(baiThiIdValue)));
+
+    return {
+        tongDiem,
+        answerCount: chiTietRows.length,
+    };
+}
+
+async function persistAutoSubmitAnswers(baiThiIdValue, answers = []) {
+    if (!Array.isArray(answers) || !answers.length) {
+        return 0;
+    }
+
+    const normalizedBaiThiId = Number(baiThiIdValue);
+    const columnSupport = await getBaiThiChiTietColumnSupport();
+    const tracAnswers = answers.filter((item) => Number(item?.loai) !== 2);
+    const tuLuanAnswers = answers.filter((item) => Number(item?.loai) === 2);
+    let persistedCount = 0;
+
+    if (tracAnswers.length) {
+        const questionIds = [...new Set(
+            tracAnswers
+                .map((item) => Number(item?.questionId))
+                .filter((item) => Number.isInteger(item) && item > 0)
+        )];
+
+        if (questionIds.length) {
+            const questionRows = await db
+                .select({
+                    id: tracNghiem.id,
+                    loaiCauHoi: tracNghiem.loaiCauHoi,
+                })
+                .from(tracNghiem)
+                .where(inArray(tracNghiem.id, questionIds));
+
+            const questionMap = new Map(
+                questionRows.map((item) => [
+                    Number(item.id),
+                    normalizeLoaiCauHoi(item.loaiCauHoi),
+                ])
+            );
+
+            for (const answer of tracAnswers) {
+                const questionId = Number(answer.questionId);
+                const loaiCauHoi = questionMap.get(questionId);
+
+                if (!loaiCauHoi) {
+                    continue;
+                }
+
+                const values = {
+                    baiThiId: normalizedBaiThiId,
+                    cauHoiId: questionId,
+                    dapAnChon: null,
+                };
+
+                if (columnSupport.hasDapAnChonNhieu) {
+                    values.dapAnChonNhieu = null;
+                }
+
+                if (columnSupport.hasDapAnTuDo) {
+                    values.dapAnTuDo = null;
+                }
+
+                if (loaiCauHoi === LOAI_CAU_HOI.CHON_MOT) {
+                    values.dapAnChon = answer.dapAnChon ?? null;
+                }
+
+                if (loaiCauHoi === LOAI_CAU_HOI.CHON_NHIEU && columnSupport.hasDapAnChonNhieu) {
+                    values.dapAnChonNhieu = serializeAnswerList(answer.dapAnChonNhieu);
+                }
+
+                if (loaiCauHoi === LOAI_CAU_HOI.DIEN_TU && columnSupport.hasDapAnTuDo) {
+                    values.dapAnTuDo = String(answer.dapAnTuDo || "").trim() || null;
+                }
+
+                await upsertBaiThiChiTietAnswer(values, columnSupport);
+                persistedCount += 1;
+            }
+        }
+    }
+
+    if (tuLuanAnswers.length) {
+        const questionIds = [...new Set(
+            tuLuanAnswers
+                .map((item) => Number(item?.questionId))
+                .filter((item) => Number.isInteger(item) && item > 0)
+        )];
+
+        if (questionIds.length) {
+            const questionRows = await db
+                .select({
+                    id: tuLuanDotThi.id,
+                })
+                .from(tuLuanDotThi)
+                .where(inArray(tuLuanDotThi.id, questionIds));
+            const validQuestionIds = new Set(
+                questionRows.map((item) => Number(item.id))
+            );
+
+            for (const answer of tuLuanAnswers) {
+                const questionId = Number(answer.questionId);
+
+                if (!validQuestionIds.has(questionId)) {
+                    continue;
+                }
+
+                await db
+                    .insert(baiThiChiTietTuLuan)
+                    .values({
+                        baiThiId: normalizedBaiThiId,
+                        cauHoiId: questionId,
+                        dapAn: String(answer.dapAn || ""),
+                    })
+                    .onConflictDoUpdate({
+                        target: [baiThiChiTietTuLuan.baiThiId, baiThiChiTietTuLuan.cauHoiId],
+                        set: {
+                            dapAn: String(answer.dapAn || ""),
+                        },
+                    });
+                persistedCount += 1;
+            }
+        }
+    }
+
+    return persistedCount;
 }
 
 function mapBaiThi(row) {
@@ -582,16 +832,16 @@ async function layCauHoiTuLuanInternal(tx, baiThiId) {
     return rows.map(mapTuLuanQuestion);
 }
 
-exports.conDuocThi = async (dotThiId, thiSinhId) => {
+async function conDuocThiWithExecutor(executor, dotThiId, thiSinhId) {
     const [dotThiInfo, completedRows] = await Promise.all([
-        db
+        executor
             .select({
                 soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
             })
             .from(dotThi)
             .where(eq(dotThi.id, Number(dotThiId)))
             .limit(1),
-        db
+        executor
             .select({
                 total: sql`count(*)::int`,
             })
@@ -608,6 +858,10 @@ exports.conDuocThi = async (dotThiId, thiSinhId) => {
     const daThi = Number(completedRows[0]?.total || 0);
 
     return daThi < max;
+}
+
+exports.conDuocThi = async (dotThiId, thiSinhId) => {
+    return conDuocThiWithExecutor(db, dotThiId, thiSinhId);
 };
 
 exports.layDeDangLam = async (dotThiId, thiSinhId) => {
@@ -863,78 +1117,18 @@ exports.nopBai = async (baiThiIdValue) => {
         trace.step("ensureBaiThi");
         const columnSupport = await getBaiThiChiTietColumnSupport();
         trace.step("loadColumnSupport");
-
-        const chiTietRows = await tx
-            .select({
-                id: baiThiChiTiet.id,
-                loaiCauHoi: tracNghiem.loaiCauHoi,
-                dapAnChon: baiThiChiTiet.dapAnChon,
-                dapAnChonNhieu: columnSupport.hasDapAnChonNhieu
-                    ? baiThiChiTiet.dapAnChonNhieu
-                    : sql`null`,
-                dapAnTuDo: columnSupport.hasDapAnTuDo
-                    ? baiThiChiTiet.dapAnTuDo
-                    : sql`null`,
-                dapAn: tracNghiem.dapAn,
-                dapAnNhieu: tracNghiem.dapAnNhieu,
-                dapAnText: tracNghiem.dapAnText,
-                diemCauHoi: tracNghiem.diem,
-            })
-            .from(baiThiChiTiet)
-            .innerJoin(tracNghiem, eq(tracNghiem.id, baiThiChiTiet.cauHoiId))
-            .where(eq(baiThiChiTiet.baiThiId, Number(baiThiIdValue)));
-        trace.step("loadAnswers", {
-            answerCount: chiTietRows.length,
-        });
-
-        let tongDiem = 0;
-        const scoreUpdates = chiTietRows.map((item) => {
-            const loaiCauHoi = normalizeLoaiCauHoi(item.loaiCauHoi);
-            let dung = false;
-
-            if (loaiCauHoi === LOAI_CAU_HOI.CHON_MOT) {
-                dung = item.dapAnChon === item.dapAn;
-            }
-
-            if (loaiCauHoi === LOAI_CAU_HOI.CHON_NHIEU) {
-                dung =
-                    serializeAnswerList(item.dapAnChonNhieu) ===
-                    serializeAnswerList(item.dapAnNhieu);
-            }
-
-            if (loaiCauHoi === LOAI_CAU_HOI.DIEN_TU) {
-                dung =
-                    normalizeTextAnswer(item.dapAnTuDo) !== "" &&
-                    normalizeTextAnswer(item.dapAnTuDo) === normalizeTextAnswer(item.dapAnText);
-            }
-
-            const diem = dung ? Number(item.diemCauHoi || 0) : 0;
-            tongDiem += diem;
-
-            return {
-                id: Number(item.id),
-                dung,
-                diem,
-            };
-        });
-
-        await batchUpdateBaiThiChiTietScores(tx, scoreUpdates);
-        trace.step("updateAnswerScores");
-
-        await tx
-            .update(baiThi)
-            .set({
-                trangThai: 1,
-                thoiGianNop: new Date(),
-                diem: tongDiem,
-            })
-            .where(eq(baiThi.id, Number(baiThiIdValue)));
+        const result = await finalizeBaiThiSubmission(
+            tx,
+            baiThiIdValue,
+            columnSupport,
+            trace
+        );
         trace.finish({
-            answerCount: chiTietRows.length,
-            tongDiem,
+            answerCount: result.answerCount,
+            tongDiem: result.tongDiem,
         });
 
-        return tongDiem;
+        return result.tongDiem;
     });
 };
 
@@ -1036,16 +1230,6 @@ exports.startThi = async (dotThiId, thiSinhId) => {
     });
 
     return db.transaction(async (tx) => {
-        const conDuoc = await exports.conDuocThi(dotThiId, thiSinhId);
-        trace.step("conDuocThi");
-
-        if (!conDuoc) {
-            trace.finish({
-                result: "het_lan_thi",
-            });
-            return {error: "het_lan_thi"};
-        }
-
         const [existing] = await tx
             .select({
                 baiThiId: baiThi.id,
@@ -1054,6 +1238,7 @@ exports.startThi = async (dotThiId, thiSinhId) => {
                 tongThoiGianDaLam: baiThi.tongThoiGianDaLam,
                 lanBatDau: baiThi.lanBatDau,
                 dangLam: baiThi.dangLam,
+                choPhepLuuBai: dotThi.choPhepLuuBai,
             })
             .from(baiThi)
             .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
@@ -1068,11 +1253,43 @@ exports.startThi = async (dotThiId, thiSinhId) => {
             hasExisting: Boolean(existing?.baiThiId),
         });
 
-        let baiThiIdValue = existing?.baiThiId || null;
-        let deThiIdValue = existing?.deThiId || null;
-        let thoiGianThi = existing?.thoiGianThi || 0;
-        let tongDaLam = Number(existing?.tongThoiGianDaLam || 0);
-        let lanBatDau = existing?.lanBatDau || null;
+        let currentExisting = existing || null;
+
+        if (currentExisting?.baiThiId && !currentExisting?.choPhepLuuBai) {
+            await pauseThiWithExecutor(tx, existing.baiThiId);
+            trace.step("autoPauseExistingNoSave");
+
+            const columnSupport = await getBaiThiChiTietColumnSupport();
+            trace.step("loadColumnSupportForAutoSubmit");
+
+            await finalizeBaiThiSubmission(
+                tx,
+                currentExisting.baiThiId,
+                columnSupport,
+                trace
+            );
+            trace.step("autoSubmitExistingNoSave", {
+                baiThiId: Number(currentExisting.baiThiId),
+            });
+
+            currentExisting = null;
+        }
+
+        const conDuoc = await conDuocThiWithExecutor(tx, dotThiId, thiSinhId);
+        trace.step("conDuocThi");
+
+        if (!conDuoc) {
+            trace.finish({
+                result: "het_lan_thi",
+            });
+            return {error: "het_lan_thi"};
+        }
+
+        let baiThiIdValue = currentExisting?.baiThiId || null;
+        let deThiIdValue = currentExisting?.deThiId || null;
+        let thoiGianThi = currentExisting?.thoiGianThi || 0;
+        let tongDaLam = Number(currentExisting?.tongThoiGianDaLam || 0);
+        let lanBatDau = currentExisting?.lanBatDau || null;
 
         if (!baiThiIdValue) {
             deThiIdValue = await exports.taoDeThi(dotThiId, thiSinhId);
@@ -1137,31 +1354,7 @@ exports.startThi = async (dotThiId, thiSinhId) => {
 };
 
 exports.pauseThi = async (baiThiIdValue) => {
-    const [row] = await db
-        .select({
-            lanBatDau: baiThi.lanBatDau,
-            tongThoiGianDaLam: baiThi.tongThoiGianDaLam,
-        })
-        .from(baiThi)
-        .where(eq(baiThi.id, Number(baiThiIdValue)))
-        .limit(1);
-
-    if (!row?.lanBatDau) {
-        return false;
-    }
-
-    const diff = Math.floor((Date.now() - new Date(row.lanBatDau).getTime()) / 1000);
-
-    await db
-        .update(baiThi)
-        .set({
-            tongThoiGianDaLam: Number(row.tongThoiGianDaLam || 0) + diff,
-            dangLam: false,
-            lanBatDau: null,
-        })
-        .where(eq(baiThi.id, Number(baiThiIdValue)));
-
-    return true;
+    return pauseThiWithExecutor(db, baiThiIdValue);
 };
 
 exports.nopDuDoanKetQuan = async (baiThiIdValue, soDuDoan) => {
@@ -1178,6 +1371,53 @@ exports.nopDuDoanKetQuan = async (baiThiIdValue, soDuDoan) => {
     }
 
     return true;
+};
+
+exports.autoSubmitBaiThi = async (baiThiIdValue, payload = {}) => {
+    const trace = createExamTrace("autoSubmitBaiThi", {
+        baiThiId: Number(baiThiIdValue),
+    });
+
+    await ensureEntityExists(db, baiThi, baiThiIdValue, "Bài thi không tồn tại.");
+    trace.step("ensureBaiThi");
+
+    const persistedCount = await persistAutoSubmitAnswers(
+        baiThiIdValue,
+        payload.answers
+    );
+    trace.step("persistAnswers", {
+        answerCount: persistedCount,
+    });
+
+    if (payload.prediction !== undefined) {
+        await exports.nopDuDoanKetQuan(
+            baiThiIdValue,
+            payload.prediction
+        );
+        trace.step("savePrediction");
+    }
+
+    return db.transaction(async (tx) => {
+        await pauseThiWithExecutor(tx, baiThiIdValue);
+        trace.step("pauseThi");
+
+        const columnSupport = await getBaiThiChiTietColumnSupport();
+        trace.step("loadColumnSupport");
+
+        const result = await finalizeBaiThiSubmission(
+            tx,
+            baiThiIdValue,
+            columnSupport,
+            trace
+        );
+
+        trace.finish({
+            answerCount: result.answerCount,
+            tongDiem: result.tongDiem,
+        });
+
+        return result.tongDiem;
+    });
 };
 
 async function layDanhSachBaiThiXepHang(whereClause) {
@@ -1203,25 +1443,15 @@ async function layDanhSachBaiThiXepHang(whereClause) {
         .innerJoin(users, eq(users.id, baiThi.thiSinhId))
         .where(and(
             whereClause,
-            eq(baiThi.trangThai, 1)
+            eq(baiThi.trangThai, 1),
+            sql`coalesce(${baiThi.diem}, 0) >= coalesce(${dotThi.tyLeDanhGiaDat}, 0)`
         ));
 
     if (!examRows.length) {
         return [];
     }
 
-    const eligibleRows = examRows.filter((row) => {
-        const diem = Number(row.diem ?? 0);
-        const tyLeDat = Number(row.tyLeDanhGiaDat ?? 0);
-
-        return diem >= tyLeDat;
-    });
-
-    if (!eligibleRows.length) {
-        return [];
-    }
-
-    const examIds = eligibleRows.map((row) => row.baiThiId);
+    const examIds = examRows.map((row) => row.baiThiId);
     const detailRows = await db
         .select({
             baiThiId: baiThiChiTiet.baiThiId,
@@ -1242,14 +1472,14 @@ async function layDanhSachBaiThiXepHang(whereClause) {
         ])
     );
 
-    const soNguoi100 = eligibleRows.reduce((total, row) => {
+    const soNguoi100 = examRows.reduce((total, row) => {
         const stats = detailStats.get(Number(row.baiThiId)) || { tong: 0, dung: 0 };
         return stats.dung === stats.tong ? total + 1 : total;
     }, 0);
 
     const bestByThiSinh = new Map();
 
-    for (const row of eligibleRows) {
+    for (const row of examRows) {
         const current = {
             baiThiId: row.baiThiId,
             thiSinhId: row.thiSinhId,
@@ -1310,16 +1540,36 @@ async function layXepHangDonViTheoDieuKien(whereClause) {
 }
 
 exports.xepHangTracNghiemTheoDotThi = async (dotThiId, topGiai) => {
+    const top = Number(topGiai) || 10;
+    const cacheKey = getRankingCacheKey("ranking-dot-thi", dotThiId, top);
+    const cached = readRankingCache(cacheKey);
+
+    if (cached) {
+        return cached;
+    }
+
     const rows = await layDanhSachBaiThiXepHang(
         eq(deThi.dotThiId, Number(dotThiId))
     );
 
-    return rows
-        .slice(0, Number(topGiai) || 10)
+    const data = rows
+        .slice(0, top)
         .map(mapRankingRow);
+
+    writeRankingCache(cacheKey, data);
+
+    return data;
 };
 
 exports.xepHangTracNghiemTheoCuocThi = async (cuocThiId, topGiai) => {
+    const top = Number(topGiai) || 10;
+    const cacheKey = getRankingCacheKey("ranking-cuoc-thi", cuocThiId, top);
+    const cached = readRankingCache(cacheKey);
+
+    if (cached) {
+        return cached;
+    }
+
     const rows = await db
         .select({ id: dotThi.id })
         .from(dotThi)
@@ -1335,21 +1585,51 @@ exports.xepHangTracNghiemTheoCuocThi = async (cuocThiId, topGiai) => {
         inArray(deThi.dotThiId, dotThiIds)
     );
 
-    return data
-        .slice(0, Number(topGiai) || 10)
+    const result = data
+        .slice(0, top)
         .map(mapRankingRow);
+
+    writeRankingCache(cacheKey, result);
+
+    return result;
 };
 
 exports.xepHangDonViTheoDotThi = async (dotThiId, top) => {
+    const normalizedTop =
+        Number.isInteger(Number(top)) && Number(top) > 0
+            ? Number(top)
+            : 0;
+    const cacheKey = getRankingCacheKey("honor-dot-thi", dotThiId, normalizedTop);
+    const cached = readRankingCache(cacheKey);
+
+    if (cached) {
+        return cached;
+    }
+
     const rows = await layXepHangDonViTheoDieuKien(
         eq(deThi.dotThiId, Number(dotThiId))
     );
 
-    return sliceRankingRows(rows, top)
+    const data = sliceRankingRows(rows, top)
         .map(mapDonViRankingRow);
+
+    writeRankingCache(cacheKey, data);
+
+    return data;
 };
 
 exports.xepHangDonViTheoCuocThi = async (cuocThiId, top) => {
+    const normalizedTop =
+        Number.isInteger(Number(top)) && Number(top) > 0
+            ? Number(top)
+            : 0;
+    const cacheKey = getRankingCacheKey("honor-cuoc-thi", cuocThiId, normalizedTop);
+    const cached = readRankingCache(cacheKey);
+
+    if (cached) {
+        return cached;
+    }
+
     const rows = await db
         .select({ id: dotThi.id })
         .from(dotThi)
@@ -1365,7 +1645,11 @@ exports.xepHangDonViTheoCuocThi = async (cuocThiId, top) => {
         inArray(deThi.dotThiId, dotThiIds)
     );
 
-    return sliceRankingRows(data, top)
+    const result = sliceRankingRows(data, top)
         .map(mapDonViRankingRow);
+
+    writeRankingCache(cacheKey, result);
+
+    return result;
 };
 

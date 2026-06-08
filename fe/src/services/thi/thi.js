@@ -364,7 +364,8 @@ export async function pauseThi(
 }
 
 export function pauseThiKeepAlive(
-    baiThiId
+    baiThiId,
+    options = {}
 ) {
 
     if (!baiThiId) {
@@ -382,6 +383,7 @@ export function pauseThiKeepAlive(
     }
 
     try {
+        const body = JSON.stringify(options);
 
         void fetch(
             API_BASE_URL + BASE_PATH + "/pause/" + baiThiId,
@@ -391,7 +393,52 @@ export function pauseThiKeepAlive(
                     Authorization: `Bearer ${access}`,
                     "Content-Type": "application/json",
                 },
-                body: "{}",
+                body,
+                keepalive: true,
+            }
+        );
+
+        return true;
+
+    }
+    catch {
+
+        return false;
+
+    }
+}
+
+export function autoSubmitKeepAlive(
+    baiThiId,
+    payload = {}
+) {
+
+    if (!baiThiId) {
+        return false;
+    }
+
+    const access =
+        useAuthStore.getState().access
+        || (typeof window !== "undefined"
+            ? localStorage.getItem("access")
+            : null);
+
+    if (!access || typeof window === "undefined" || typeof fetch !== "function") {
+        return false;
+    }
+
+    try {
+        const body = JSON.stringify(payload);
+
+        void fetch(
+            API_BASE_URL + BASE_PATH + "/auto-submit/" + baiThiId,
+            {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${access}`,
+                    "Content-Type": "application/json",
+                },
+                body,
                 keepalive: true,
             }
         );
@@ -578,6 +625,39 @@ export async function xepHangDonViTheoCuocThi(
 
         throw new Error(
             e?.response?.data?.message
+        )
+
+    }
+}
+
+export async function layBangXepHangCongKhai({
+    dotThiId,
+    cuocThiId,
+    rankingTop = 10,
+    honorTop = 5,
+}) {
+
+    try {
+        const res =
+            await api.get(
+                BASE_PATH + "/public-rankings",
+                {
+                    params: {
+                        dotThiId,
+                        cuocThiId,
+                        rankingTop,
+                        honorTop,
+                    },
+                }
+            )
+
+        return res.data.data
+
+    }
+    catch (e) {
+
+        throw new Error(
+            e?.response?.data?.message || "Không thể tải bảng xếp hạng công khai"
         )
 
     }
