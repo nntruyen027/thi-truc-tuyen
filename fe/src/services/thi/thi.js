@@ -538,16 +538,11 @@ export async function xepHangDonViTheoDotThi(
 ) {
 
     try {
-
-        let val = Number(top)
-
-        if (isNaN(val)) {
-            val = 10
-        }
-
         const res =
             await api.get(
-                BASE_PATH + "/bang-vang-don-vi/dot-thi/" + dotThiId + "/" + val,
+                top == null
+                    ? BASE_PATH + "/bang-vang-don-vi/dot-thi/" + dotThiId
+                    : BASE_PATH + "/bang-vang-don-vi/dot-thi/" + dotThiId + "/" + Number(top),
             )
 
         return res.data.data
@@ -569,16 +564,11 @@ export async function xepHangDonViTheoCuocThi(
 ) {
 
     try {
-
-        let val = Number(top)
-
-        if (isNaN(val)) {
-            val = 10
-        }
-
         const res =
             await api.get(
-                BASE_PATH + "/bang-vang-don-vi/cuoc-thi/" + cuocThiId + "/" + val,
+                top == null
+                    ? BASE_PATH + "/bang-vang-don-vi/cuoc-thi/" + cuocThiId
+                    : BASE_PATH + "/bang-vang-don-vi/cuoc-thi/" + cuocThiId + "/" + Number(top),
             )
 
         return res.data.data

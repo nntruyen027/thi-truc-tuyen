@@ -401,6 +401,14 @@ function mapDonViRankingRow(row) {
     };
 }
 
+function sliceRankingRows(rows, top) {
+    if (!Number.isInteger(Number(top)) || Number(top) < 1) {
+        return rows;
+    }
+
+    return rows.slice(0, Number(top));
+}
+
 async function ensureEntityExists(tx, table, id, message) {
     const [row] = await tx
         .select({ id: table.id })
@@ -1184,8 +1192,7 @@ exports.xepHangDonViTheoDotThi = async (dotThiId, top) => {
         eq(deThi.dotThiId, Number(dotThiId))
     );
 
-    return rows
-        .slice(0, Number(top) || 10)
+    return sliceRankingRows(rows, top)
         .map(mapDonViRankingRow);
 };
 
@@ -1205,8 +1212,7 @@ exports.xepHangDonViTheoCuocThi = async (cuocThiId, top) => {
         inArray(deThi.dotThiId, dotThiIds)
     );
 
-    return data
-        .slice(0, Number(top) || 10)
+    return sliceRankingRows(data, top)
         .map(mapDonViRankingRow);
 };
 

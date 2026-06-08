@@ -481,11 +481,31 @@ router.get("/bang-vang-don-vi/dot-thi/:dotThiId/:top", async (req, res) => {
     }
 })
 
+router.get("/bang-vang-don-vi/dot-thi/:dotThiId", async (req, res) => {
+    try {
+        const dotThiId = validation.ensureRequiredId(req.params.dotThiId, "Đợt thi");
+        const data = await query.xepHangDonViTheoDotThi(dotThiId);
+        resUtil.ok(res, data)
+    } catch (err) {
+        resUtil.error(res, err)
+    }
+})
+
 router.get("/bang-vang-don-vi/cuoc-thi/:cuocThiId/:top", async (req, res) => {
     try {
         const cuocThiId = validation.ensureRequiredId(req.params.cuocThiId, "Cuộc thi");
         const top = validation.normalizeTopParam(req.params.top);
         const data = await query.xepHangDonViTheoCuocThi(cuocThiId, top);
+        resUtil.ok(res, data)
+    } catch (err) {
+        resUtil.error(res, err)
+    }
+})
+
+router.get("/bang-vang-don-vi/cuoc-thi/:cuocThiId", async (req, res) => {
+    try {
+        const cuocThiId = validation.ensureRequiredId(req.params.cuocThiId, "Cuộc thi");
+        const data = await query.xepHangDonViTheoCuocThi(cuocThiId);
         resUtil.ok(res, data)
     } catch (err) {
         resUtil.error(res, err)

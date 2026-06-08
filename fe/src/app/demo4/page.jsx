@@ -28,8 +28,6 @@ const DEMO4_BACKGROUND_IMAGES = {
     soctrang: "/bg_soctrang.jpg",
     haugiang: "/bg_haugiang.jpg",
 };
-const UNIT_RANKING_LIMIT = 100;
-
 function chonCuocThiGanNhat(dsCuocThi = []) {
     const now = dayjs();
     const dsHopLe = [...dsCuocThi]
@@ -494,9 +492,8 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             setParticipantLoading(true);
             setUnitLoading(true);
 
-            const [participantsResult, unitsResult, allUnitsResult] = await Promise.allSettled([
+            const [participantsResult, allUnitsResult] = await Promise.allSettled([
                 xepHangTracNghiemTheoCuocThi(dotThi.cuoc_thi_id, 20),
-                xepHangDonViTheoCuocThi(dotThi.cuoc_thi_id, UNIT_RANKING_LIMIT),
                 getDonVi({
                     page: 1,
                     size: 1000,
@@ -515,11 +512,19 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             setTopParticipants(participantRows);
             setParticipantLoading(false);
 
-            const unitRows = unitsResult.status === "fulfilled"
-                ? normalizeUnitRankings(unitsResult.value || [])
-                : [];
             const allUnits = allUnitsResult.status === "fulfilled"
                 ? allUnitsResult.value?.data || []
+                : [];
+            const unitsResult = await xepHangDonViTheoCuocThi(dotThi.cuoc_thi_id)
+                .then((data) => ({status: "fulfilled", value: data}))
+                .catch(() => ({status: "rejected"}));
+
+            if (!active) {
+                return;
+            }
+
+            const unitRows = unitsResult.status === "fulfilled"
+                ? normalizeUnitRankings(unitsResult.value || [])
                 : [];
 
             setTopUnits(
