@@ -3,9 +3,11 @@ const router =
 
 const query = require("./thi.query")
 const validation = require("./thi.validation")
+const exportService = require("./thi_export.service")
 
 const resUtil = require("../../core/utils/response")
 const auth = require("../../core/middlewares/auth")
+const role = require("../../core/middlewares/role")
 
 
 /**
@@ -425,6 +427,26 @@ router.post("/du-doan/:baiThiId", auth, async (req, res) => {
     }
 })
 
+router.get("/ket-qua-trac-nghiem/export", auth, role(["admin"]), async (req, res) => {
+    try {
+        const scope = validation.normalizeKetQuaTracNghiemExportScope(req.query);
+        const result = await exportService.exportKetQuaTracNghiem(scope);
+
+        res.setHeader(
+            "Content-Type",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${result.fileName}"`
+        );
+
+        res.send(Buffer.from(result.buffer));
+    } catch (err) {
+        resUtil.error(res, err)
+    }
+})
+
 router.get("/ket-qua-trac-nghiem/dot-thi/:dotThiId/:top", async (req, res) => {
     try {
         const dotThiId = validation.ensureRequiredId(req.params.dotThiId, "Đợt thi");
@@ -471,4 +493,3 @@ router.get("/bang-vang-don-vi/cuoc-thi/:cuocThiId/:top", async (req, res) => {
 })
 
 module.exports = router
-

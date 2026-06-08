@@ -155,6 +155,34 @@ exports.normalizeTopParam = (top) =>
         max: 100,
     });
 
+exports.normalizeKetQuaTracNghiemExportScope = ({
+    cuocThiId,
+    dotThiId,
+    top,
+} = {}) => {
+    const normalizedTop = exports.normalizeTopParam(top ?? 10);
+    const normalizedDotThiId = normalizeOptionalId(dotThiId, "Đợt thi");
+    const normalizedCuocThiId = normalizeOptionalId(cuocThiId, "Cuộc thi");
+
+    if (normalizedDotThiId) {
+        return {
+            scopeType: "dot-thi",
+            scopeId: normalizedDotThiId,
+            top: normalizedTop,
+        };
+    }
+
+    if (normalizedCuocThiId) {
+        return {
+            scopeType: "cuoc-thi",
+            scopeId: normalizedCuocThiId,
+            top: normalizedTop,
+        };
+    }
+
+    throw "Vui lòng chọn cuộc thi hoặc đợt thi để xuất Excel.";
+};
+
 exports.normalizePredictionValue = (soDuDoan) => {
     if (soDuDoan == null || soDuDoan === "") {
         return null;

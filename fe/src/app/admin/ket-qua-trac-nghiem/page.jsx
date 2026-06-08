@@ -1,11 +1,16 @@
 'use client'
 
 import {useCallback, useEffect, useState} from "react";
-import {App, Col, Row, Select, Table, Typography} from "antd";
+import {App, Button, Col, Row, Select, Table, Typography} from "antd";
 import {usePageInfoStore} from "~/store/page-info";
-import {xepHangTracNghiemTheoCuocThi, xepHangTracNghiemTheoDotThi} from "~/services/thi/thi";
+import {
+    xepHangTracNghiemTheoCuocThi,
+    xepHangTracNghiemTheoDotThi,
+    xuatKetQuaTracNghiemExcel
+} from "~/services/thi/thi";
 import {useCuocThiSelect} from "~/hook/useCuocThi";
 import {useDotThiSelect} from "~/hook/useDotThi";
+import {DownloadOutlined} from "@ant-design/icons";
 
 function getThiSinh(record) {
     return record?.thiSinh || record?.thi_sinh || null;
@@ -39,6 +44,7 @@ export default function NhomCauHoi() {
     const [cuocThi, setCuocThi] = useState(null);
     const [dotThi, setDotThi] = useState(null);
     const [top, setTop] = useState(10);
+    const [exporting, setExporting] = useState(false);
 
     const { dsCuocThi, loading: cuocThiLoading, setSearchCuocThi, loadMore: cuocThiLoadMore } = useCuocThiSelect();
     const { dsDotThi, loading: dotThiLoading, setSearchDotThi, loadMore: dotThiLoadMore } = useDotThiSelect(cuocThi);
@@ -122,6 +128,37 @@ export default function NhomCauHoi() {
         void fetchData();
 
     }, [cuocThi, dotThi, fetchData, fetchDataCuocThi, top]);
+
+    const handleExportExcel = async () => {
+        if (!cuocThi && !dotThi) {
+            message.warning("Vui lòng chọn cuộc thi hoặc đợt thi trước khi xuất Excel.");
+            return;
+        }
+
+        setExporting(true);
+
+        try {
+            const blob = await xuatKetQuaTracNghiemExcel({
+                cuocThiId: cuocThi,
+                dotThiId: dotThi,
+                top,
+            });
+            const scope = dotThi ? `dot-thi-${dotThi}` : `cuoc-thi-${cuocThi}`;
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.download = `ket-qua-trac-nghiem-${scope}-top-${top}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            message.error(e.message);
+        } finally {
+            setExporting(false);
+        }
+    };
 
 
     // ===== first load =====
@@ -219,6 +256,16 @@ export default function NhomCauHoi() {
     return (
 
         <div className="admin-page space-y-4">
+
+                <div className="flex justify-end">
+                    <Button
+                        icon={<DownloadOutlined />}
+                        loading={exporting}
+                        onClick={handleExportExcel}
+                    >
+                        Xuất Excel
+                    </Button>
+                </div>
 
                 <Text className="!block !text-sm !text-slate-500">
                     Chỉ xét giải các bài có điểm đạt từ tỷ lệ đạt của đợt thi trở lên.

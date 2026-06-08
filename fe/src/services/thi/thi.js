@@ -499,6 +499,39 @@ export async function xepHangTracNghiemTheoCuocThi(
     }
 }
 
+export async function xuatKetQuaTracNghiemExcel({
+    cuocThiId,
+    dotThiId,
+    top,
+}) {
+
+    try {
+
+        const res =
+            await api.get(
+                BASE_PATH + "/ket-qua-trac-nghiem/export",
+                {
+                    params: {
+                        cuocThiId,
+                        dotThiId,
+                        top,
+                    },
+                    responseType: "blob",
+                }
+            )
+
+        return res.data
+
+    }
+    catch (e) {
+
+        throw new Error(
+            e?.response?.data?.message || "Không thể xuất file Excel"
+        )
+
+    }
+}
+
 export async function xepHangDonViTheoDotThi(
     dotThiId,
     top
