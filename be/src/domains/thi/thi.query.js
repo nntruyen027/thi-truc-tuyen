@@ -360,11 +360,15 @@ function mapRankingRow(row) {
     return {
         baiThiId: row.baiThiId,
         bai_thi_id: row.baiThiId,
+        dotThiId: row.dotThiId,
+        dot_thi_id: row.dotThiId,
         thiSinh: row.thiSinh,
         thi_sinh: row.thiSinh,
         diem: row.diem,
         thoiGian: row.thoiGian,
         thoi_gian: row.thoiGian,
+        thoiGianThi: row.thoiGianThi,
+        thoi_gian_thi: row.thoiGianThi,
         soDuDoan: row.soDuDoan,
         so_du_doan: row.soDuDoan,
         soNguoi100: row.soNguoi100,
@@ -1022,6 +1026,7 @@ async function layDanhSachBaiThiXepHang(whereClause) {
             thiSinhId: baiThi.thiSinhId,
             diem: baiThi.diem,
             thoiGian: baiThi.tongThoiGianDaLam,
+            thoiGianThi: dotThi.thoiGianThi,
             soDuDoan: baiThi.soDuDoan,
             dotThiId: dotThi.id,
             tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
@@ -1035,7 +1040,10 @@ async function layDanhSachBaiThiXepHang(whereClause) {
         .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
         .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
         .innerJoin(users, eq(users.id, baiThi.thiSinhId))
-        .where(whereClause);
+        .where(and(
+            whereClause,
+            eq(baiThi.trangThai, 1)
+        ));
 
     if (!examRows.length) {
         return [];
@@ -1084,8 +1092,10 @@ async function layDanhSachBaiThiXepHang(whereClause) {
         const current = {
             baiThiId: row.baiThiId,
             thiSinhId: row.thiSinhId,
+            dotThiId: row.dotThiId,
             diem: row.diem,
             thoiGian: row.thoiGian,
+            thoiGianThi: row.thoiGianThi,
             soDuDoan: row.soDuDoan,
             thiSinh: mapThiSinh({
                 id: row.userId,
@@ -1123,7 +1133,10 @@ async function layXepHangDonViTheoDieuKien(whereClause) {
         .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
         .innerJoin(users, eq(users.id, baiThi.thiSinhId))
         .innerJoin(donVi, eq(donVi.id, users.donViId))
-        .where(whereClause)
+        .where(and(
+            whereClause,
+            eq(baiThi.trangThai, 1)
+        ))
         .groupBy(donVi.id, donVi.ten);
 
     return rows

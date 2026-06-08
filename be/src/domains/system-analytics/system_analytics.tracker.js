@@ -46,14 +46,6 @@ function estimateRequestBytes(req) {
         return contentLength;
     }
 
-    if (req.body && typeof req.body === "object") {
-        try {
-            return Buffer.byteLength(JSON.stringify(req.body));
-        } catch {
-            return 0;
-        }
-    }
-
     return 0;
 }
 
@@ -144,33 +136,9 @@ function recordRequest({
 function middleware(req, res, next) {
     const startedAt = Date.now();
     const requestBytes = estimateRequestBytes(req);
-    let responseBytes = 0;
     let finalized = false;
     state.currentInFlight += 1;
     state.peakInFlight = Math.max(state.peakInFlight, state.currentInFlight);
-
-    const originalWrite = res.write.bind(res);
-    const originalEnd = res.end.bind(res);
-
-    res.write = (chunk, encoding, callback) => {
-        if (chunk) {
-            responseBytes += Buffer.isBuffer(chunk)
-                ? chunk.length
-                : Buffer.byteLength(chunk, encoding);
-        }
-
-        return originalWrite(chunk, encoding, callback);
-    };
-
-    res.end = (chunk, encoding, callback) => {
-        if (chunk) {
-            responseBytes += Buffer.isBuffer(chunk)
-                ? chunk.length
-                : Buffer.byteLength(chunk, encoding);
-        }
-
-        return originalEnd(chunk, encoding, callback);
-    };
 
     res.on("finish", () => {
         if (finalized) {
@@ -191,7 +159,7 @@ function middleware(req, res, next) {
             userAgent: req.headers["user-agent"],
             durationMs,
             requestBytes,
-            responseBytes: contentLength > 0 ? contentLength : responseBytes,
+            responseBytes: contentLength,
             username: req.user?.username || null,
         });
     });

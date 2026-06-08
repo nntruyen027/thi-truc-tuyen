@@ -32,6 +32,18 @@ function getSaiSo(record) {
     return record?.saiSo ?? record?.sai_so ?? 0;
 }
 
+function getThoiGianThi(record) {
+    return record?.thoiGianThi ?? record?.thoi_gian_thi ?? null;
+}
+
+function formatDuration(seconds) {
+    const normalized = Math.max(0, Number(seconds) || 0);
+    const minutes = Math.floor(normalized / 60);
+    const secs = normalized % 60;
+
+    return `${minutes}:${secs.toString().padStart(2, "0")}`;
+}
+
 
 export default function NhomCauHoi() {
     const {Text} = Typography;
@@ -220,24 +232,26 @@ export default function NhomCauHoi() {
             align: "center",
             render: (_, record) => {
                 const thoiGian = getThoiGian(record);
+                const dotThiSelected = dsDotThi.find((item) => item.id === dotThi);
+                const gioiHanTheoDotThi =
+                    dotThiSelected?.thoi_gian_thi != null
+                        ? Number(dotThiSelected.thoi_gian_thi) * 60
+                        : null;
+                const gioiHanTheoBanGhi =
+                    getThoiGianThi(record) != null
+                        ? Number(getThoiGianThi(record)) * 60
+                        : null;
+                const gioiHan = gioiHanTheoDotThi ?? gioiHanTheoBanGhi;
 
-                if (!thoiGian || !dotThi)
+                if (thoiGian == null)
                     return "-"
 
-                const diff = Math.min(dsDotThi.filter(t => t.id === dotThi)[0]?.thoi_gian_thi*60, thoiGian)
+                const diff =
+                    gioiHan != null
+                        ? Math.min(gioiHan, Number(thoiGian) || 0)
+                        : Number(thoiGian) || 0
 
-
-
-
-                const m =
-                    Math.floor(diff / 60)
-
-                const s =
-                    diff % 60
-
-                return `${m}:${s
-                    .toString()
-                    .padStart(2, "0")}`
+                return formatDuration(diff)
 
             }
         },
