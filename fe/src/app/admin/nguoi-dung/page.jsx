@@ -31,6 +31,7 @@ import {
     xoaNguoiDung
 } from "~/services/dm_chung/nguoi_dung";
 import UserModal from "./UserModal";
+import {useDonViSelect} from "~/hook/useDonVi";
 
 export default function NguoiDung() {
     const setPageInfo = usePageInfoStore((state) => state.setPageInfo);
@@ -47,13 +48,21 @@ export default function NguoiDung() {
     const [editing, setEditing] = useState(null);
     const [modalOpen, setModalOpen] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [selectedDonVi, setSelectedDonVi] = useState(null);
 
     const debouncedSearch = useDebounce(searchText, 400);
+    const {
+        dsDonVi,
+        loading: donViLoading,
+        setSearchDonVi,
+        loadMore: loadMoreDonVi,
+    } = useDonViSelect();
 
     const fetchData = async (
         page = 1,
         size = 10,
         search = "",
+        donViId = selectedDonVi,
     ) => {
         setLoading(true);
 
@@ -62,6 +71,7 @@ export default function NguoiDung() {
                 page,
                 size,
                 search,
+                donViId,
             });
 
             setData(res.data || []);
@@ -81,7 +91,8 @@ export default function NguoiDung() {
         await fetchData(
             pagination.current,
             pagination.pageSize,
-            debouncedSearch
+            debouncedSearch,
+            selectedDonVi
         );
     };
 
@@ -137,7 +148,8 @@ export default function NguoiDung() {
             await fetchData(
                 nextPage,
                 pagination.pageSize,
-                debouncedSearch
+                debouncedSearch,
+                selectedDonVi
             );
         } catch (e) {
             message.error(e.message);
@@ -151,9 +163,10 @@ export default function NguoiDung() {
             1,
             pagination.pageSize,
             debouncedSearch,
+            selectedDonVi,
         );
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [debouncedSearch]);
+    }, [debouncedSearch, selectedDonVi]);
 
     useEffect(() => {
         void fetchData();
@@ -269,6 +282,31 @@ export default function NguoiDung() {
                             onChange={(e) => setSearchText(e.target.value)}
                             className="max-w-xl"
                         />
+                        <Select
+                            allowClear
+                            showSearch
+                            value={selectedDonVi}
+                            placeholder="Lọc theo đơn vị"
+                            className="w-full lg:max-w-sm"
+                            loading={donViLoading}
+                            filterOption={false}
+                            options={dsDonVi.map((item) => ({
+                                label: item.ten,
+                                value: item.id,
+                            }))}
+                            onChange={(value) => setSelectedDonVi(value)}
+                            onSearch={setSearchDonVi}
+                            onPopupScroll={(e) => {
+                                const target = e.target;
+
+                                if (
+                                    target.scrollTop + target.offsetHeight >=
+                                    target.scrollHeight - 10
+                                ) {
+                                    loadMoreDonVi();
+                                }
+                            }}
+                        />
                     </div>
 
                      <Button
@@ -299,7 +337,8 @@ export default function NguoiDung() {
                         void fetchData(
                             p.current,
                             p.pageSize,
-                            debouncedSearch
+                            debouncedSearch,
+                            selectedDonVi
                         );
                     }}
                 />

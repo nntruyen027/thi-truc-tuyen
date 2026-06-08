@@ -5,6 +5,7 @@ const path = require("path")
 const multer = require("multer")
 
 const routes = require("./app/routes")
+const systemAnalyticsTracker = require("./domains/system-analytics/system_analytics.tracker");
 
 const app = express()
 const corsOptions = {
@@ -20,6 +21,7 @@ const corsOptions = {
 app.use(express.json({limit: "50mb"}))
 app.use(cors(corsOptions))
 app.options(/.*/, cors(corsOptions))
+app.use(systemAnalyticsTracker.middleware)
 app.use(
     helmet({
         crossOriginResourcePolicy: false,

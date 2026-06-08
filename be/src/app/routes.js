@@ -11,5 +11,6 @@ router.use(
     require("../domains/file/file.route")
 );
 router.use("/cau-hinh", require("../domains/cau-hinh/cau-hinh.route"))
+router.use("/thong-ke-he-thong", require("../domains/system-analytics/system_analytics.route"))
 
 module.exports = router

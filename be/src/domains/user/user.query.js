@@ -1,4 +1,4 @@
-const { and, count, eq, sql } = require("drizzle-orm");
+const { and, count, eq, ilike, or, sql } = require("drizzle-orm");
 const db = require("../../db/client");
 const { donVi, users } = require("../../db/schema");
 const { buildPagedResult, normalizePagination } = require("../../core/utils/drizzle");
@@ -44,7 +44,12 @@ function buildSearch(search) {
         return undefined;
     }
 
-    return sql`unaccent(lower(${users.hoTen})) like ${`%${search.trim().toLowerCase()}%`}`;
+    const keyword = `%${search.trim()}%`;
+
+    return or(
+        ilike(users.hoTen, keyword),
+        ilike(users.username, keyword)
+    );
 }
 
 async function selectUserByCondition(condition) {
@@ -73,13 +78,18 @@ async function selectUserByCondition(condition) {
     return mapUser(row);
 }
 
-exports.getUsers = async (search, page, size) => {
+exports.getUsers = async (search, page, size, donViId) => {
     const paging = normalizePagination({page, size});
     const conditions = [];
     const searchCondition = buildSearch(search);
+    const normalizedDonViId = Number(donViId);
 
     if (searchCondition) {
         conditions.push(searchCondition);
+    }
+
+    if (Number.isInteger(normalizedDonViId) && normalizedDonViId > 0) {
+        conditions.push(eq(users.donViId, normalizedDonViId));
     }
 
     const where = conditions.length ? and(...conditions) : undefined;

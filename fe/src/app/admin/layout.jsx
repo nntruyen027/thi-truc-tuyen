@@ -33,6 +33,7 @@ const breadcrumbNameMap = {
     "dot-thi": "Đợt thi",
     "trac-nghiem": "Trắc nghiệm",
     "ket-qua-trac-nghiem": "Kết quả trắc nghiệm",
+    "thong-ke-he-thong": "Thống kê hệ thống",
     "don-vi": "Đơn vị",
     "linh-vuc": "Lĩnh vực",
     "nhom-cau-hoi": "Nhóm câu hỏi",
@@ -45,6 +46,11 @@ const menuConfig = [
     {
         key: "/admin/dashboard",
         label: "Dashboard",
+        icon: <BarChartOutlined/>,
+    },
+    {
+        key: "/admin/thong-ke-he-thong",
+        label: "Thống kê hệ thống",
         icon: <BarChartOutlined/>,
     },
     {

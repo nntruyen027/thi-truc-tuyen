@@ -6,6 +6,7 @@ const BASE_PATH = "/users";
 export async function layDsNguoiDung({ size = 10,
                                    page = 1,
                                    search = "",
+                                   donViId,
                                    }){
     try {
         const res = await api.get(BASE_PATH, {
@@ -13,6 +14,7 @@ export async function layDsNguoiDung({ size = 10,
                 size,
                 page,
                 search,
+                donViId,
             }
         });
         return res.data.data;

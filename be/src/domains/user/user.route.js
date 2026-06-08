@@ -27,10 +27,10 @@ router.get(
     role(["admin"]),
     async (req, res) => {
         try {
-            const {search, page, size} = req.query
+            const {search, page, size, donViId} = req.query
 
             const data =
-                await query.getUsers(search, page, size)
+                await query.getUsers(search, page, size, donViId)
 
             resUtil.ok(res, data)
         } catch (err) {
