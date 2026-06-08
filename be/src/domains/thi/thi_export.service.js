@@ -1,5 +1,6 @@
 const ExcelJS = require("exceljs");
 const query = require("./thi.query");
+const { runWorkerTask } = require("../../utils/worker-task");
 
 function formatDateTime(value) {
     const date = new Date(value);
@@ -54,11 +55,11 @@ function createHeaderRow(worksheet, label, value) {
     return row;
 }
 
-exports.exportKetQuaTracNghiem = async ({
+async function buildKetQuaTracNghiemExport({
     scopeType,
     scopeId,
     top,
-}) => {
+}) {
     const rows =
         scopeType === "dot-thi"
             ? await query.xepHangTracNghiemTheoDotThi(scopeId, top)
@@ -149,5 +150,19 @@ exports.exportKetQuaTracNghiem = async ({
     return {
         buffer: await workbook.xlsx.writeBuffer(),
         fileName: buildFileName({scopeType, scopeId, top}),
+    };
+}
+
+exports.buildKetQuaTracNghiemExport = buildKetQuaTracNghiemExport;
+
+exports.exportKetQuaTracNghiem = async (payload) => {
+    const result = await runWorkerTask(
+        "domains/thi/thi_export.worker.js",
+        payload
+    );
+
+    return {
+        fileName: result.fileName,
+        buffer: Buffer.from(result.buffer),
     };
 };

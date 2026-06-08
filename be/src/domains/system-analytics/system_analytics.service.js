@@ -1,12 +1,8 @@
 const os = require("os");
-const { monitorEventLoopDelay } = require("perf_hooks");
 const { count, sql } = require("drizzle-orm");
 const db = require("../../db/client");
 const { files } = require("../../db/schema");
 const tracker = require("./system_analytics.tracker");
-
-const eventLoopDelayMonitor = monitorEventLoopDelay({ resolution: 20 });
-eventLoopDelayMonitor.enable();
 
 function safePercent(value, total) {
     if (!total) {
@@ -14,11 +10,6 @@ function safePercent(value, total) {
     }
 
     return Math.max(0, Math.min(100, Math.round((value / total) * 100)));
-}
-
-function normalizeNanoToMs(value) {
-    const normalized = Number(value || 0);
-    return Math.round(normalized / 1e6);
 }
 
 exports.getSystemAnalytics = async () => {
@@ -44,8 +35,7 @@ exports.getSystemAnalytics = async () => {
         100,
         Math.round(((Number(loadAverage[0]) || 0) / cpuCount) * 100)
     );
-    const eventLoopLagMs = normalizeNanoToMs(eventLoopDelayMonitor.mean);
-    const eventLoopLagMaxMs = normalizeNanoToMs(eventLoopDelayMonitor.max);
+    const eventLoop = runtime.eventLoop?.current || {};
 
     return {
         overview: {
@@ -82,8 +72,11 @@ exports.getSystemAnalytics = async () => {
             loadAverage5m: Number(loadAverage[1] || 0),
             loadAverage15m: Number(loadAverage[2] || 0),
             cpuLoadPercent1m: oneMinuteLoadPercent,
-            eventLoopLagMs,
-            eventLoopLagMaxMs,
+            eventLoopLagMs: Number(eventLoop.meanMs || 0),
+            eventLoopLagP95Ms: Number(eventLoop.p95Ms || 0),
+            eventLoopLagP99Ms: Number(eventLoop.p99Ms || 0),
+            eventLoopLagMaxMs: Number(eventLoop.maxMs || 0),
+            eventLoopSampledAt: eventLoop.sampledAt || null,
         },
         charts: {
             requestsByHour: runtime.perHour.map((item) => ({
@@ -103,5 +96,7 @@ exports.getSystemAnalytics = async () => {
             methodBreakdown: runtime.methodBreakdown,
         },
         recentRequests: runtime.recentRequests,
+        activeRequests: runtime.activeRequests || [],
+        recentLagSpikes: runtime.recentLagSpikes || [],
     };
 };

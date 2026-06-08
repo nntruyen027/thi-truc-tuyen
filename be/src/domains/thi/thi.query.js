@@ -15,6 +15,9 @@ const {
     users,
 } = require("../../db/schema");
 
+const EXAM_FLOW_DEBUG = process.env.EXAM_FLOW_DEBUG === "1";
+const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
+
 const LOAI_CAU_HOI = {
     CHON_MOT: "chon_mot",
     CHON_NHIEU: "chon_nhieu",
@@ -22,6 +25,47 @@ const LOAI_CAU_HOI = {
 };
 
 let baiThiChiTietColumnsPromise = null;
+
+function createExamTrace(name, meta = {}) {
+    const startedAt = process.hrtime.bigint();
+    const steps = [];
+
+    function elapsedMs() {
+        return Number(process.hrtime.bigint() - startedAt) / 1e6;
+    }
+
+    return {
+        step(stepName, extra = {}) {
+            if (!EXAM_FLOW_DEBUG) {
+                return;
+            }
+
+            steps.push({
+                step: stepName,
+                ms: Math.round(elapsedMs()),
+                ...extra,
+            });
+        },
+        finish(extra = {}) {
+            const totalMs = Math.round(elapsedMs());
+
+            if (!EXAM_FLOW_DEBUG || totalMs < EXAM_FLOW_SLOW_MS) {
+                return;
+            }
+
+            console.log(
+                "[exam-flow]",
+                JSON.stringify({
+                    name,
+                    totalMs,
+                    ...meta,
+                    ...extra,
+                    steps,
+                })
+            );
+        },
+    };
+}
 
 function withLegacyKeys(data) {
     if (!data || typeof data !== "object" || Array.isArray(data)) {
@@ -206,6 +250,33 @@ async function upsertBaiThiChiTietAnswer(values, columnSupport) {
         `,
         params
     );
+}
+
+async function batchUpdateBaiThiChiTietScores(tx, items) {
+    if (!items.length) {
+        return;
+    }
+
+    const dungCaseSql = sql.join(
+        items.map((item) => sql`when ${item.id} then ${item.dung}`),
+        sql` `
+    );
+    const diemCaseSql = sql.join(
+        items.map((item) => sql`when ${item.id} then ${item.diem}`),
+        sql` `
+    );
+    const idListSql = sql.join(
+        items.map((item) => sql`${item.id}`),
+        sql`, `
+    );
+
+    await tx.execute(sql`
+        update "thi"."bai_thi_chi_tiet" as target
+        set
+            "dung" = case target."id" ${dungCaseSql} else target."dung" end,
+            "diem" = case target."id" ${diemCaseSql} else target."diem" end
+        where target."id" in (${idListSql})
+    `);
 }
 
 function mapBaiThi(row) {
@@ -557,6 +628,11 @@ exports.layDeDangLam = async (dotThiId, thiSinhId) => {
 };
 
 exports.taoDeThi = async (dotThiId, thiSinhId) => {
+    const trace = createExamTrace("taoDeThi", {
+        dotThiId: Number(dotThiId),
+        thiSinhId: Number(thiSinhId),
+    });
+
     return db.transaction(async (tx) => {
         const [lanThiRow] = await tx
             .select({
@@ -567,6 +643,7 @@ exports.taoDeThi = async (dotThiId, thiSinhId) => {
                 eq(deThi.dotThiId, Number(dotThiId)),
                 eq(deThi.thiSinhId, Number(thiSinhId))
             ));
+        trace.step("loadLanThi");
 
         const lanThi = Number(lanThiRow?.lanThi || 1);
         const [dotThiInfo] = await tx
@@ -576,6 +653,9 @@ exports.taoDeThi = async (dotThiId, thiSinhId) => {
             .from(dotThi)
             .where(eq(dotThi.id, Number(dotThiId)))
             .limit(1);
+        trace.step("loadDotThiInfo", {
+            lanThi,
+        });
 
         const shouldShuffleQuestions =
             lanThi > 1 && Boolean(dotThiInfo?.coTronCauHoi);
@@ -588,11 +668,17 @@ exports.taoDeThi = async (dotThiId, thiSinhId) => {
                 lanThi,
             })
             .returning({id: deThi.id});
+        trace.step("insertDeThi", {
+            deThiId: Number(createdDeThi?.id || 0),
+        });
 
         const cauHinhRows = await tx
             .select()
             .from(tracNghiemDotThi)
             .where(eq(tracNghiemDotThi.dotThiId, Number(dotThiId)));
+        trace.step("loadConfigs", {
+            configCount: cauHinhRows.length,
+        });
 
         const sortedConfigs = [...cauHinhRows].sort((left, right) => {
             const byLoai =
@@ -607,6 +693,9 @@ exports.taoDeThi = async (dotThiId, thiSinhId) => {
         });
 
         let thuTu = 0;
+        let totalCandidates = 0;
+        let totalSelected = 0;
+        const deThiCauHoiRows = [];
 
         for (const config of sortedConfigs) {
             const questionRows = await tx
@@ -618,6 +707,7 @@ exports.taoDeThi = async (dotThiId, thiSinhId) => {
                     eq(tracNghiem.loaiCauHoi, config.loaiCauHoi || LOAI_CAU_HOI.CHON_MOT)
                 ))
                 .orderBy(asc(tracNghiem.id));
+            totalCandidates += questionRows.length;
 
             const candidateIds = questionRows.map((item) => item.id);
             const selectedIds =
@@ -628,19 +718,31 @@ exports.taoDeThi = async (dotThiId, thiSinhId) => {
                         + (Number(config.id) * 17)
                     ).slice(0, config.soLuong)
                     : candidateIds.slice(0, config.soLuong);
+            totalSelected += selectedIds.length;
 
             for (const questionId of selectedIds) {
                 thuTu += 1;
-
-                await tx
-                    .insert(deThiCauHoi)
-                    .values({
-                        deThiId: createdDeThi.id,
-                        cauHoiId: questionId,
-                        thuTu,
-                    });
+                deThiCauHoiRows.push({
+                    deThiId: createdDeThi.id,
+                    cauHoiId: questionId,
+                    thuTu,
+                });
             }
         }
+
+        if (deThiCauHoiRows.length) {
+            await tx
+                .insert(deThiCauHoi)
+                .values(deThiCauHoiRows);
+        }
+
+        trace.finish({
+            deThiId: Number(createdDeThi?.id || 0),
+            configCount: sortedConfigs.length,
+            totalCandidates,
+            totalSelected,
+            insertedQuestionCount: deThiCauHoiRows.length,
+        });
 
         return createdDeThi.id;
     });
@@ -668,8 +770,15 @@ exports.batDauThi = async (deThiId, thiSinhId) => {
 };
 
 exports.luuCauTraLoi = async (baiThiId, cauHoiId, dapAn) => {
+    const trace = createExamTrace("luuCauTraLoi", {
+        baiThiId: Number(baiThiId),
+        cauHoiId: Number(cauHoiId),
+    });
+
     await ensureEntityExists(db, baiThi, baiThiId, "Bài thi không tồn tại.");
+    trace.step("ensureBaiThi");
     const columnSupport = await getBaiThiChiTietColumnSupport();
+    trace.step("loadColumnSupport");
 
     const [question] = await db
         .select({
@@ -679,6 +788,7 @@ exports.luuCauTraLoi = async (baiThiId, cauHoiId, dapAn) => {
         .from(tracNghiem)
         .where(eq(tracNghiem.id, Number(cauHoiId)))
         .limit(1);
+    trace.step("loadQuestion");
 
     if (!question) {
         throw "Câu hỏi không tồn tại.";
@@ -713,6 +823,9 @@ exports.luuCauTraLoi = async (baiThiId, cauHoiId, dapAn) => {
     }
 
     await upsertBaiThiChiTietAnswer(values, columnSupport);
+    trace.finish({
+        loaiCauHoi,
+    });
 
     return null;
 };
@@ -741,9 +854,15 @@ exports.luuCauTraLoiTuLuan = async (baiThiId, cauHoiId, dapAn) => {
 };
 
 exports.nopBai = async (baiThiIdValue) => {
+    const trace = createExamTrace("nopBai", {
+        baiThiId: Number(baiThiIdValue),
+    });
+
     return db.transaction(async (tx) => {
         await ensureEntityExists(tx, baiThi, baiThiIdValue, "Bài thi không tồn tại.");
+        trace.step("ensureBaiThi");
         const columnSupport = await getBaiThiChiTietColumnSupport();
+        trace.step("loadColumnSupport");
 
         const chiTietRows = await tx
             .select({
@@ -764,10 +883,12 @@ exports.nopBai = async (baiThiIdValue) => {
             .from(baiThiChiTiet)
             .innerJoin(tracNghiem, eq(tracNghiem.id, baiThiChiTiet.cauHoiId))
             .where(eq(baiThiChiTiet.baiThiId, Number(baiThiIdValue)));
+        trace.step("loadAnswers", {
+            answerCount: chiTietRows.length,
+        });
 
         let tongDiem = 0;
-
-        await Promise.all(chiTietRows.map(async (item) => {
+        const scoreUpdates = chiTietRows.map((item) => {
             const loaiCauHoi = normalizeLoaiCauHoi(item.loaiCauHoi);
             let dung = false;
 
@@ -790,14 +911,15 @@ exports.nopBai = async (baiThiIdValue) => {
             const diem = dung ? Number(item.diemCauHoi || 0) : 0;
             tongDiem += diem;
 
-            await tx
-                .update(baiThiChiTiet)
-                .set({
-                    dung,
-                    diem,
-                })
-                .where(eq(baiThiChiTiet.id, item.id));
-        }));
+            return {
+                id: Number(item.id),
+                dung,
+                diem,
+            };
+        });
+
+        await batchUpdateBaiThiChiTietScores(tx, scoreUpdates);
+        trace.step("updateAnswerScores");
 
         await tx
             .update(baiThi)
@@ -807,6 +929,10 @@ exports.nopBai = async (baiThiIdValue) => {
                 diem: tongDiem,
             })
             .where(eq(baiThi.id, Number(baiThiIdValue)));
+        trace.finish({
+            answerCount: chiTietRows.length,
+            tongDiem,
+        });
 
         return tongDiem;
     });
@@ -904,10 +1030,19 @@ exports.layBaiDangLam = async (thiSinhId, dotThiId) => {
 };
 
 exports.startThi = async (dotThiId, thiSinhId) => {
+    const trace = createExamTrace("startThi", {
+        dotThiId: Number(dotThiId),
+        thiSinhId: Number(thiSinhId),
+    });
+
     return db.transaction(async (tx) => {
         const conDuoc = await exports.conDuocThi(dotThiId, thiSinhId);
+        trace.step("conDuocThi");
 
         if (!conDuoc) {
+            trace.finish({
+                result: "het_lan_thi",
+            });
             return {error: "het_lan_thi"};
         }
 
@@ -929,6 +1064,9 @@ exports.startThi = async (dotThiId, thiSinhId) => {
                 eq(baiThi.trangThai, 0)
             ))
             .limit(1);
+        trace.step("loadExistingBaiThi", {
+            hasExisting: Boolean(existing?.baiThiId),
+        });
 
         let baiThiIdValue = existing?.baiThiId || null;
         let deThiIdValue = existing?.deThiId || null;
@@ -938,8 +1076,15 @@ exports.startThi = async (dotThiId, thiSinhId) => {
 
         if (!baiThiIdValue) {
             deThiIdValue = await exports.taoDeThi(dotThiId, thiSinhId);
+            trace.step("taoDeThi", {
+                deThiId: Number(deThiIdValue || 0),
+            });
             baiThiIdValue = await exports.batDauThi(deThiIdValue, thiSinhId);
+            trace.step("batDauThi", {
+                baiThiId: Number(baiThiIdValue || 0),
+            });
             thoiGianThi = await layThoiGianThiTheoDeThi(tx, deThiIdValue);
+            trace.step("loadThoiGianThi");
             tongDaLam = 0;
             lanBatDau = null;
         }
@@ -956,6 +1101,7 @@ exports.startThi = async (dotThiId, thiSinhId) => {
                 .where(eq(baiThi.id, Number(baiThiIdValue)));
 
             lanBatDau = now;
+            trace.step("markDangLam");
         }
 
         const diff = Math.floor((Date.now() - new Date(lanBatDau).getTime()) / 1000);
@@ -969,6 +1115,13 @@ exports.startThi = async (dotThiId, thiSinhId) => {
             layCauHoiDeThiInternal(tx, deThiIdValue, baiThiIdValue),
             layCauHoiTuLuanInternal(tx, baiThiIdValue),
         ]);
+        trace.finish({
+            deThiId: Number(deThiIdValue || 0),
+            baiThiId: Number(baiThiIdValue || 0),
+            cauHoiCount: cauHoi.length,
+            tuLuanCount: tuLuan.length,
+            timeLeft,
+        });
 
         return {
             deThiId: deThiIdValue,

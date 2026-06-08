@@ -1,6 +1,16 @@
+const { monitorEventLoopDelay } = require("perf_hooks");
+
 const MAX_RECENT_REQUESTS = 200;
 const MAX_BUCKETS = 72;
 const SLOW_REQUEST_THRESHOLD_MS = 1000;
+const MAX_ACTIVE_REQUESTS = 200;
+const MAX_RECENT_LAG_SPIKES = 20;
+const ACTIVE_REQUEST_SNAPSHOT_LIMIT = 10;
+const EVENT_LOOP_SAMPLE_INTERVAL_MS = 5000;
+const LAG_SPIKE_THRESHOLD_MS = Number(process.env.EVENT_LOOP_LAG_SPIKE_MS || 120);
+
+const eventLoopDelayMonitor = monitorEventLoopDelay({ resolution: 20 });
+eventLoopDelayMonitor.enable();
 
 const state = {
     startedAt: new Date(),
@@ -21,13 +31,35 @@ const state = {
     statusCounts: new Map(),
     methodCounts: new Map(),
     ipCounts: new Map(),
+    activeRequests: new Map(),
+    recentLagSpikes: [],
+    eventLoop: {
+        current: {
+            meanMs: 0,
+            maxMs: 0,
+            p95Ms: 0,
+            p99Ms: 0,
+            sampledAt: null,
+        },
+    },
 };
+
+let requestSequence = 0;
 
 function normalizeByteValue(value) {
     const normalized = Number(value);
     return Number.isFinite(normalized) && normalized >= 0
         ? normalized
         : 0;
+}
+
+function normalizeMsValue(value) {
+    const normalized = Number(value || 0);
+    if (!Number.isFinite(normalized) || normalized < 0) {
+        return 0;
+    }
+
+    return Math.round(normalized / 1e6);
 }
 
 function buildHourKey(value) {
@@ -51,6 +83,11 @@ function estimateRequestBytes(req) {
 
 function incrementMap(map, key, value = 1) {
     map.set(key, normalizeByteValue(map.get(key)) + normalizeByteValue(value));
+}
+
+function createRequestId() {
+    requestSequence += 1;
+    return `req-${Date.now()}-${requestSequence}`;
 }
 
 function trimBucketsIfNeeded() {
@@ -133,12 +170,78 @@ function recordRequest({
     }
 }
 
+function trimActiveRequestsIfNeeded() {
+    while (state.activeRequests.size > MAX_ACTIVE_REQUESTS) {
+        const oldestKey = state.activeRequests.keys().next().value;
+
+        if (!oldestKey) {
+            return;
+        }
+
+        state.activeRequests.delete(oldestKey);
+    }
+}
+
+function sampleActiveRequests() {
+    const now = Date.now();
+
+    return Array.from(state.activeRequests.values())
+        .map((item) => ({
+            id: item.id,
+            method: item.method,
+            path: item.path,
+            ip: item.ip,
+            requestBytes: item.requestBytes,
+            startedAt: new Date(item.startedAt).toISOString(),
+            inFlightMs: Math.max(now - item.startedAt, 0),
+        }))
+        .sort((left, right) => right.inFlightMs - left.inFlightMs)
+        .slice(0, ACTIVE_REQUEST_SNAPSHOT_LIMIT);
+}
+
+function captureEventLoopSample() {
+    const sample = {
+        meanMs: normalizeMsValue(eventLoopDelayMonitor.mean),
+        maxMs: normalizeMsValue(eventLoopDelayMonitor.max),
+        p95Ms: normalizeMsValue(eventLoopDelayMonitor.percentile(95)),
+        p99Ms: normalizeMsValue(eventLoopDelayMonitor.percentile(99)),
+        sampledAt: new Date().toISOString(),
+    };
+
+    state.eventLoop.current = sample;
+
+    if (sample.maxMs >= LAG_SPIKE_THRESHOLD_MS || sample.p99Ms >= LAG_SPIKE_THRESHOLD_MS) {
+        state.recentLagSpikes.unshift({
+            ...sample,
+            activeRequests: sampleActiveRequests(),
+        });
+
+        if (state.recentLagSpikes.length > MAX_RECENT_LAG_SPIKES) {
+            state.recentLagSpikes.length = MAX_RECENT_LAG_SPIKES;
+        }
+    }
+
+    eventLoopDelayMonitor.reset();
+}
+
+setInterval(captureEventLoopSample, EVENT_LOOP_SAMPLE_INTERVAL_MS).unref();
+
 function middleware(req, res, next) {
     const startedAt = Date.now();
     const requestBytes = estimateRequestBytes(req);
+    const requestId = createRequestId();
     let finalized = false;
     state.currentInFlight += 1;
     state.peakInFlight = Math.max(state.peakInFlight, state.currentInFlight);
+    state.activeRequests.set(requestId, {
+        id: requestId,
+        startedAt,
+        method: req.method,
+        path: req.originalUrl || req.url || "/",
+        ip: req.ip || req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "-",
+        requestBytes,
+    });
+    trimActiveRequestsIfNeeded();
 
     res.on("finish", () => {
         if (finalized) {
@@ -149,6 +252,7 @@ function middleware(req, res, next) {
         const durationMs = Date.now() - startedAt;
         const contentLength = normalizeByteValue(res.getHeader("content-length"));
         state.currentInFlight = Math.max(state.currentInFlight - 1, 0);
+        state.activeRequests.delete(requestId);
 
         recordRequest({
             time: startedAt,
@@ -171,6 +275,7 @@ function middleware(req, res, next) {
 
         finalized = true;
         state.currentInFlight = Math.max(state.currentInFlight - 1, 0);
+        state.activeRequests.delete(requestId);
     });
 
     next();
@@ -249,6 +354,9 @@ function getSnapshot() {
             .map(([method, total]) => ({method, total}))
             .sort((left, right) => right.total - left.total),
         recentRequests: state.recentRequests,
+        activeRequests: sampleActiveRequests(),
+        recentLagSpikes: state.recentLagSpikes,
+        eventLoop: state.eventLoop,
     };
 }
 

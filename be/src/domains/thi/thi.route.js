@@ -9,6 +9,46 @@ const resUtil = require("../../core/utils/response")
 const auth = require("../../core/middlewares/auth")
 const role = require("../../core/middlewares/role")
 
+const EXAM_FLOW_DEBUG = process.env.EXAM_FLOW_DEBUG === "1";
+const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
+
+function createRouteTrace(name, meta = {}) {
+    const startedAt = Date.now();
+    const steps = [];
+
+    return {
+        step(stepName, extra = {}) {
+            if (!EXAM_FLOW_DEBUG) {
+                return;
+            }
+
+            steps.push({
+                step: stepName,
+                ms: Date.now() - startedAt,
+                ...extra,
+            });
+        },
+        finish(extra = {}) {
+            const totalMs = Date.now() - startedAt;
+
+            if (!EXAM_FLOW_DEBUG || totalMs < EXAM_FLOW_SLOW_MS) {
+                return;
+            }
+
+            console.log(
+                "[exam-route]",
+                JSON.stringify({
+                    name,
+                    totalMs,
+                    ...meta,
+                    ...extra,
+                    steps,
+                })
+            );
+        },
+    };
+}
+
 
 /**
  * kiểm tra còn được thi không
@@ -188,6 +228,9 @@ router.post(
     "/tra-loi",
     auth,
     async (req, res) => {
+        const trace = createRouteTrace("POST /thi/tra-loi", {
+            userId: Number(req.user?.id || 0),
+        });
 
         try {
             const {
@@ -199,6 +242,10 @@ router.post(
                 validation.ensureRequiredId(baiThiId, "Bài thi")
             const normalizedCauHoiId =
                 validation.ensureRequiredId(cauHoiId, "Câu hỏi")
+            trace.step("validated", {
+                baiThiId: normalizedBaiThiId,
+                cauHoiId: normalizedCauHoiId,
+            });
 
             const data =
                 await query.luuCauTraLoi(
@@ -206,6 +253,10 @@ router.post(
                     normalizedCauHoiId,
                     dapAn,
                 )
+            trace.finish({
+                baiThiId: normalizedBaiThiId,
+                cauHoiId: normalizedCauHoiId,
+            });
 
             resUtil.ok(res, data)
 
@@ -273,6 +324,9 @@ router.post(
     "/nop-bai",
     auth,
     async (req, res) => {
+        const trace = createRouteTrace("POST /thi/nop-bai", {
+            userId: Number(req.user?.id || 0),
+        });
 
         try {
             const {
@@ -280,11 +334,17 @@ router.post(
             } = req.body
             const normalizedBaiThiId =
                 validation.ensureRequiredId(baiThiId, "Bài thi")
+            trace.step("validated", {
+                baiThiId: normalizedBaiThiId,
+            });
 
             const data =
                 await query.nopBai(
                     normalizedBaiThiId,
                 )
+            trace.finish({
+                baiThiId: normalizedBaiThiId,
+            });
 
             resUtil.ok(res, data)
 
@@ -336,30 +396,45 @@ router.post(
     "/start",
     auth,
     async (req, res) => {
+        const trace = createRouteTrace("POST /thi/start", {
+            userId: Number(req.user?.id || 0),
+        });
 
         try {
             const {dotThiId} =
                 req.body
             const normalizedDotThiId =
                 validation.ensureRequiredId(dotThiId, "Đợt thi")
+            trace.step("validated", {
+                dotThiId: normalizedDotThiId,
+            });
 
             const thiSinhId =
                 req.user.id
 
             await validation.ensureDotThiQuestionConfigValid(normalizedDotThiId)
+            trace.step("ensureDotThiQuestionConfigValid");
 
             const result =
                 await query.startThi(
                     normalizedDotThiId,
                     thiSinhId,
                 )
+            trace.step("query.startThi");
 
             const tuLuanInfo =
                 await validation.layTrangThaiTuLuanTheoDotThi(normalizedDotThiId)
+            trace.step("layTrangThaiTuLuanTheoDotThi");
 
             if (!tuLuanInfo.coTuLuan) {
                 result.tuLuan = []
             }
+            trace.finish({
+                dotThiId: normalizedDotThiId,
+                baiThiId: Number(result?.baiThiId || result?.bai_thi_id || 0),
+                cauHoiCount: Array.isArray(result?.cauHoi) ? result.cauHoi.length : 0,
+                tuLuanCount: Array.isArray(result?.tuLuan) ? result.tuLuan.length : 0,
+            });
 
             resUtil.ok(
                 res,

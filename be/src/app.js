@@ -8,6 +8,7 @@ const routes = require("./app/routes")
 const systemAnalyticsTracker = require("./domains/system-analytics/system_analytics.tracker");
 
 const app = express()
+const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || "5mb";
 const corsOptions = {
     origin: true,
     credentials: true,
@@ -18,7 +19,7 @@ const corsOptions = {
     ],
 }
 
-app.use(express.json({limit: "50mb"}))
+app.use(express.json({limit: JSON_BODY_LIMIT}))
 app.use(cors(corsOptions))
 app.options(/.*/, cors(corsOptions))
 app.use(systemAnalyticsTracker.middleware)
