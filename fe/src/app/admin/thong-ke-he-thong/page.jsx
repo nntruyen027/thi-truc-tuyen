@@ -22,7 +22,10 @@ import {
     CloudServerOutlined,
     DatabaseOutlined,
     EyeOutlined,
+    FireOutlined,
+    HourglassOutlined,
     ReloadOutlined,
+    ThunderboltOutlined,
 } from "@ant-design/icons";
 import {usePageInfoStore} from "~/store/page-info";
 import {layThongKeHeThong} from "~/services/thong-ke-he-thong";
@@ -65,6 +68,30 @@ function formatDuration(seconds) {
 
 function formatDateTime(value) {
     return value ? dayjs(value).format("DD/MM/YYYY HH:mm:ss") : "-";
+}
+
+function getSeverityColor(level) {
+    if (level === "danger") {
+        return "red";
+    }
+
+    if (level === "warning") {
+        return "orange";
+    }
+
+    return "green";
+}
+
+function getSeverityLabel(level) {
+    if (level === "danger") {
+        return "Nguy cơ cao";
+    }
+
+    if (level === "warning") {
+        return "Cần theo dõi";
+    }
+
+    return "Ổn định";
 }
 
 function SimpleBarChart({items = [], valueFormatter = (value) => value, color = "#1948be"}) {
@@ -198,6 +225,96 @@ export default function ThongKeHeThongPage() {
     const overview = data?.overview || {};
     const charts = data?.charts || {};
 
+    const healthChecks = useMemo(() => {
+        const checks = [
+            {
+                key: "cpu",
+                label: "CPU load",
+                value: `${overview.cpuLoadPercent1m || 0}%`,
+                level:
+                    (overview.cpuLoadPercent1m || 0) >= 85
+                        ? "danger"
+                        : (overview.cpuLoadPercent1m || 0) >= 70
+                            ? "warning"
+                            : "ok",
+                detail: "Ngưỡng cảnh báo khi tải CPU duy trì cao trong 1 phút.",
+            },
+            {
+                key: "p95",
+                label: "P95 latency",
+                value: `${overview.p95DurationMs || 0} ms`,
+                level:
+                    (overview.p95DurationMs || 0) >= 1500
+                        ? "danger"
+                        : (overview.p95DurationMs || 0) >= 800
+                            ? "warning"
+                            : "ok",
+                detail: "Phản ánh nhóm request chậm nhất, dễ gây cảm giác giật/lắc.",
+            },
+            {
+                key: "event-loop",
+                label: "Event loop delay",
+                value: `${overview.eventLoopLagMs || 0} ms`,
+                level:
+                    (overview.eventLoopLagMs || 0) >= 100
+                        ? "danger"
+                        : (overview.eventLoopLagMs || 0) >= 50
+                            ? "warning"
+                            : "ok",
+                detail: "Tăng cao khi tiến trình Node bị block và phản hồi đồng loạt bị trễ.",
+            },
+            {
+                key: "in-flight",
+                label: "Request đang xử lý",
+                value: `${overview.currentInFlight || 0}`,
+                level:
+                    (overview.currentInFlight || 0) >= 80
+                        ? "danger"
+                        : (overview.currentInFlight || 0) >= 40
+                            ? "warning"
+                            : "ok",
+                detail: "Số request đồng thời đang treo xử lý trên tiến trình hiện tại.",
+            },
+            {
+                key: "server-errors",
+                label: "Lỗi 5xx",
+                value: `${overview.serverErrors || 0}`,
+                level:
+                    (overview.serverErrors || 0) >= 20
+                        ? "danger"
+                        : (overview.serverErrors || 0) >= 5
+                            ? "warning"
+                            : "ok",
+                detail: "Nếu tăng liên tục thì có lỗi ứng dụng hoặc nghẽn tài nguyên.",
+            },
+        ];
+
+        return checks;
+    }, [
+        overview.cpuLoadPercent1m,
+        overview.currentInFlight,
+        overview.eventLoopLagMs,
+        overview.p95DurationMs,
+        overview.serverErrors,
+    ]);
+
+    const overallHealth = useMemo(() => {
+        if (healthChecks.some((item) => item.level === "danger")) {
+            return "danger";
+        }
+
+        if (healthChecks.some((item) => item.level === "warning")) {
+            return "warning";
+        }
+
+        return "ok";
+    }, [healthChecks]);
+
+    const alertItems = useMemo(
+        () => healthChecks.filter((item) => item.level !== "ok"),
+        [healthChecks]
+    );
+
     const recentColumns = useMemo(() => ([
         {
             title: "Thời gian",
@@ -290,6 +407,7 @@ export default function ThongKeHeThongPage() {
                             <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
                                 <span>Bắt đầu ghi nhận: {formatDateTime(overview.startedAt)}</span>
                                 <span>Uptime: {formatDuration(overview.uptimeSeconds)}</span>
+                                <span>In-flight: {overview.currentInFlight || 0}</span>
                             </div>
                         </Space>
                     </Col>
@@ -308,6 +426,19 @@ export default function ThongKeHeThongPage() {
                                         Làm mới
                                     </Button>
                                 </div>
+                                <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
+                                    <div>
+                                        <div className="text-xs uppercase tracking-[0.12em] text-slate-400">
+                                            Sức khỏe hệ thống
+                                        </div>
+                                        <div className="mt-1 font-semibold text-slate-900">
+                                            {getSeverityLabel(overallHealth)}
+                                        </div>
+                                    </div>
+                                    <Tag color={getSeverityColor(overallHealth)}>
+                                        {overallHealth === "danger" ? "Cảnh báo đỏ" : overallHealth === "warning" ? "Cảnh báo vàng" : "Bình thường"}
+                                    </Tag>
+                                </div>
                                 <Progress percent={overview.ramUsagePercent || 0} strokeColor="#1948be"/>
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     <div className="rounded-2xl bg-white p-4">
@@ -317,6 +448,13 @@ export default function ThongKeHeThongPage() {
                                     <div className="rounded-2xl bg-white p-4">
                                         <div className="text-xs uppercase text-slate-400">Tổng RAM</div>
                                         <div className="mt-1 font-semibold text-slate-900">{formatBytes(overview.ramTotalBytes)}</div>
+                                    </div>
+                                </div>
+                                <div className="rounded-2xl bg-white p-4">
+                                    <div className="text-xs uppercase text-slate-400">Event loop delay</div>
+                                    <div className="mt-1 flex items-end justify-between gap-3">
+                                        <div className="text-lg font-semibold text-slate-900">{overview.eventLoopLagMs || 0} ms</div>
+                                        <div className="text-sm text-slate-500">Max: {overview.eventLoopLagMaxMs || 0} ms</div>
                                     </div>
                                 </div>
                             </Space>
@@ -349,6 +487,70 @@ export default function ThongKeHeThongPage() {
             </Row>
 
             <Row gutter={[20, 20]}>
+                <Col xs={24} xl={10}>
+                    <Card title="Cảnh báo hiệu năng" className="rounded-[28px] border-0 shadow-sm">
+                        <div className="space-y-3">
+                            {alertItems.length ? alertItems.map((item) => (
+                                <div
+                                    key={item.key}
+                                    className="rounded-2xl border border-slate-100 bg-slate-50 p-4"
+                                >
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="font-semibold text-slate-900">{item.label}</div>
+                                        <Tag color={getSeverityColor(item.level)}>{item.value}</Tag>
+                                    </div>
+                                    <div className="mt-2 text-sm text-slate-500">{item.detail}</div>
+                                </div>
+                            )) : (
+                                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-700">
+                                    Chưa phát hiện chỉ số nào vượt ngưỡng cảnh báo.
+                                </div>
+                            )}
+                        </div>
+                    </Card>
+                </Col>
+                <Col xs={24} xl={14}>
+                    <Card title="Ngưỡng đánh giá" className="rounded-[28px] border-0 shadow-sm">
+                        <div className="grid gap-3 md:grid-cols-2">
+                            {healthChecks.map((item) => (
+                                <div key={item.key} className="rounded-2xl border border-slate-100 p-4">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="font-semibold text-slate-900">{item.label}</div>
+                                        <Tag color={getSeverityColor(item.level)}>{getSeverityLabel(item.level)}</Tag>
+                                    </div>
+                                    <div className="mt-2 text-sm text-slate-500">Hiện tại: {item.value}</div>
+                                    <div className="mt-1 text-sm text-slate-400">{item.detail}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </Card>
+                </Col>
+            </Row>
+
+            <Row gutter={[20, 20]}>
+                <Col xs={24} md={12} xl={6}>
+                    <Card className="rounded-[28px] border-0 shadow-sm">
+                        <Statistic title="CPU load 1 phút" value={overview.cpuLoadPercent1m || 0} suffix="%" prefix={<ThunderboltOutlined style={{color: "#1948be"}}/>}/>
+                    </Card>
+                </Col>
+                <Col xs={24} md={12} xl={6}>
+                    <Card className="rounded-[28px] border-0 shadow-sm">
+                        <Statistic title="P95 latency" value={overview.p95DurationMs || 0} suffix="ms" prefix={<HourglassOutlined style={{color: "#1948be"}}/>}/>
+                    </Card>
+                </Col>
+                <Col xs={24} md={12} xl={6}>
+                    <Card className="rounded-[28px] border-0 shadow-sm">
+                        <Statistic title="Request chậm/phút" value={overview.slowRequestsPerMinute || 0} prefix={<FireOutlined style={{color: "#1948be"}}/>}/>
+                    </Card>
+                </Col>
+                <Col xs={24} md={12} xl={6}>
+                    <Card className="rounded-[28px] border-0 shadow-sm">
+                        <Statistic title="Request/phút" value={overview.requestsPerMinute || 0} prefix={<EyeOutlined style={{color: "#1948be"}}/>}/>
+                    </Card>
+                </Col>
+            </Row>
+
+            <Row gutter={[20, 20]}>
                 <Col xs={24} xl={16}>
                     <Card
                         title="Lượt truy cập theo giờ"
@@ -373,7 +575,7 @@ export default function ThongKeHeThongPage() {
                                     {overview.averageDurationMs || 0} ms
                                 </div>
                                 <div className="mt-1 text-sm text-slate-500">
-                                    Lỗi: {overview.errorRequests || 0} request ({overview.errorRatePercent || 0}%)
+                                    Lỗi: {overview.errorRequests || 0} request ({overview.errorRatePercent || 0}%) | 5xx: {overview.serverErrors || 0}
                                 </div>
                             </div>
                             <SimpleBarChart
@@ -436,6 +638,11 @@ export default function ThongKeHeThongPage() {
                     <Card title="Tài nguyên tiến trình" className="rounded-[28px] border-0 shadow-sm">
                         <div className="space-y-3">
                             <div className="rounded-2xl border border-slate-100 p-4">
+                                <div className="text-xs uppercase text-slate-400">Request đang xử lý</div>
+                                <div className="mt-1 font-semibold text-slate-900">{overview.currentInFlight || 0}</div>
+                                <div className="mt-1 text-sm text-slate-500">Đỉnh đã ghi nhận: {overview.peakInFlight || 0}</div>
+                            </div>
+                            <div className="rounded-2xl border border-slate-100 p-4">
                                 <div className="text-xs uppercase text-slate-400">Heap đang dùng</div>
                                 <div className="mt-1 font-semibold text-slate-900">{formatBytes(overview.heapUsedBytes)}</div>
                             </div>
@@ -446,6 +653,13 @@ export default function ThongKeHeThongPage() {
                             <div className="rounded-2xl border border-slate-100 p-4">
                                 <div className="text-xs uppercase text-slate-400">RSS</div>
                                 <div className="mt-1 font-semibold text-slate-900">{formatBytes(overview.rssBytes)}</div>
+                            </div>
+                            <div className="rounded-2xl border border-slate-100 p-4">
+                                <div className="text-xs uppercase text-slate-400">Load average</div>
+                                <div className="mt-1 font-semibold text-slate-900">
+                                    {Number(overview.loadAverage1m || 0).toFixed(2)} / {Number(overview.loadAverage5m || 0).toFixed(2)} / {Number(overview.loadAverage15m || 0).toFixed(2)}
+                                </div>
+                                <div className="mt-1 text-sm text-slate-500">CPU logic: {overview.cpuCount || 0}</div>
                             </div>
                         </div>
                     </Card>
