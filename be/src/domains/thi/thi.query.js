@@ -583,6 +583,13 @@ function mapThiSinh(row) {
         username: row.username,
         hoTen: row.hoTen,
         donViId: row.donViId,
+        donViTen: row.donViTen,
+        don_vi_ten: row.donViTen,
+        don_vi: row.donViTen
+            ? {
+                ten: row.donViTen,
+            }
+            : null,
         avatar: null,
         createdAt: row.createdAt,
         ho_ten: row.hoTen,
@@ -1435,12 +1442,14 @@ async function layDanhSachBaiThiXepHang(whereClause) {
             username: users.username,
             hoTen: users.hoTen,
             donViId: users.donViId,
+            donViTen: donVi.ten,
             createdAt: users.createdAt,
         })
         .from(baiThi)
         .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
         .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
         .innerJoin(users, eq(users.id, baiThi.thiSinhId))
+        .leftJoin(donVi, eq(donVi.id, users.donViId))
         .where(and(
             whereClause,
             eq(baiThi.trangThai, 1),
@@ -1493,6 +1502,7 @@ async function layDanhSachBaiThiXepHang(whereClause) {
                 username: row.username,
                 hoTen: row.hoTen,
                 donViId: row.donViId,
+                donViTen: row.donViTen,
                 createdAt: row.createdAt,
             }),
         };

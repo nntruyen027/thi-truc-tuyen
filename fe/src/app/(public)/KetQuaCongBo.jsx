@@ -20,6 +20,15 @@ function getThoiGian(record) {
     return record?.thoiGian ?? record?.thoi_gian ?? null;
 }
 
+function getDonViThiSinh(record) {
+    return record?.don_vi?.ten
+        || record?.don_vi_ten
+        || getThiSinh(record)?.don_vi?.ten
+        || getThiSinh(record)?.don_vi_ten
+        || getThiSinh(record)?.donViTen
+        || "";
+}
+
 function formatDuration(seconds, maxMinutes) {
     if (seconds == null) {
         return "-";
@@ -170,6 +179,11 @@ export default function KetQuaCongBo({dotThi}) {
                                 <Title level={4} className="!mb-1 !text-slate-900">
                                     {getThiSinh(item)?.hoTen || getThiSinh(item)?.ho_ten || "-"}
                                 </Title>
+                                {getDonViThiSinh(item) ? (
+                                    <Text className="!block !text-slate-600">
+                                        {getDonViThiSinh(item)}
+                                    </Text>
+                                ) : null}
                                 <Text className="!block !text-slate-500">
                                     {getThiSinh(item)?.username || ""}
                                 </Text>
