@@ -18,6 +18,9 @@ const {
 const EXAM_FLOW_DEBUG = process.env.EXAM_FLOW_DEBUG === "1";
 const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
 const RANKING_CACHE_TTL_MS = Number(process.env.RANKING_CACHE_TTL_MS || 30000);
+const RANKING_DETAIL_BATCH_SIZE = Number(
+    process.env.RANKING_DETAIL_BATCH_SIZE || 2000
+);
 
 const LOAI_CAU_HOI = {
     CHON_MOT: "chon_mot",
@@ -93,6 +96,31 @@ function writeRankingCache(key, data) {
         createdAt: Date.now(),
         data,
     });
+}
+
+async function loadRankingDetailStats(examIds = []) {
+    if (!examIds.length) {
+        return [];
+    }
+
+    const rows = [];
+
+    for (let index = 0; index < examIds.length; index += RANKING_DETAIL_BATCH_SIZE) {
+        const batchIds = examIds.slice(index, index + RANKING_DETAIL_BATCH_SIZE);
+        const batchRows = await db
+            .select({
+                baiThiId: baiThiChiTiet.baiThiId,
+                tong: sql`count(*)::int`,
+                dung: sql`coalesce(sum(case when ${baiThiChiTiet.dung} then 1 else 0 end), 0)::int`,
+            })
+            .from(baiThiChiTiet)
+            .where(inArray(baiThiChiTiet.baiThiId, batchIds))
+            .groupBy(baiThiChiTiet.baiThiId);
+
+        rows.push(...batchRows);
+    }
+
+    return rows;
 }
 
 function withLegacyKeys(data) {
@@ -1461,15 +1489,7 @@ async function layDanhSachBaiThiXepHang(whereClause) {
     }
 
     const examIds = examRows.map((row) => row.baiThiId);
-    const detailRows = await db
-        .select({
-            baiThiId: baiThiChiTiet.baiThiId,
-            tong: sql`count(*)::int`,
-            dung: sql`coalesce(sum(case when ${baiThiChiTiet.dung} then 1 else 0 end), 0)::int`,
-        })
-        .from(baiThiChiTiet)
-        .where(inArray(baiThiChiTiet.baiThiId, examIds))
-        .groupBy(baiThiChiTiet.baiThiId);
+    const detailRows = await loadRankingDetailStats(examIds);
 
     const detailStats = new Map(
         detailRows.map((row) => [
