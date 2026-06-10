@@ -1542,6 +1542,7 @@ async function layXepHangDonViTheoDieuKien(whereClause) {
         })
         .from(baiThi)
         .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
         .innerJoin(users, eq(users.id, baiThi.thiSinhId))
         .innerJoin(donVi, eq(donVi.id, users.donViId))
         .where(and(
@@ -1590,19 +1591,8 @@ exports.xepHangTracNghiemTheoCuocThi = async (cuocThiId, topGiai) => {
         return cached;
     }
 
-    const rows = await db
-        .select({ id: dotThi.id })
-        .from(dotThi)
-        .where(eq(dotThi.cuocThiId, Number(cuocThiId)));
-
-    const dotThiIds = rows.map((row) => row.id);
-
-    if (!dotThiIds.length) {
-        return [];
-    }
-
     const data = await layDanhSachBaiThiXepHang(
-        inArray(deThi.dotThiId, dotThiIds)
+        eq(dotThi.cuocThiId, Number(cuocThiId))
     );
 
     const result = data
@@ -1650,19 +1640,8 @@ exports.xepHangDonViTheoCuocThi = async (cuocThiId, top) => {
         return cached;
     }
 
-    const rows = await db
-        .select({ id: dotThi.id })
-        .from(dotThi)
-        .where(eq(dotThi.cuocThiId, Number(cuocThiId)));
-
-    const dotThiIds = rows.map((row) => row.id);
-
-    if (!dotThiIds.length) {
-        return [];
-    }
-
     const data = await layXepHangDonViTheoDieuKien(
-        inArray(deThi.dotThiId, dotThiIds)
+        eq(dotThi.cuocThiId, Number(cuocThiId))
     );
 
     const result = sliceRankingRows(data, top)

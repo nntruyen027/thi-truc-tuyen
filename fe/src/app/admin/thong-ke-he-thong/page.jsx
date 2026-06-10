@@ -277,7 +277,7 @@ export default function ThongKeHeThongPage() {
             },
             {
                 key: "server-errors",
-                label: "Lỗi 5xx",
+                label: "Lỗi 5xx tích lũy",
                 value: `${overview.serverErrors || 0}`,
                 level:
                     (overview.serverErrors || 0) >= 20
@@ -285,7 +285,7 @@ export default function ThongKeHeThongPage() {
                         : (overview.serverErrors || 0) >= 5
                             ? "warning"
                             : "ok",
-                detail: "Nếu tăng liên tục thì có lỗi ứng dụng hoặc nghẽn tài nguyên.",
+                detail: "Được cộng dồn từ lúc tiến trình hiện tại bắt đầu ghi nhận, không chỉ trong 200 request gần nhất.",
             },
         ];
 
@@ -365,6 +365,11 @@ export default function ThongKeHeThongPage() {
         () => (data?.recentRequests || []).filter((item) => Number(item?.status || 0) >= 500),
         [data?.recentRequests]
     );
+
+    const recent5xxCount = recent5xxRequests.length;
+    const cumulative5xxCount = Number(overview.serverErrors || 0);
+    const recentWindowSize = Number(data?.recentRequests?.length || 0);
+    const hasHistorical5xxOutsideWindow = cumulative5xxCount > 0 && recent5xxCount === 0;
 
     const recentColumns = useMemo(() => ([
         {
@@ -668,7 +673,7 @@ export default function ThongKeHeThongPage() {
                                     {overview.averageDurationMs || 0} ms
                                 </div>
                                 <div className="mt-1 text-sm text-slate-500">
-                                    Lỗi: {overview.errorRequests || 0} request ({overview.errorRatePercent || 0}%) | 5xx: {overview.serverErrors || 0}
+                                    Lỗi: {overview.errorRequests || 0} request ({overview.errorRatePercent || 0}%) | 5xx tích lũy: {cumulative5xxCount} | 5xx trong {recentWindowSize} request gần nhất: {recent5xxCount}
                                 </div>
                             </div>
                             <SimpleBarChart
@@ -763,7 +768,7 @@ export default function ThongKeHeThongPage() {
                 <Col xs={24} xl={10}>
                     <Card
                         title="API thường gặp lỗi 5xx"
-                        extra={<Text className="!text-slate-500">Nhóm theo method + path + mã lỗi trong 200 request gần nhất</Text>}
+                        extra={<Text className="!text-slate-500">Nhóm theo method + path + mã lỗi trong tối đa 200 request gần nhất</Text>}
                         className="rounded-[28px] border-0 shadow-sm"
                     >
                         {error5xxSummary.length ? (
@@ -775,8 +780,10 @@ export default function ThongKeHeThongPage() {
                                 scroll={{x: 860}}
                             />
                         ) : (
-                            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-700">
-                                Chưa ghi nhận request 5xx nào trong danh sách truy cập gần đây.
+                            <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-700">
+                                {hasHistorical5xxOutsideWindow
+                                    ? `Hiện không còn request 5xx nào trong ${recentWindowSize} lượt gần nhất. Bộ đếm tích lũy vẫn là ${cumulative5xxCount} vì lỗi đã xảy ra trước đó và đã trôi khỏi cửa sổ theo dõi gần đây.`
+                                    : `Chưa ghi nhận request 5xx nào trong ${recentWindowSize} lượt gần nhất.`}
                             </div>
                         )}
                     </Card>
@@ -784,7 +791,7 @@ export default function ThongKeHeThongPage() {
                 <Col xs={24} xl={14}>
                     <Card
                         title="Request 5xx gần đây"
-                        extra={<Text className="!text-slate-500">Chỉ hiển thị lỗi server để tiện lần vết</Text>}
+                        extra={<Text className="!text-slate-500">Chỉ hiển thị lỗi server còn nằm trong cửa sổ gần đây để tiện lần vết</Text>}
                         className="rounded-[28px] border-0 shadow-sm"
                     >
                         <Table
@@ -798,7 +805,9 @@ export default function ThongKeHeThongPage() {
                                 showSizeChanger: true,
                             }}
                             locale={{
-                                emptyText: "Chưa có request 5xx trong danh sách gần đây",
+                                emptyText: hasHistorical5xxOutsideWindow
+                                    ? `Không còn request 5xx nào trong ${recentWindowSize} lượt gần nhất để hiển thị.`
+                                    : `Chưa có request 5xx trong ${recentWindowSize} lượt gần nhất.`,
                             }}
                         />
                     </Card>

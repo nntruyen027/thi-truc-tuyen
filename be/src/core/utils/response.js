@@ -62,6 +62,7 @@ function logServerError(res, err, status, message) {
     }
 
     const req = res.req;
+    const cause = err?.cause || err?.originalError || null;
     const payload = {
         requestId: req?.requestId || res.locals?.requestId || null,
         method: req?.method || null,
@@ -69,6 +70,19 @@ function logServerError(res, err, status, message) {
         status,
         message,
         errorName: err?.name || null,
+        errorCode: err?.code || cause?.code || null,
+        causeMessage: cause?.message
+            ? truncateText(cause.message, 1200)
+            : null,
+        detail: cause?.detail
+            ? truncateText(cause.detail, 1200)
+            : null,
+        hint: cause?.hint
+            ? truncateText(cause.hint, 800)
+            : null,
+        table: cause?.table || null,
+        column: cause?.column || null,
+        constraint: cause?.constraint || null,
         stack: typeof err?.stack === "string"
             ? truncateText(err.stack, 2000)
             : null,

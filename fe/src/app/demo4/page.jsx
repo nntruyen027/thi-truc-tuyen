@@ -9,7 +9,7 @@ import {useRouter} from "next/navigation";
 import {layCauHinh} from "~/services/cau-hinh";
 import {layCuocThi, layLuotThiHienTai} from "~/services/thi/cuoc-thi";
 import {layDotThi} from "~/services/thi/dot-thi";
-import {xepHangDonViTheoCuocThi, xepHangTracNghiemTheoCuocThi} from "~/services/thi/thi";
+import {xepHangDonViTheoDotThi, xepHangTracNghiemTheoDotThi} from "~/services/thi/thi";
 import {getDonVi} from "~/services/dm_chung/don_vi";
 import PublicPageBanner from "~/app/(public)/components/PublicPageBanner";
 import PublicContestTimeline from "~/app/(public)/components/PublicContestTimeline";
@@ -32,11 +32,11 @@ const LIVE_DATA_REFRESH_MS = 30 * 1000;
 const RESIZE_DEBOUNCE_MS = 180;
 const UNIT_RANKING_FETCH_LIMIT = 1000;
 
-async function loadUnitRankingsForContest(cuocThiId) {
+async function loadUnitRankingsForCurrentRound(dotThiId) {
     try {
-        return await xepHangDonViTheoCuocThi(cuocThiId, UNIT_RANKING_FETCH_LIMIT);
+        return await xepHangDonViTheoDotThi(dotThiId, UNIT_RANKING_FETCH_LIMIT);
     } catch {
-        return xepHangDonViTheoCuocThi(cuocThiId);
+        return xepHangDonViTheoDotThi(dotThiId);
     }
 }
 function chonCuocThiGanNhat(dsCuocThi = []) {
@@ -641,7 +641,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
         let active = true;
 
         const loadRankings = async () => {
-            if (!dotThi?.cuoc_thi_id) {
+            if (!dotThi?.id) {
                 if (active) {
                     setTopParticipants([]);
                     setTopUnits([]);
@@ -660,7 +660,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             }
 
             const [participantsResult, allUnitsResult] = await Promise.allSettled([
-                xepHangTracNghiemTheoCuocThi(dotThi.cuoc_thi_id, 20),
+                xepHangTracNghiemTheoDotThi(dotThi.id, 20),
                 getDonVi({
                     page: 1,
                     size: 1000,
@@ -682,7 +682,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             const allUnits = allUnitsResult.status === "fulfilled"
                 ? allUnitsResult.value?.data || []
                 : [];
-            const unitsResult = await loadUnitRankingsForContest(dotThi.cuoc_thi_id)
+            const unitsResult = await loadUnitRankingsForCurrentRound(dotThi.id)
                 .then((data) => ({status: "fulfilled", value: data}))
                 .catch(() => ({status: "rejected"}));
 
@@ -714,7 +714,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             active = false;
             clearInterval(intervalId);
         };
-    }, [dotThi?.cuoc_thi_id]);
+    }, [dotThi?.id]);
 
     useEffect(() => {
         const cuocThi = dotThi?.cuoc_thi;
