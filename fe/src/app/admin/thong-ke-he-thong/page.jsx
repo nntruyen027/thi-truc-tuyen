@@ -315,6 +315,57 @@ export default function ThongKeHeThongPage() {
         [healthChecks]
     );
 
+    const error5xxSummary = useMemo(() => {
+        const grouped = new Map();
+
+        for (const item of data?.recentRequests || []) {
+            const status = Number(item?.status || 0);
+
+            if (status < 500) {
+                continue;
+            }
+
+            const method = item?.method || "GET";
+            const path = item?.path || "/";
+            const key = `${method} ${path} ${status}`;
+            const current = grouped.get(key) || {
+                key,
+                method,
+                path,
+                status,
+                count: 0,
+                latestTime: null,
+                latestDurationMs: 0,
+                latestIp: "-",
+                latestUsername: null,
+            };
+
+            current.count += 1;
+
+            if (!current.latestTime || new Date(item.time).getTime() > new Date(current.latestTime).getTime()) {
+                current.latestTime = item.time;
+                current.latestDurationMs = Number(item?.durationMs || 0);
+                current.latestIp = item?.ip || "-";
+                current.latestUsername = item?.username || null;
+            }
+
+            grouped.set(key, current);
+        }
+
+        return Array.from(grouped.values()).sort((left, right) => {
+            if (right.count !== left.count) {
+                return right.count - left.count;
+            }
+
+            return new Date(right.latestTime || 0).getTime() - new Date(left.latestTime || 0).getTime();
+        });
+    }, [data?.recentRequests]);
+
+    const recent5xxRequests = useMemo(
+        () => (data?.recentRequests || []).filter((item) => Number(item?.status || 0) >= 500),
+        [data?.recentRequests]
+    );
+
     const recentColumns = useMemo(() => ([
         {
             title: "Thời gian",
@@ -376,6 +427,48 @@ export default function ThongKeHeThongPage() {
             render: (value) => (
                 <div className="max-w-[320px] truncate text-sm text-slate-500">
                     {value || "-"}
+                </div>
+            ),
+        },
+    ]), []);
+
+    const error5xxColumns = useMemo(() => ([
+        {
+            title: "API lỗi",
+            key: "api",
+            render: (_, record) => (
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                        <Tag color="red">{record.method}</Tag>
+                        <span className="font-medium text-slate-900">{record.path}</span>
+                    </div>
+                    <div className="text-xs text-slate-500">
+                        Gần nhất: {formatDateTime(record.latestTime)}
+                    </div>
+                </div>
+            ),
+        },
+        {
+            title: "Mã lỗi",
+            dataIndex: "status",
+            width: 120,
+            render: (value) => <Tag color="red">{value}</Tag>,
+        },
+        {
+            title: "Số lần",
+            dataIndex: "count",
+            width: 110,
+            render: (value) => <span className="font-semibold text-slate-900">{value}</span>,
+        },
+        {
+            title: "Lần lỗi gần nhất",
+            key: "latestMeta",
+            width: 260,
+            render: (_, record) => (
+                <div className="text-sm text-slate-600">
+                    <div>{record.latestDurationMs} ms</div>
+                    <div>IP: {record.latestIp}</div>
+                    <div>{record.latestUsername ? `Tài khoản: ${record.latestUsername}` : "Khách/không xác định"}</div>
                 </div>
             ),
         },
@@ -662,6 +755,52 @@ export default function ThongKeHeThongPage() {
                                 <div className="mt-1 text-sm text-slate-500">CPU logic: {overview.cpuCount || 0}</div>
                             </div>
                         </div>
+                    </Card>
+                </Col>
+            </Row>
+
+            <Row gutter={[20, 20]}>
+                <Col xs={24} xl={10}>
+                    <Card
+                        title="API thường gặp lỗi 5xx"
+                        extra={<Text className="!text-slate-500">Nhóm theo method + path + mã lỗi trong 200 request gần nhất</Text>}
+                        className="rounded-[28px] border-0 shadow-sm"
+                    >
+                        {error5xxSummary.length ? (
+                            <Table
+                                rowKey="key"
+                                columns={error5xxColumns}
+                                dataSource={error5xxSummary}
+                                pagination={false}
+                                scroll={{x: 860}}
+                            />
+                        ) : (
+                            <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-700">
+                                Chưa ghi nhận request 5xx nào trong danh sách truy cập gần đây.
+                            </div>
+                        )}
+                    </Card>
+                </Col>
+                <Col xs={24} xl={14}>
+                    <Card
+                        title="Request 5xx gần đây"
+                        extra={<Text className="!text-slate-500">Chỉ hiển thị lỗi server để tiện lần vết</Text>}
+                        className="rounded-[28px] border-0 shadow-sm"
+                    >
+                        <Table
+                            rowKey="id"
+                            columns={recentColumns}
+                            dataSource={recent5xxRequests}
+                            scroll={{x: 1280}}
+                            pagination={{
+                                pageSize: 8,
+                                responsive: true,
+                                showSizeChanger: true,
+                            }}
+                            locale={{
+                                emptyText: "Chưa có request 5xx trong danh sách gần đây",
+                            }}
+                        />
                     </Card>
                 </Col>
             </Row>

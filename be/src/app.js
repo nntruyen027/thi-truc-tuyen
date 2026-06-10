@@ -6,6 +6,7 @@ const multer = require("multer")
 
 const routes = require("./app/routes")
 const systemAnalyticsTracker = require("./domains/system-analytics/system_analytics.tracker");
+const resUtil = require("./core/utils/response");
 
 const app = express()
 const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || "5mb";
@@ -71,22 +72,24 @@ app.use("/api", routes)
 app.use((err, req, res, next) => {
     if (err instanceof multer.MulterError) {
         if (err.code === "LIMIT_FILE_SIZE") {
-            return res.status(413).json({
-                success: false,
+            return resUtil.error(res, {
+                status: 413,
                 message: "Kích thước file vượt quá giới hạn 50MB",
             })
         }
 
-        return res.status(400).json({
-            success: false,
+        return resUtil.error(res, {
+            status: 400,
             message: err.message,
         })
     }
 
     if (err) {
-        return res.status(500).json({
-            success: false,
+        return resUtil.error(res, {
+            status: 500,
             message: err.message || "Có lỗi xảy ra trong quá trình xử lý file",
+            stack: err.stack,
+            name: err.name,
         })
     }
 

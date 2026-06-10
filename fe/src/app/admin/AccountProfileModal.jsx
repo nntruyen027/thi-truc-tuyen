@@ -71,7 +71,7 @@ export default function AccountProfileModal() {
             forceRender
             destroyOnHidden
         >
-            <Space direction="vertical" size={18} className="w-full">
+            <Space orientation="vertical" size={18} className="w-full">
                 <div className="rounded-2xl bg-slate-50 px-4 py-3">
                     <Text className="text-slate-500">
                         Cập nhật thông tin hiển thị của tài khoản quản trị. Tên đăng nhập được giữ cố định.

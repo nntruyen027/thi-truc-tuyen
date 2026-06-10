@@ -29,6 +29,16 @@ const DEMO4_BACKGROUND_IMAGES = {
     haugiang: "/bg_haugiang.jpg",
 };
 const LIVE_DATA_REFRESH_MS = 30 * 1000;
+const RESIZE_DEBOUNCE_MS = 180;
+const UNIT_RANKING_FETCH_LIMIT = 1000;
+
+async function loadUnitRankingsForContest(cuocThiId) {
+    try {
+        return await xepHangDonViTheoCuocThi(cuocThiId, UNIT_RANKING_FETCH_LIMIT);
+    } catch {
+        return xepHangDonViTheoCuocThi(cuocThiId);
+    }
+}
 function chonCuocThiGanNhat(dsCuocThi = []) {
     const now = dayjs();
     const dsHopLe = [...dsCuocThi]
@@ -454,6 +464,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     const giaiTapTheSectionRef = useRef(null);
     const topUnitsRef = useRef([]);
     const topParticipantsRef = useRef([]);
+    const bannerViewportModeRef = useRef(null);
     const router = useRouter();
     const user = useAuthStore((state) => state.user);
 
@@ -480,17 +491,19 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     useEffect(() => {
         let active = true;
 
-        const getKhoa = () => (window.innerWidth < 768 ? "banner_mobile" : "banner_desktop");
+        const getViewportMode = () => (window.innerWidth < 768 ? "mobile" : "desktop");
+        const getKhoa = (mode = getViewportMode()) => (mode === "mobile" ? "banner_mobile" : "banner_desktop");
 
-        const loadBanner = async () => {
-            const mobile = window.innerWidth < 768;
+        const loadBanner = async (forcedMode) => {
+            const viewportMode = forcedMode || getViewportMode();
+            const mobile = viewportMode === "mobile";
 
             if (active) {
                 setIsMobileViewport(mobile);
             }
 
             try {
-                const res = await layCauHinh(getKhoa());
+                const res = await layCauHinh(getKhoa(viewportMode));
                 const val = parseMediaConfig(res?.data?.gia_tri);
 
                 if (!active) {
@@ -511,17 +524,44 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 setBannerPositionX(DEMO_BANNER_CONFIG.positionX);
                 setBannerPositionY(DEMO_BANNER_CONFIG.positionY);
             }
+
+            bannerViewportModeRef.current = viewportMode;
         };
 
         const handleResize = () => {
-            void loadBanner();
+            const nextMode = getViewportMode();
+
+            if (active) {
+                setIsMobileViewport(nextMode === "mobile");
+            }
+
+            if (bannerViewportModeRef.current === nextMode) {
+                return;
+            }
+
+            window.clearTimeout(handleResize.timeoutId);
+            handleResize.timeoutId = window.setTimeout(() => {
+                if (!active) {
+                    return;
+                }
+
+                const confirmedMode = getViewportMode();
+
+                if (bannerViewportModeRef.current === confirmedMode) {
+                    return;
+                }
+
+                void loadBanner(confirmedMode);
+            }, RESIZE_DEBOUNCE_MS);
         };
+        handleResize.timeoutId = null;
 
         void loadBanner();
         window.addEventListener("resize", handleResize);
 
         return () => {
             active = false;
+            window.clearTimeout(handleResize.timeoutId);
             window.removeEventListener("resize", handleResize);
         };
     }, []);
@@ -642,7 +682,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             const allUnits = allUnitsResult.status === "fulfilled"
                 ? allUnitsResult.value?.data || []
                 : [];
-            const unitsResult = await xepHangDonViTheoCuocThi(dotThi.cuoc_thi_id)
+            const unitsResult = await loadUnitRankingsForContest(dotThi.cuoc_thi_id)
                 .then((data) => ({status: "fulfilled", value: data}))
                 .catch(() => ({status: "rejected"}));
 
@@ -650,15 +690,18 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 return;
             }
 
-            const unitRows = unitsResult.status === "fulfilled"
-                ? normalizeUnitRankings(unitsResult.value || [])
-                : [];
+            if (unitsResult.status === "fulfilled") {
+                const unitRows = normalizeUnitRankings(unitsResult.value || []);
 
-            setTopUnits(
-                allUnits.length
-                    ? mergeUnitRankings(allUnits, unitRows)
-                    : unitRows
-            );
+                setTopUnits(
+                    allUnits.length
+                        ? mergeUnitRankings(allUnits, unitRows)
+                        : unitRows
+                );
+            } else if (!topUnitsRef.current.length) {
+                setTopUnits([]);
+            }
+
             setUnitLoading(false);
         };
 

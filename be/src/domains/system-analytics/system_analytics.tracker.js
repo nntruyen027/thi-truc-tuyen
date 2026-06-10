@@ -231,6 +231,9 @@ function middleware(req, res, next) {
     const requestBytes = estimateRequestBytes(req);
     const requestId = createRequestId();
     let finalized = false;
+    req.requestId = requestId;
+    res.locals.requestId = requestId;
+    res.setHeader("X-Request-Id", requestId);
     state.currentInFlight += 1;
     state.peakInFlight = Math.max(state.peakInFlight, state.currentInFlight);
     state.activeRequests.set(requestId, {
