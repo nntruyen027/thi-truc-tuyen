@@ -28,6 +28,7 @@ const DEMO4_BACKGROUND_IMAGES = {
     soctrang: "/bg_soctrang.jpg",
     haugiang: "/bg_haugiang.jpg",
 };
+const LIVE_DATA_REFRESH_MS = 30 * 1000;
 function chonCuocThiGanNhat(dsCuocThi = []) {
     const now = dayjs();
     const dsHopLe = [...dsCuocThi]
@@ -469,9 +470,13 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
         };
 
         void load();
+        const intervalId = setInterval(() => {
+            void load();
+        }, LIVE_DATA_REFRESH_MS);
 
         return () => {
             active = false;
+            clearInterval(intervalId);
         };
     }, []);
 
@@ -536,9 +541,13 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
         };
 
         void loadRankings();
+        const intervalId = setInterval(() => {
+            void loadRankings();
+        }, LIVE_DATA_REFRESH_MS);
 
         return () => {
             active = false;
+            clearInterval(intervalId);
         };
     }, [dotThi?.cuoc_thi_id]);
 
