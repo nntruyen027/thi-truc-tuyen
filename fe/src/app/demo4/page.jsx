@@ -316,9 +316,11 @@ function RankingColumn({
                 return;
             }
 
+            const previousIndex = previousIndexMapRef.current.get(item.id);
             const currentTop = element.getBoundingClientRect().top;
             const previousTop = previousPositionsRef.current.get(item.id);
-            if (previousTop != null) {
+
+            if (previousIndex != null && previousIndex !== index && previousTop != null) {
                 const deltaY = previousTop - currentTop;
 
                 if (Math.abs(deltaY) > 1) {
@@ -326,41 +328,10 @@ function RankingColumn({
                     element.style.transform = `translateY(${deltaY}px)`;
 
                     window.requestAnimationFrame(() => {
-                        element.style.transition = "transform 560ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 320ms ease, border-color 320ms ease, background 320ms ease";
+                        element.style.transition = "transform 560ms cubic-bezier(0.22, 1, 0.36, 1)";
                         element.style.transform = "translateY(0)";
                     });
                 }
-            }
-
-            const previousIndex = previousIndexMapRef.current.get(item.id);
-
-            element.classList.remove(
-                "demo4-ranking-card--active",
-                "demo4-ranking-card--rise",
-                "demo4-ranking-card--fall",
-                "demo4-ranking-card--new"
-            );
-
-            if (previousIndex == null) {
-                element.classList.add("demo4-ranking-card--active", "demo4-ranking-card--new");
-            } else if (previousIndex !== index) {
-                element.classList.add(
-                    "demo4-ranking-card--active",
-                    previousIndex > index
-                        ? "demo4-ranking-card--rise"
-                        : "demo4-ranking-card--fall"
-                );
-            }
-
-            if (previousIndex == null || previousIndex !== index) {
-                window.setTimeout(() => {
-                    element.classList.remove(
-                        "demo4-ranking-card--active",
-                        "demo4-ranking-card--rise",
-                        "demo4-ranking-card--fall",
-                        "demo4-ranking-card--new"
-                    );
-                }, 1800);
             }
         });
 
@@ -413,8 +384,12 @@ function RankingColumn({
 
                                 itemRefs.current.delete(item.id);
                             }}
-                            className="demo4-ranking-card rounded-[24px] border px-4 py-4"
-                            style={{borderColor: alphaColor(colorPrimary, 0.1)}}
+                            className="rounded-[24px] border px-4 py-4"
+                            style={{
+                                borderColor: alphaColor(colorPrimary, 0.1),
+                                background: "linear-gradient(180deg, #ffffff 0%, #fff7f2 100%)",
+                                transition: "border-color 320ms ease, background 320ms ease, box-shadow 320ms ease",
+                            }}
                         >
                             <div className="flex items-center gap-3">
                                 <div
@@ -1050,34 +1025,6 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     opacity: 1;
                 }
 
-                .demo4-ranking-card {
-                    background: linear-gradient(180deg, #ffffff 0%, #fff7f2 100%);
-                    transition: border-color 320ms ease, background 320ms ease, box-shadow 320ms ease;
-                }
-
-                .demo4-ranking-card--active {
-                    animation: demo4-ranking-highlight 1.25s ease;
-                    will-change: transform;
-                }
-
-                .demo4-ranking-card--rise {
-                    background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
-                    border-color: ${alphaColor("#16a34a", 0.28)} !important;
-                    box-shadow: 0 16px 32px ${alphaColor("#16a34a", 0.1)};
-                }
-
-                .demo4-ranking-card--fall {
-                    background: linear-gradient(180deg, #ffffff 0%, #fff1f2 100%);
-                    border-color: ${alphaColor("#dc2626", 0.22)} !important;
-                    box-shadow: 0 16px 32px ${alphaColor("#dc2626", 0.08)};
-                }
-
-                .demo4-ranking-card--new {
-                    background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%);
-                    border-color: ${alphaColor(colorPrimary, 0.2)} !important;
-                    box-shadow: 0 16px 32px ${alphaColor(colorPrimary, 0.12)};
-                }
-
                 .join-exam-pulse {
                     isolation: isolate;
                 }
@@ -1203,18 +1150,6 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     100% {
                         opacity: 0;
                         transform: scale(1.5);
-                    }
-                }
-
-                @keyframes demo4-ranking-highlight {
-                    0% {
-                        transform: scale(0.985);
-                    }
-                    45% {
-                        transform: scale(1.012);
-                    }
-                    100% {
-                        transform: scale(1);
                     }
                 }
 
