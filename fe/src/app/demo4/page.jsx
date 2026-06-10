@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useMemo, useRef, useState} from "react";
+import {useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";
 import dayjs from "dayjs";
 import {ArrowRightOutlined, ClockCircleFilled, TrophyFilled, UserOutlined} from "@ant-design/icons";
 import {Button, Card, Col, Empty, QRCode, Row, Spin, Statistic, Typography, theme} from "antd";
@@ -242,6 +242,58 @@ function resolveLuotThiValue(payload) {
     ) || 0;
 }
 
+function AnimatedNumber({
+    value,
+    duration = 900,
+    formatter = (nextValue) => Intl.NumberFormat("vi-VN").format(nextValue),
+    className = "",
+    style,
+}) {
+    const [displayValue, setDisplayValue] = useState(Number(value || 0));
+    const previousValueRef = useRef(Number(value || 0));
+
+    useEffect(() => {
+        const nextValue = Number(value || 0);
+        const startValue = previousValueRef.current;
+
+        if (startValue === nextValue) {
+            setDisplayValue(nextValue);
+            return undefined;
+        }
+
+        let frameId = 0;
+        const startedAt = performance.now();
+
+        const tick = (currentTime) => {
+            const progress = Math.min((currentTime - startedAt) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const animatedValue = Math.round(startValue + ((nextValue - startValue) * eased));
+
+            setDisplayValue(animatedValue);
+
+            if (progress < 1) {
+                frameId = window.requestAnimationFrame(tick);
+                return;
+            }
+
+            previousValueRef.current = nextValue;
+        };
+
+        frameId = window.requestAnimationFrame(tick);
+
+        return () => {
+            window.cancelAnimationFrame(frameId);
+            previousValueRef.current = nextValue;
+        };
+    }, [duration, value]);
+
+    return (
+        <span className={className} style={style}>
+            {formatter(displayValue)}
+        </span>
+    );
+}
+
 function RankingColumn({
     title,
     icon,
@@ -252,6 +304,76 @@ function RankingColumn({
     loading = false,
 }) {
     const headerBackground = `linear-gradient(135deg, ${alphaColor(colorPrimary, 0.18)} 0%, ${alphaColor(colorPrimary, 0.32)} 100%)`;
+    const itemRefs = useRef(new Map());
+    const previousPositionsRef = useRef(new Map());
+    const previousIndexMapRef = useRef(new Map());
+
+    useLayoutEffect(() => {
+        items.forEach((item, index) => {
+            const element = itemRefs.current.get(item.id);
+
+            if (!element) {
+                return;
+            }
+
+            const currentTop = element.getBoundingClientRect().top;
+            const previousTop = previousPositionsRef.current.get(item.id);
+            if (previousTop != null) {
+                const deltaY = previousTop - currentTop;
+
+                if (Math.abs(deltaY) > 1) {
+                    element.style.transition = "none";
+                    element.style.transform = `translateY(${deltaY}px)`;
+
+                    window.requestAnimationFrame(() => {
+                        element.style.transition = "transform 560ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 320ms ease, border-color 320ms ease, background 320ms ease";
+                        element.style.transform = "translateY(0)";
+                    });
+                }
+            }
+
+            const previousIndex = previousIndexMapRef.current.get(item.id);
+
+            element.classList.remove(
+                "demo4-ranking-card--active",
+                "demo4-ranking-card--rise",
+                "demo4-ranking-card--fall",
+                "demo4-ranking-card--new"
+            );
+
+            if (previousIndex == null) {
+                element.classList.add("demo4-ranking-card--active", "demo4-ranking-card--new");
+            } else if (previousIndex !== index) {
+                element.classList.add(
+                    "demo4-ranking-card--active",
+                    previousIndex > index
+                        ? "demo4-ranking-card--rise"
+                        : "demo4-ranking-card--fall"
+                );
+            }
+
+            if (previousIndex == null || previousIndex !== index) {
+                window.setTimeout(() => {
+                    element.classList.remove(
+                        "demo4-ranking-card--active",
+                        "demo4-ranking-card--rise",
+                        "demo4-ranking-card--fall",
+                        "demo4-ranking-card--new"
+                    );
+                }, 1800);
+            }
+        });
+
+        previousPositionsRef.current = new Map(
+            items.map((item) => [
+                item.id,
+                itemRefs.current.get(item.id)?.getBoundingClientRect().top,
+            ])
+        );
+        previousIndexMapRef.current = new Map(
+            items.map((item, index) => [item.id, index])
+        );
+    }, [items]);
 
     return (
         <Card
@@ -283,7 +405,15 @@ function RankingColumn({
                     ) : items.map((item, index) => (
                         <div
                             key={item.id}
-                            className="rounded-[24px] border bg-[linear-gradient(180deg,#ffffff_0%,#fff7f2_100%)] px-4 py-4"
+                            ref={(node) => {
+                                if (node) {
+                                    itemRefs.current.set(item.id, node);
+                                    return;
+                                }
+
+                                itemRefs.current.delete(item.id);
+                            }}
+                            className="demo4-ranking-card rounded-[24px] border px-4 py-4"
                             style={{borderColor: alphaColor(colorPrimary, 0.1)}}
                         >
                             <div className="flex items-center gap-3">
@@ -307,8 +437,10 @@ function RankingColumn({
                                     ) : null}
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-2xl font-black leading-none" style={{color: colorPrimary}}>
-                                        {item.diem == null ? "-" : Intl.NumberFormat("vi-VN").format(item.diem)}
+                                    <div className="text-2xl font-black leading-none" style={{color: colorPrimary, fontVariantNumeric: "tabular-nums"}}>
+                                        {item.diem == null ? "-" : (
+                                            <AnimatedNumber value={item.diem} />
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -345,6 +477,8 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     const rankingHeaderBackground = `linear-gradient(135deg, ${alphaColor(colorPrimary, 0.18)} 0%, ${alphaColor(colorPrimary, 0.32)} 100%)`;
     const timelineSectionRef = useRef(null);
     const giaiTapTheSectionRef = useRef(null);
+    const topUnitsRef = useRef([]);
+    const topParticipantsRef = useRef([]);
     const router = useRouter();
     const user = useAuthStore((state) => state.user);
 
@@ -359,6 +493,14 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     const qrValue = typeof window !== "undefined"
         ? `${window.location.origin}/login`
         : "";
+
+    useEffect(() => {
+        topUnitsRef.current = topUnits;
+    }, [topUnits]);
+
+    useEffect(() => {
+        topParticipantsRef.current = topParticipants;
+    }, [topParticipants]);
 
     useEffect(() => {
         let active = true;
@@ -494,8 +636,13 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 return;
             }
 
-            setParticipantLoading(true);
-            setUnitLoading(true);
+            if (!topParticipantsRef.current.length) {
+                setParticipantLoading(true);
+            }
+
+            if (!topUnitsRef.current.length) {
+                setUnitLoading(true);
+            }
 
             const [participantsResult, allUnitsResult] = await Promise.allSettled([
                 xepHangTracNghiemTheoCuocThi(dotThi.cuoc_thi_id, 20),
@@ -787,9 +934,11 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                                                 <Text className="!mb-0 !pb-1 !text-lg !font-semibold !uppercase !text-slate-700 md:!text-xl">
                                                     Đã có
                                                 </Text>
-                                                <span className="text-5xl font-bold leading-none md:text-6xl" style={{color: colorPrimary}}>
-                                                    {Intl.NumberFormat("vi-VN").format(tongLuotThi)}
-                                                </span>
+                                                <AnimatedNumber
+                                                    value={tongLuotThi}
+                                                    className="text-5xl font-bold leading-none md:text-6xl"
+                                                    style={{color: colorPrimary, fontVariantNumeric: "tabular-nums"}}
+                                                />
                                                 <span className="pb-1 text-lg font-semibold uppercase text-slate-700 md:text-xl">
                                                     lượt thi
                                                 </span>
@@ -899,6 +1048,34 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
 
                 .demo4-background-layer.is-active {
                     opacity: 1;
+                }
+
+                .demo4-ranking-card {
+                    background: linear-gradient(180deg, #ffffff 0%, #fff7f2 100%);
+                    transition: border-color 320ms ease, background 320ms ease, box-shadow 320ms ease;
+                }
+
+                .demo4-ranking-card--active {
+                    animation: demo4-ranking-highlight 1.25s ease;
+                    will-change: transform;
+                }
+
+                .demo4-ranking-card--rise {
+                    background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+                    border-color: ${alphaColor("#16a34a", 0.28)} !important;
+                    box-shadow: 0 16px 32px ${alphaColor("#16a34a", 0.1)};
+                }
+
+                .demo4-ranking-card--fall {
+                    background: linear-gradient(180deg, #ffffff 0%, #fff1f2 100%);
+                    border-color: ${alphaColor("#dc2626", 0.22)} !important;
+                    box-shadow: 0 16px 32px ${alphaColor("#dc2626", 0.08)};
+                }
+
+                .demo4-ranking-card--new {
+                    background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%);
+                    border-color: ${alphaColor(colorPrimary, 0.2)} !important;
+                    box-shadow: 0 16px 32px ${alphaColor(colorPrimary, 0.12)};
                 }
 
                 .join-exam-pulse {
@@ -1026,6 +1203,18 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     100% {
                         opacity: 0;
                         transform: scale(1.5);
+                    }
+                }
+
+                @keyframes demo4-ranking-highlight {
+                    0% {
+                        transform: scale(0.985);
+                    }
+                    45% {
+                        transform: scale(1.012);
+                    }
+                    100% {
+                        transform: scale(1);
                     }
                 }
 
