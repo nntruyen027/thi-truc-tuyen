@@ -3,6 +3,7 @@ const router =
 
 const query = require("./thi.query")
 const validation = require("./thi.validation")
+const publicRankingsSnapshotService = require("./public_rankings_snapshot.service");
 
 const resUtil = require("../../core/utils/response")
 const auth = require("../../core/middlewares/auth")
@@ -647,32 +648,14 @@ router.get("/public-rankings", async (req, res) => {
     try {
         const dotThiId = validation.ensureRequiredId(req.query?.dotThiId, "Đợt thi");
         const cuocThiId = validation.ensureRequiredId(req.query?.cuocThiId, "Cuộc thi");
-        const rankingTop = validation.normalizeTopParam(req.query?.rankingTop ?? 10);
-        const honorTop = validation.normalizeTopParam(req.query?.honorTop ?? 5);
+        const rankingTop = publicRankingsSnapshotService.PUBLIC_RANKING_TOP;
+        const honorTop = publicRankingsSnapshotService.PUBLIC_HONOR_TOP;
         const cacheKey = getPublicRankingsCacheKey(dotThiId, cuocThiId, rankingTop, honorTop);
         const data = await runPublicRankingsTask(cacheKey, async () => {
-            const [
-                rankingsDotThi,
-                rankingsCuocThi,
-                honorDotThi,
-                honorCuocThi,
-            ] = await Promise.all([
-                query.xepHangTracNghiemTheoDotThi(dotThiId, rankingTop),
-                query.xepHangTracNghiemTheoCuocThi(cuocThiId, rankingTop),
-                query.xepHangDonViTheoDotThi(dotThiId, honorTop),
-                query.xepHangDonViTheoCuocThi(cuocThiId, honorTop),
-            ]);
-
-            return {
-                rankings: {
-                    "dot-thi": rankingsDotThi,
-                    "cuoc-thi": rankingsCuocThi,
-                },
-                honorBoard: {
-                    "dot-thi": honorDotThi,
-                    "cuoc-thi": honorCuocThi,
-                },
-            };
+            return publicRankingsSnapshotService.getPublicRankingsSnapshotOrRefresh(
+                dotThiId,
+                cuocThiId
+            );
         });
 
         resUtil.ok(res, data)

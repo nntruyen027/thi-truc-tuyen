@@ -12,7 +12,8 @@
     "db:generate": "node scripts/generate-db.js",
     "db:migrate": "node scripts/migrate-db.js",
     "db:push": "drizzle-kit push --force",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "public-rankings:refresh": "node scripts/refresh-public-rankings-snapshot.js"
   },
   "keywords": [],
   "author": "",

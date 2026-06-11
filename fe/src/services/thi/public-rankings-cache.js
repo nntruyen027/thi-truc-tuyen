@@ -5,6 +5,8 @@ import {
 } from "~/services/thi/thi";
 
 const CACHE_TTL_MS = 120 * 1000;
+const PUBLIC_RANKING_TOP = 20;
+const PUBLIC_HONOR_TOP = 200;
 
 const cacheStore = new Map();
 const inflightStore = new Map();
@@ -13,7 +15,12 @@ function isFresh(entry) {
     return entry && (Date.now() - entry.createdAt) < CACHE_TTL_MS;
 }
 
-function getBundleKey(dotThiId, cuocThiId, rankingTop = 10, honorTop = 5) {
+function getBundleKey(
+    dotThiId,
+    cuocThiId,
+    rankingTop = PUBLIC_RANKING_TOP,
+    honorTop = PUBLIC_HONOR_TOP
+) {
     return [
         Number(dotThiId || 0),
         Number(cuocThiId || 0),
@@ -27,7 +34,12 @@ function readCache(key) {
     return isFresh(entry) ? entry.data : null;
 }
 
-async function loadBundle(dotThiId, cuocThiId, rankingTop = 10, honorTop = 5) {
+async function loadBundle(
+    dotThiId,
+    cuocThiId,
+    rankingTop = PUBLIC_RANKING_TOP,
+    honorTop = PUBLIC_HONOR_TOP
+) {
     const key = getBundleKey(dotThiId, cuocThiId, rankingTop, honorTop);
     const cached = readCache(key);
 
@@ -66,7 +78,14 @@ async function loadBundle(dotThiId, cuocThiId, rankingTop = 10, honorTop = 5) {
 }
 
 export function getCachedPublicRankings(type, dotThiId, cuocThiId, top) {
-    const bundle = readCache(getBundleKey(dotThiId, cuocThiId, 10, 5));
+    const bundle = readCache(
+        getBundleKey(
+            dotThiId,
+            cuocThiId,
+            PUBLIC_RANKING_TOP,
+            PUBLIC_HONOR_TOP
+        )
+    );
     const bucket =
         type === "honor-board"
             ? bundle?.honorBoard
@@ -83,7 +102,12 @@ export function getCachedPublicRankings(type, dotThiId, cuocThiId, top) {
 }
 
 export function loadPublicRankings(type, dotThiId, cuocThiId, top) {
-    return loadBundle(dotThiId, cuocThiId, 10, 5).then((bundle) => {
+    return loadBundle(
+        dotThiId,
+        cuocThiId,
+        PUBLIC_RANKING_TOP,
+        PUBLIC_HONOR_TOP
+    ).then((bundle) => {
         const bucket =
             type === "honor-board"
                 ? bundle?.honorBoard

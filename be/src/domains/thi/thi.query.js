@@ -9,6 +9,7 @@ const {
     deThiCauHoi,
     donVi,
     dotThi,
+    publicRankingSnapshot,
     tracNghiemDotThi,
     tracNghiem,
     tuLuanDotThi,
@@ -789,6 +790,22 @@ function mapRankingRow(row) {
         so_nguoi_100: row.soNguoi100,
         saiSo: row.saiSo,
         sai_so: row.saiSo,
+    };
+}
+
+function mapPublicRankingSnapshot(row) {
+    if (!row) {
+        return null;
+    }
+
+    return {
+        id: row.id,
+        dotThiId: Number(row.dotThiId || 0),
+        cuocThiId: Number(row.cuocThiId || 0),
+        rankingTop: Number(row.rankingTop || 20),
+        honorTop: Number(row.honorTop || 200),
+        payload: row.payload || null,
+        createdAt: row.createdAt || null,
     };
 }
 
@@ -1704,5 +1721,52 @@ exports.xepHangDonViTheoCuocThi = async (cuocThiId, top) => {
         return sliceRankingRows(data, top)
             .map(mapDonViRankingRow);
     });
+};
+
+exports.layPublicRankingSnapshot = async (dotThiId, cuocThiId) => {
+    const [row] = await db
+        .select()
+        .from(publicRankingSnapshot)
+        .where(and(
+            eq(publicRankingSnapshot.dotThiId, Number(dotThiId)),
+            eq(publicRankingSnapshot.cuocThiId, Number(cuocThiId))
+        ))
+        .limit(1);
+
+    return mapPublicRankingSnapshot(row);
+};
+
+exports.luuPublicRankingSnapshot = async ({
+    dotThiId,
+    cuocThiId,
+    rankingTop,
+    honorTop,
+    payload,
+}) => {
+    const [row] = await db
+        .insert(publicRankingSnapshot)
+        .values({
+            dotThiId: Number(dotThiId),
+            cuocThiId: Number(cuocThiId),
+            rankingTop: Number(rankingTop) || 20,
+            honorTop: Number(honorTop) || 200,
+            payload,
+            createdAt: new Date(),
+        })
+        .onConflictDoUpdate({
+            target: [
+                publicRankingSnapshot.dotThiId,
+                publicRankingSnapshot.cuocThiId,
+            ],
+            set: {
+                rankingTop: Number(rankingTop) || 20,
+                honorTop: Number(honorTop) || 200,
+                payload,
+                createdAt: new Date(),
+            },
+        })
+        .returning();
+
+    return mapPublicRankingSnapshot(row);
 };
 

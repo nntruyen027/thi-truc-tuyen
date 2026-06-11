@@ -702,8 +702,8 @@ export async function xepHangDonViTheoCuocThi(
 export async function layBangXepHangCongKhai({
     dotThiId,
     cuocThiId,
-    rankingTop = 10,
-    honorTop = 5,
+    rankingTop = 20,
+    honorTop = 200,
 }) {
 
     try {

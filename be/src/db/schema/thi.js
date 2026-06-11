@@ -1,6 +1,7 @@
 const {
     boolean,
     integer,
+    jsonb,
     pgSchema,
     real,
     serial,
@@ -136,6 +137,25 @@ const baiThiChiTietTuLuan = thiSchema.table(
     })
 );
 
+const publicRankingSnapshot = thiSchema.table(
+    "public_ranking_snapshot",
+    {
+        id: serial("id").primaryKey(),
+        dotThiId: integer("dot_thi_id").notNull(),
+        cuocThiId: integer("cuoc_thi_id").notNull(),
+        rankingTop: integer("ranking_top").notNull().default(20),
+        honorTop: integer("honor_top").notNull().default(200),
+        payload: jsonb("payload").notNull(),
+        createdAt: timestamp("created_at").defaultNow().notNull(),
+    },
+    (table) => ({
+        uqDotThiCuocThiSnapshot: unique("uq_public_ranking_snapshot_scope").on(
+            table.dotThiId,
+            table.cuocThiId
+        ),
+    })
+);
+
 module.exports = {
     thiSchema,
     cuocThi,
@@ -148,4 +168,5 @@ module.exports = {
     baiThi,
     baiThiChiTiet,
     baiThiChiTietTuLuan,
+    publicRankingSnapshot,
 };
