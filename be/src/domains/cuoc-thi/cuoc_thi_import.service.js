@@ -1,4 +1,3 @@
-const ExcelJS = require("exceljs");
 const { eq } = require("drizzle-orm");
 const db = require("../../db/client");
 const { cuocThi } = require("../../db/schema");
@@ -371,6 +370,7 @@ async function importDotThiSheet({ rows, contestsByName, summary }) {
 }
 
 exports.generateImportWorkbook = async () => {
+    const ExcelJS = require("exceljs");
     const workbook = new ExcelJS.Workbook();
     workbook.creator = "Thi trực tuyến";
     workbook.company = "VNPT";
@@ -447,6 +447,7 @@ exports.generateImportWorkbook = async () => {
 };
 
 exports.importWorkbook = async (filePath) => {
+    const ExcelJS = require("exceljs");
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
 

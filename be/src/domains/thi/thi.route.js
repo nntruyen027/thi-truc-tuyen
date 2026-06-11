@@ -3,7 +3,6 @@ const router =
 
 const query = require("./thi.query")
 const validation = require("./thi.validation")
-const exportService = require("./thi_export.service")
 
 const resUtil = require("../../core/utils/response")
 const auth = require("../../core/middlewares/auth")
@@ -14,6 +13,10 @@ const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
 const PUBLIC_RANKINGS_CACHE_TTL_MS = Number(process.env.PUBLIC_RANKINGS_CACHE_TTL_MS || 60000);
 const MAX_PUBLIC_RANKINGS_CACHE_ENTRIES = Number(process.env.MAX_PUBLIC_RANKINGS_CACHE_ENTRIES || 20);
 const publicRankingsCache = new Map();
+
+function getExportService() {
+    return require("./thi_export.service");
+}
 
 function createRouteTrace(name, meta = {}) {
     const startedAt = Date.now();
@@ -594,7 +597,7 @@ router.post("/du-doan/:baiThiId", auth, async (req, res) => {
 router.get("/ket-qua-trac-nghiem/export", auth, role(["admin"]), async (req, res) => {
     try {
         const scope = validation.normalizeKetQuaTracNghiemExportScope(req.query);
-        const result = await exportService.exportKetQuaTracNghiem(scope);
+        const result = await getExportService().exportKetQuaTracNghiem(scope);
 
         res.setHeader(
             "Content-Type",

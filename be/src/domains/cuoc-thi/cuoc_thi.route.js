@@ -6,8 +6,11 @@ const resUtil = require("../../core/utils/response");
 const auth = require("../../core/middlewares/auth");
 const role = require("../../core/middlewares/role");
 const upload = require("../../core/utils/upload");
-const importService = require("./cuoc_thi_import.service");
 const fs = require("fs/promises");
+
+function getImportService() {
+    return require("./cuoc_thi_import.service");
+}
 
 router.get("/",
     async (req, res) => {
@@ -68,7 +71,7 @@ router.get("/luot-thi-hien-tai", async (req, res) => {
 
 router.get("/import/template", async (req, res) => {
     try {
-        const buffer = await importService.generateImportWorkbook();
+        const buffer = await getImportService().generateImportWorkbook();
 
         res.setHeader(
             "Content-Type",
@@ -98,7 +101,7 @@ router.post(
                 throw "Vui lòng chọn file Excel để import.";
             }
 
-            const data = await importService.importWorkbook(
+            const data = await getImportService().importWorkbook(
                 uploadedPath
             );
 

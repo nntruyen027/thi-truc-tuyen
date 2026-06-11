@@ -6,7 +6,10 @@ const auth = require("../../core/middlewares/auth")
 const role = require("../../core/middlewares/role")
 const upload = require("../../core/utils/upload");
 const fs = require("fs/promises");
-const importService = require("./danhmuc_import.service");
+
+function getImportService() {
+    return require("./danhmuc_import.service");
+}
 
 router.get(
     "/:tenDm/import/template",
@@ -17,7 +20,7 @@ router.get(
             let tenDm = req.params.tenDm;
             tenDm = String(tenDm).replaceAll("-", "_");
 
-            const result = await importService.generateTemplate(tenDm);
+            const result = await getImportService().generateTemplate(tenDm);
 
             res.setHeader(
                 "Content-Type",
@@ -51,7 +54,7 @@ router.post(
                 throw "Vui lòng chọn file Excel để import.";
             }
 
-            const data = await importService.importWorkbook(
+            const data = await getImportService().importWorkbook(
                 tenDm,
                 uploadedPath
             );

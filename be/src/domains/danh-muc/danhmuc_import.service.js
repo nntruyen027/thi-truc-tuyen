@@ -1,4 +1,3 @@
-const ExcelJS = require("exceljs");
 const { eq } = require("drizzle-orm");
 const db = require("../../db/client");
 const { donVi, linhVuc, nhomCauHoi } = require("../../db/schema");
@@ -61,6 +60,7 @@ function getConfig(tenDm) {
 }
 
 function buildWorkbook(config) {
+    const ExcelJS = require("exceljs");
     const workbook = new ExcelJS.Workbook();
     workbook.creator = "Thi trực tuyến";
     workbook.company = "VNPT";
@@ -186,6 +186,7 @@ exports.generateTemplate = async (tenDm) => {
 
 exports.importWorkbook = async (tenDm, filePath) => {
     const config = getConfig(tenDm);
+    const ExcelJS = require("exceljs");
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
 

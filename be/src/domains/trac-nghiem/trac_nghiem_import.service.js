@@ -1,4 +1,3 @@
-const ExcelJS = require("exceljs");
 const query = require("./trac_nghiem.query");
 
 const DATA_START_ROW = 6;
@@ -13,6 +12,7 @@ function normalizeCellValue(value) {
 }
 
 function buildWorkbook() {
+    const ExcelJS = require("exceljs");
     const workbook = new ExcelJS.Workbook();
     workbook.creator = "Thi trực tuyến";
     workbook.company = "VNPT";
@@ -149,6 +149,7 @@ exports.generateTemplate = async () => {
 };
 
 exports.importWorkbook = async (filePath) => {
+    const ExcelJS = require("exceljs");
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.readFile(filePath);
 

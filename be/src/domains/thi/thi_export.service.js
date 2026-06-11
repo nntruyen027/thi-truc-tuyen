@@ -1,4 +1,3 @@
-const ExcelJS = require("exceljs");
 const query = require("./thi.query");
 const { runWorkerTask } = require("../../utils/worker-task");
 
@@ -60,6 +59,7 @@ async function buildKetQuaTracNghiemExport({
     scopeId,
     top,
 }) {
+    const ExcelJS = require("exceljs");
     const rows =
         scopeType === "dot-thi"
             ? await query.xepHangTracNghiemTheoDotThi(scopeId, top)
