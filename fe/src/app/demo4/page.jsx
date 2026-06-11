@@ -972,7 +972,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     <Col xs={24} xl={8} className="order-2 xl:order-3">
                         <Reveal delay={140} className="h-full">
                             <RankingColumn
-                                title="Đơn vị có nhiều người tham gia"
+                                title="Đơn vị có nhiều lượt thi"
                                 icon={<TrophyFilled />}
                                 items={topUnits}
                                 colorPrimary={colorPrimary}
