@@ -12,6 +12,7 @@ const role = require("../../core/middlewares/role")
 const EXAM_FLOW_DEBUG = process.env.EXAM_FLOW_DEBUG === "1";
 const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
 const PUBLIC_RANKINGS_CACHE_TTL_MS = Number(process.env.PUBLIC_RANKINGS_CACHE_TTL_MS || 60000);
+const MAX_PUBLIC_RANKINGS_CACHE_ENTRIES = Number(process.env.MAX_PUBLIC_RANKINGS_CACHE_ENTRIES || 20);
 const publicRankingsCache = new Map();
 
 function createRouteTrace(name, meta = {}) {
@@ -60,7 +61,26 @@ function getPublicRankingsCacheKey(dotThiId, cuocThiId, rankingTop, honorTop) {
     ].join(":");
 }
 
+function prunePublicRankingsCache(now = Date.now()) {
+    for (const [key, entry] of publicRankingsCache.entries()) {
+        if ((now - entry.createdAt) > PUBLIC_RANKINGS_CACHE_TTL_MS) {
+            publicRankingsCache.delete(key);
+        }
+    }
+
+    while (publicRankingsCache.size > MAX_PUBLIC_RANKINGS_CACHE_ENTRIES) {
+        const oldestKey = publicRankingsCache.keys().next().value;
+
+        if (!oldestKey) {
+            return;
+        }
+
+        publicRankingsCache.delete(oldestKey);
+    }
+}
+
 function readPublicRankingsCache(key) {
+    prunePublicRankingsCache();
     const entry = publicRankingsCache.get(key);
 
     if (!entry) {
@@ -76,10 +96,13 @@ function readPublicRankingsCache(key) {
 }
 
 function writePublicRankingsCache(key, data) {
+    prunePublicRankingsCache();
+    publicRankingsCache.delete(key);
     publicRankingsCache.set(key, {
         createdAt: Date.now(),
         data,
     });
+    prunePublicRankingsCache();
 }
 
 

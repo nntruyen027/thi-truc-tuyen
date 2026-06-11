@@ -18,6 +18,7 @@ const {
 const EXAM_FLOW_DEBUG = process.env.EXAM_FLOW_DEBUG === "1";
 const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
 const RANKING_CACHE_TTL_MS = Number(process.env.RANKING_CACHE_TTL_MS || 60000);
+const MAX_RANKING_CACHE_ENTRIES = Number(process.env.MAX_RANKING_CACHE_ENTRIES || 50);
 
 const LOAI_CAU_HOI = {
     CHON_MOT: "chon_mot",
@@ -73,7 +74,26 @@ function getRankingCacheKey(kind, scopeId, top) {
     return [kind, Number(scopeId || 0), Number(top || 0)].join(":");
 }
 
+function pruneRankingCache(now = Date.now()) {
+    for (const [key, entry] of rankingCache.entries()) {
+        if ((now - entry.createdAt) > RANKING_CACHE_TTL_MS) {
+            rankingCache.delete(key);
+        }
+    }
+
+    while (rankingCache.size > MAX_RANKING_CACHE_ENTRIES) {
+        const oldestKey = rankingCache.keys().next().value;
+
+        if (!oldestKey) {
+            return;
+        }
+
+        rankingCache.delete(oldestKey);
+    }
+}
+
 function readRankingCache(key) {
+    pruneRankingCache();
     const entry = rankingCache.get(key);
 
     if (!entry) {
@@ -89,10 +109,13 @@ function readRankingCache(key) {
 }
 
 function writeRankingCache(key, data) {
+    pruneRankingCache();
+    rankingCache.delete(key);
     rankingCache.set(key, {
         createdAt: Date.now(),
         data,
     });
+    pruneRankingCache();
 }
 
 async function loadRankingDetailStatsByExamIds(baiThiIds = []) {

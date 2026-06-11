@@ -8,6 +8,9 @@ const MAX_RECENT_LAG_SPIKES = 20;
 const ACTIVE_REQUEST_SNAPSHOT_LIMIT = 10;
 const EVENT_LOOP_SAMPLE_INTERVAL_MS = 5000;
 const LAG_SPIKE_THRESHOLD_MS = Number(process.env.EVENT_LOOP_LAG_SPIKE_MS || 120);
+const MAX_TRACKED_PATHS = Number(process.env.MAX_TRACKED_PATHS || 1000);
+const MAX_TRACKED_UNIQUE_IPS = Number(process.env.MAX_TRACKED_UNIQUE_IPS || 10000);
+const OVERFLOW_PATH_KEY = "__other__";
 
 const eventLoopDelayMonitor = monitorEventLoopDelay({ resolution: 20 });
 eventLoopDelayMonitor.enable();
@@ -30,7 +33,7 @@ const state = {
     pathCounts: new Map(),
     statusCounts: new Map(),
     methodCounts: new Map(),
-    ipCounts: new Map(),
+    ipCounts: new Set(),
     activeRequests: new Map(),
     recentLagSpikes: [],
     eventLoop: {
@@ -85,6 +88,41 @@ function incrementMap(map, key, value = 1) {
     map.set(key, normalizeByteValue(map.get(key)) + normalizeByteValue(value));
 }
 
+function normalizeTrackedPath(path) {
+    if (!path) {
+        return "/";
+    }
+
+    const normalized = String(path).split("?")[0].trim();
+
+    if (!normalized) {
+        return "/";
+    }
+
+    return normalized.length > 180
+        ? normalized.slice(0, 180)
+        : normalized;
+}
+
+function incrementPathCount(path, value = 1) {
+    const normalizedPath = normalizeTrackedPath(path);
+
+    if (state.pathCounts.has(normalizedPath) || state.pathCounts.size < MAX_TRACKED_PATHS) {
+        incrementMap(state.pathCounts, normalizedPath, value);
+        return;
+    }
+
+    incrementMap(state.pathCounts, OVERFLOW_PATH_KEY, value);
+}
+
+function trackUniqueIp(ip) {
+    const normalizedIp = ip || "unknown";
+
+    if (state.ipCounts.has(normalizedIp) || state.ipCounts.size < MAX_TRACKED_UNIQUE_IPS) {
+        state.ipCounts.add(normalizedIp);
+    }
+}
+
 function createRequestId() {
     requestSequence += 1;
     return `req-${Date.now()}-${requestSequence}`;
@@ -129,10 +167,10 @@ function recordRequest({
     state.perHour.set(hourKey, currentBucket);
     trimBucketsIfNeeded();
 
-    incrementMap(state.pathCounts, path);
+    incrementPathCount(path);
     incrementMap(state.methodCounts, method);
     incrementMap(state.statusCounts, String(status));
-    incrementMap(state.ipCounts, ip || "unknown");
+    trackUniqueIp(ip);
 
     state.totals.requests += 1;
     state.totals.requestBytes += requestBytes;
