@@ -28,7 +28,7 @@ const DEMO4_BACKGROUND_IMAGES = {
     soctrang: "/bg_soctrang.jpg",
     haugiang: "/bg_haugiang.jpg",
 };
-const LIVE_DATA_REFRESH_MS = 30 * 1000;
+const LIVE_DATA_REFRESH_MS = 120 * 1000;
 const RESIZE_DEBOUNCE_MS = 180;
 const UNIT_RANKING_FETCH_LIMIT = 1000;
 

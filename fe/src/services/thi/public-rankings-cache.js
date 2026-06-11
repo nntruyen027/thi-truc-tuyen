@@ -4,7 +4,7 @@ import {
     layBangXepHangCongKhai,
 } from "~/services/thi/thi";
 
-const CACHE_TTL_MS = 60 * 1000;
+const CACHE_TTL_MS = 120 * 1000;
 
 const cacheStore = new Map();
 const inflightStore = new Map();

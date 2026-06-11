@@ -17,6 +17,7 @@ module.exports = {
       env_production: {
         NODE_ENV: "production",
         PORT: 4000,
+        PUBLIC_RANKINGS_CACHE_TTL_MS: 120000,
         MAX_RANKING_CACHE_ENTRIES: 30,
         MAX_PUBLIC_RANKINGS_CACHE_ENTRIES: 10,
         MAX_TRACKED_PATHS: 500,
