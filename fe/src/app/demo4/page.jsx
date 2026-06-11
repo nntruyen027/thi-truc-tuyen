@@ -568,6 +568,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
 
     useEffect(() => {
         let active = true;
+        let timeoutId = null;
 
         const load = async () => {
             try {
@@ -623,22 +624,26 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     setCountdown(null);
                     setTongLuotThi(0);
                 }
+            } finally {
+                if (active) {
+                    timeoutId = window.setTimeout(() => {
+                        void load();
+                    }, LIVE_DATA_REFRESH_MS);
+                }
             }
         };
 
         void load();
-        const intervalId = setInterval(() => {
-            void load();
-        }, LIVE_DATA_REFRESH_MS);
 
         return () => {
             active = false;
-            clearInterval(intervalId);
+            window.clearTimeout(timeoutId);
         };
     }, []);
 
     useEffect(() => {
         let active = true;
+        let timeoutId = null;
 
         const loadRankings = async () => {
             if (!dotThi?.id) {
@@ -703,16 +708,19 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             }
 
             setUnitLoading(false);
+
+            if (active) {
+                timeoutId = window.setTimeout(() => {
+                    void loadRankings();
+                }, LIVE_DATA_REFRESH_MS);
+            }
         };
 
         void loadRankings();
-        const intervalId = setInterval(() => {
-            void loadRankings();
-        }, LIVE_DATA_REFRESH_MS);
 
         return () => {
             active = false;
-            clearInterval(intervalId);
+            window.clearTimeout(timeoutId);
         };
     }, [dotThi?.id]);
 

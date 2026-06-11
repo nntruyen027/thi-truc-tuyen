@@ -3,6 +3,26 @@ import {API_BASE_URL} from "~/config/env";
 import {useAuthStore} from "~/store/auth";
 
 const BASE_PATH = "/thi";
+const rankingRequestInFlight = new Map();
+
+function runSharedRankingRequest(key, loader) {
+    const existingRequest = rankingRequestInFlight.get(key);
+
+    if (existingRequest) {
+        return existingRequest;
+    }
+
+    const request = (async () => {
+        try {
+            return await loader();
+        } finally {
+            rankingRequestInFlight.delete(key);
+        }
+    })();
+
+    rankingRequestInFlight.set(key, request);
+    return request;
+}
 
 function getAccessToken() {
     return useAuthStore.getState().access
@@ -524,9 +544,14 @@ export async function xepHangTracNghiemTheoDotThi(
             val = 10
         }
 
+        const requestKey =
+            `ranking:dot-thi:${Number(dotThiId || 0)}:${val}`;
         const res =
-            await api.get(
-                BASE_PATH + "/ket-qua-trac-nghiem/dot-thi/" + dotThiId + "/" + val,
+            await runSharedRankingRequest(
+                requestKey,
+                () => api.get(
+                    BASE_PATH + "/ket-qua-trac-nghiem/dot-thi/" + dotThiId + "/" + val,
+                )
             )
 
         return res.data.data
@@ -554,9 +579,14 @@ export async function xepHangTracNghiemTheoCuocThi(
             val = 10
         }
 
+        const requestKey =
+            `ranking:cuoc-thi:${Number(cuocThiId || 0)}:${val}`;
         const res =
-            await api.get(
-                BASE_PATH + "/ket-qua-trac-nghiem/cuoc-thi/" + cuocThiId + "/" + val,
+            await runSharedRankingRequest(
+                requestKey,
+                () => api.get(
+                    BASE_PATH + "/ket-qua-trac-nghiem/cuoc-thi/" + cuocThiId + "/" + val,
+                )
             )
 
         return res.data.data
@@ -610,11 +640,18 @@ export async function xepHangDonViTheoDotThi(
 ) {
 
     try {
+        const normalizedTop =
+            top == null ? "all" : Number(top);
+        const requestKey =
+            `honor:dot-thi:${Number(dotThiId || 0)}:${normalizedTop}`;
         const res =
-            await api.get(
-                top == null
-                    ? BASE_PATH + "/bang-vang-don-vi/dot-thi/" + dotThiId
-                    : BASE_PATH + "/bang-vang-don-vi/dot-thi/" + dotThiId + "/" + Number(top),
+            await runSharedRankingRequest(
+                requestKey,
+                () => api.get(
+                    top == null
+                        ? BASE_PATH + "/bang-vang-don-vi/dot-thi/" + dotThiId
+                        : BASE_PATH + "/bang-vang-don-vi/dot-thi/" + dotThiId + "/" + Number(top),
+                )
             )
 
         return res.data.data
@@ -636,11 +673,18 @@ export async function xepHangDonViTheoCuocThi(
 ) {
 
     try {
+        const normalizedTop =
+            top == null ? "all" : Number(top);
+        const requestKey =
+            `honor:cuoc-thi:${Number(cuocThiId || 0)}:${normalizedTop}`;
         const res =
-            await api.get(
-                top == null
-                    ? BASE_PATH + "/bang-vang-don-vi/cuoc-thi/" + cuocThiId
-                    : BASE_PATH + "/bang-vang-don-vi/cuoc-thi/" + cuocThiId + "/" + Number(top),
+            await runSharedRankingRequest(
+                requestKey,
+                () => api.get(
+                    top == null
+                        ? BASE_PATH + "/bang-vang-don-vi/cuoc-thi/" + cuocThiId
+                        : BASE_PATH + "/bang-vang-don-vi/cuoc-thi/" + cuocThiId + "/" + Number(top),
+                )
             )
 
         return res.data.data
@@ -663,17 +707,22 @@ export async function layBangXepHangCongKhai({
 }) {
 
     try {
+        const requestKey =
+            `public-rankings:${Number(dotThiId || 0)}:${Number(cuocThiId || 0)}:${Number(rankingTop || 0)}:${Number(honorTop || 0)}`;
         const res =
-            await api.get(
-                BASE_PATH + "/public-rankings",
-                {
-                    params: {
-                        dotThiId,
-                        cuocThiId,
-                        rankingTop,
-                        honorTop,
-                    },
-                }
+            await runSharedRankingRequest(
+                requestKey,
+                () => api.get(
+                    BASE_PATH + "/public-rankings",
+                    {
+                        params: {
+                            dotThiId,
+                            cuocThiId,
+                            rankingTop,
+                            honorTop,
+                        },
+                    }
+                )
             )
 
         return res.data.data

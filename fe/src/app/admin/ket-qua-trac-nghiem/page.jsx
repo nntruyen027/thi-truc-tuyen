@@ -123,17 +123,6 @@ export default function NhomCauHoi() {
             if (cuocThi) {
                 void fetchDataCuocThi();
             }
-        }
-    }, [cuocThi, dotThi, fetchDataCuocThi]);
-
-    // ===== search =====
-
-    useEffect(() => {
-        if (!dotThi) {
-            setData([]);
-            if (cuocThi) {
-                void fetchDataCuocThi();
-            }
             return;
         }
 
