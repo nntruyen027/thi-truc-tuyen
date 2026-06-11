@@ -7,14 +7,8 @@ import {useRouter} from "next/navigation"
 
 import CountDown from "../CountDown"
 import {
-    autoSubmitKeepAlive,
-    nopBai,
-    nopKetQuaDuDoan,
-    pauseThi,
-    pauseThiKeepAlive,
+    autoSubmitBaiThi,
     startThi,
-    traLoi,
-    traLoiTuLuan
 } from "~/services/thi/thi"
 import {layDotThiHienTai} from "~/services/thi/dot-thi"
 
@@ -143,14 +137,9 @@ export default function Thi() {
     const [ketQuaDuDoan, setKetQuaDuDoan] = useState("")
 
     const startedRef = useRef(false)
-    const savingRef = useRef(false)
-    const pausedRef = useRef(false)
     const finishingRef = useRef(false)
     const cauHoiRef = useRef([])
     const ketQuaDuDoanRef = useRef("")
-    const debounceRef = useRef(null)
-    const pendingTuLuanRef = useRef(null)
-    const pendingDienTuRef = useRef(null)
     const questionSectionRef = useRef(null)
 
     useEffect(() => {
@@ -239,33 +228,12 @@ export default function Thi() {
                 return
             }
 
-            if (!baiThiId || pausedRef.current || finishingRef.current) {
+            if (!baiThiId || finishingRef.current) {
                 return
             }
 
             if (isReloadLikeTrigger) {
                 markReloadExit()
-            }
-
-            if (
-                dotThi?.cho_phep_luu_bai &&
-                pauseThiKeepAlive(
-                    baiThiId,
-                    {reason: "save"}
-                )
-            ) {
-                return
-            }
-
-            if (
-                !dotThi?.cho_phep_luu_bai &&
-                trigger !== "visibilitychange"
-            ) {
-                const payload = buildAutoSubmitPayload()
-
-                if (autoSubmitKeepAlive(baiThiId, payload)) {
-                    pausedRef.current = true
-                }
             }
         }
 
@@ -284,7 +252,7 @@ export default function Thi() {
 
             handleLeaveAttempt("cleanup")
         }
-    }, [baiThiId, dotThi?.cho_phep_luu_bai, dotThi?.du_doan])
+    }, [baiThiId])
 
     useEffect(() => {
         if (!isMobile || loading) {
@@ -335,71 +303,33 @@ export default function Thi() {
         })
     }
 
-    async function chon(clientKey, questionId, dapAn) {
-        if (savingRef.current) return
-
-        savingRef.current = true
-
-        try {
-            await traLoi(
-                baiThiId,
-                questionId,
-                dapAn
+    function chon(clientKey, dapAn) {
+        updateQuestions((old) =>
+            old.map((item) =>
+                item.clientKey === clientKey
+                    ? {
+                        ...item,
+                        dap_an_chon: dapAn
+                    }
+                    : item
             )
-
-            updateQuestions((old) =>
-                old.map((item) =>
-                    item.clientKey === clientKey
-                        ? {
-                            ...item,
-                            dap_an_chon: dapAn
-                        }
-                        : item
-                )
-            )
-        } catch (error) {
-            message.error(error.message || "Không thể lưu đáp án.")
-        } finally {
-            savingRef.current = false
-        }
+        )
     }
 
-    async function chonNhieu(clientKey, questionId, dapAn) {
-        if (savingRef.current) return
-
-        savingRef.current = true
-
-        try {
-            await traLoi(
-                baiThiId,
-                questionId,
-                dapAn
+    function chonNhieu(clientKey, dapAn) {
+        updateQuestions((old) =>
+            old.map((item) =>
+                item.clientKey === clientKey
+                    ? {
+                        ...item,
+                        dap_an_chon_nhieu: dapAn
+                    }
+                    : item
             )
-
-            updateQuestions((old) =>
-                old.map((item) =>
-                    item.clientKey === clientKey
-                        ? {
-                            ...item,
-                            dap_an_chon_nhieu: dapAn
-                        }
-                        : item
-                )
-            )
-        } catch (error) {
-            message.error(error.message || "Không thể lưu đáp án.")
-        } finally {
-            savingRef.current = false
-        }
+        )
     }
 
-    function dien(clientKey, questionId, val) {
-        pendingTuLuanRef.current = {
-            clientKey,
-            questionId,
-            val
-        }
-
+    function dien(clientKey, val) {
         updateQuestions((old) =>
             old.map((item) =>
                 item.clientKey === clientKey
@@ -410,33 +340,9 @@ export default function Thi() {
                     : item
             )
         )
-
-        if (debounceRef.current) {
-            clearTimeout(debounceRef.current)
-        }
-
-        debounceRef.current = setTimeout(async () => {
-            try {
-                await traLoiTuLuan(
-                    baiThiId,
-                    questionId,
-                    val
-                )
-
-                pendingTuLuanRef.current = null
-            } catch (error) {
-                message.error(error.message || "Không thể lưu câu trả lời tự luận.")
-            }
-        }, 500)
     }
 
-    function dienTu(clientKey, questionId, val) {
-        pendingDienTuRef.current = {
-            clientKey,
-            questionId,
-            val
-        }
-
+    function dienTu(clientKey, val) {
         updateQuestions((old) =>
             old.map((item) =>
                 item.clientKey === clientKey
@@ -447,94 +353,6 @@ export default function Thi() {
                     : item
             )
         )
-
-        if (debounceRef.current) {
-            clearTimeout(debounceRef.current)
-        }
-
-        debounceRef.current = setTimeout(async () => {
-            try {
-                await traLoi(
-                    baiThiId,
-                    questionId,
-                    val
-                )
-
-                pendingDienTuRef.current = null
-            } catch (error) {
-                message.error(error.message || "Không thể lưu câu trả lời.")
-            }
-        }, 500)
-    }
-
-    async function flushPendingTuLuan() {
-        if (debounceRef.current) {
-            clearTimeout(debounceRef.current)
-            debounceRef.current = null
-        }
-
-        if (!pendingTuLuanRef.current || !baiThiId) {
-            return
-        }
-
-        const {
-            questionId,
-            val
-        } = pendingTuLuanRef.current
-
-        await traLoiTuLuan(
-            baiThiId,
-            questionId,
-            val
-        )
-
-        pendingTuLuanRef.current = null
-    }
-
-    async function flushPendingDienTu() {
-        if (!pendingDienTuRef.current || !baiThiId) {
-            return
-        }
-
-        const {
-            questionId,
-            val
-        } = pendingDienTuRef.current
-
-        await traLoi(
-            baiThiId,
-            questionId,
-            val
-        )
-
-        pendingDienTuRef.current = null
-    }
-
-    async function pauseCurrentAttempt(options = {}) {
-        const {
-            keepalive = false,
-            reason = "save"
-        } = options
-
-        if (!baiThiId || pausedRef.current) {
-            return false
-        }
-
-        if (keepalive) {
-            pausedRef.current = true
-            return pauseThiKeepAlive(
-                baiThiId,
-                {reason}
-            )
-        }
-
-        await pauseThi(
-            baiThiId,
-            {reason}
-        )
-
-        pausedRef.current = true
-        return true
     }
 
     function buildAutoSubmitPayload() {
@@ -640,51 +458,30 @@ export default function Thi() {
             async onOk() {
                 try {
                     finishingRef.current = true
-
-                    await flushPendingTuLuan()
-                    await flushPendingDienTu()
-                    await pauseCurrentAttempt({
-                        reason: "submit"
-                    })
-
-                    if (dotThi?.du_doan) {
-                        await nopKetQuaDuDoan(
-                            baiThiId,
-                            ketQuaDuDoan
-                        )
-                    }
-
-                    await nopBai(baiThiId)
+                    await autoSubmitBaiThi(
+                        baiThiId,
+                        buildAutoSubmitPayload()
+                    )
                     router.replace("/user")
                 } catch (error) {
                     finishingRef.current = false
-                    pausedRef.current = false
                     message.error(error.message || "Không thể nộp bài.")
                 }
             }
         })
     }
 
-    function luuThoat() {
+    function thoatKhongLuu() {
         Modal.confirm({
             mask: { closable: false },
             keyboard: false,
-            title: "Lưu bài và thoát?",
-            content: "Bài làm hiện tại sẽ được lưu để bạn tiếp tục sau.",
-            okText: "Lưu và thoát",
+            title: "Thoát bài thi?",
+            content: "Bạn chưa bấm Nộp bài. Nếu thoát lúc này, toàn bộ đáp án hiện tại sẽ không được ghi nhận.",
+            okText: "Thoát",
             cancelText: "Ở lại",
             async onOk() {
-                try {
-                    await flushPendingTuLuan()
-                    await flushPendingDienTu()
-                    await pauseCurrentAttempt({
-                        reason: "save"
-                    })
-                    router.push("/user")
-                } catch (error) {
-                    pausedRef.current = false
-                    message.error(error.message || "Không thể lưu bài.")
-                }
+                markReloadExit()
+                router.push("/user")
             }
         })
     }
@@ -701,22 +498,13 @@ export default function Thi() {
 
         try {
             finishingRef.current = true
-
-            await flushPendingTuLuan()
-            await flushPendingDienTu()
-            await pauseCurrentAttempt({
-                reason: "submit"
-            })
-
-            if (dotThi?.du_doan) {
-                await nopKetQuaDuDoan(
-                    baiThiId,
-                    ketQuaDuDoan
-                )
-            }
-
-            await nopBai(baiThiId)
-        } catch {}
+            await autoSubmitBaiThi(
+                baiThiId,
+                buildAutoSubmitPayload()
+            )
+        } catch (error) {
+            message.error(error.message || "Không thể tự động nộp bài khi hết giờ.")
+        }
 
         setTimeout(() => {
             Modal.destroyAll()
@@ -959,7 +747,6 @@ export default function Thi() {
                                         onChange={(e) =>
                                             chon(
                                                 currentQuestion.clientKey,
-                                                currentQuestion.questionId,
                                                 e.target.value
                                             )
                                         }
@@ -1013,7 +800,6 @@ export default function Thi() {
                                         onChange={(values) =>
                                             chonNhieu(
                                                 currentQuestion.clientKey,
-                                                currentQuestion.questionId,
                                                 values
                                             )
                                         }
@@ -1077,7 +863,6 @@ export default function Thi() {
                                             onChange={(e) =>
                                                 dienTu(
                                                     currentQuestion.clientKey,
-                                                    currentQuestion.questionId,
                                                     e.target.value
                                                 )
                                             }
@@ -1115,7 +900,6 @@ export default function Thi() {
                                             onChange={(e) =>
                                                 dien(
                                                     currentQuestion.clientKey,
-                                                    currentQuestion.questionId,
                                                     e.target.value
                                                 )
                                             }
@@ -1154,15 +938,13 @@ export default function Thi() {
                                 </div>
 
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                                    {dotThi?.cho_phep_luu_bai && (
-                                        <Button
-                                            size="large"
-                                            onClick={luuThoat}
-                                            className="!h-12 !rounded-2xl !border-slate-300 !px-6"
-                                        >
-                                            Lưu và thoát
-                                        </Button>
-                                    )}
+                                    <Button
+                                        size="large"
+                                        onClick={thoatKhongLuu}
+                                        className="!h-12 !rounded-2xl !border-slate-300 !px-6"
+                                    >
+                                        Thoát không lưu
+                                    </Button>
 
                                     <Button
                                         danger

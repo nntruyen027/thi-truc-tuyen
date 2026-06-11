@@ -363,6 +363,31 @@ export async function pauseThi(
     }
 }
 
+export async function autoSubmitBaiThi(
+    baiThiId,
+    payload = {}
+) {
+
+    try {
+
+        const res =
+            await api.post(
+                BASE_PATH + "/auto-submit/" + baiThiId,
+                payload
+            )
+
+        return res.data.data
+
+    }
+    catch (e) {
+
+        throw new Error(
+            e?.response?.data?.message
+        )
+
+    }
+}
+
 export function pauseThiKeepAlive(
     baiThiId,
     options = {}
