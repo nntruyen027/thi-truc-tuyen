@@ -33,6 +33,7 @@ const breadcrumbNameMap = {
     "dot-thi": "Đợt thi",
     "trac-nghiem": "Trắc nghiệm",
     "ket-qua-trac-nghiem": "Kết quả trắc nghiệm",
+    "thong-ke-tham-gia-theo-don-vi": "Thống kê tham gia theo đơn vị",
     "thong-ke-he-thong": "Thống kê hệ thống",
     "don-vi": "Đơn vị",
     "linh-vuc": "Lĩnh vực",
@@ -87,6 +88,10 @@ const menuConfig = [
             {
                 key: "/admin/ket-qua-trac-nghiem",
                 label: "Trắc nghiệm",
+            },
+            {
+                key: "/admin/thong-ke-tham-gia-theo-don-vi",
+                label: "Tham gia theo đơn vị",
             },
         ],
     },

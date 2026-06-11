@@ -1770,3 +1770,89 @@ exports.luuPublicRankingSnapshot = async ({
     return mapPublicRankingSnapshot(row);
 };
 
+exports.thongKeThamGiaTheoDonVi = async ({
+    cuocThiId = null,
+    dotThiId = null,
+} = {}) => {
+    const normalizedDotThiId =
+        Number.isInteger(Number(dotThiId)) && Number(dotThiId) > 0
+            ? Number(dotThiId)
+            : null;
+    const normalizedCuocThiId =
+        Number.isInteger(Number(cuocThiId)) && Number(cuocThiId) > 0
+            ? Number(cuocThiId)
+            : null;
+    const participationConditions = [sql`bt.trang_thai = 1`, sql`u.role = 'user'`];
+
+    if (normalizedDotThiId) {
+        participationConditions.push(sql`dt.dot_thi_id = ${normalizedDotThiId}`);
+    } else if (normalizedCuocThiId) {
+        participationConditions.push(sql`dtt.cuoc_thi_id = ${normalizedCuocThiId}`);
+    }
+
+    const result = await db.execute(sql`
+        with user_stats as (
+            select
+                u.don_vi_id,
+                count(*)::int as tong_tai_khoan_thi_sinh,
+                coalesce(sum(case when u.doi_tuong = 'dang_vien' then 1 else 0 end), 0)::int as tong_tai_khoan_dang_vien
+            from auth.users u
+            where u.role = 'user'
+            group by u.don_vi_id
+        ),
+        participation_stats as (
+            select
+                u.don_vi_id,
+                count(distinct bt.thi_sinh_id)::int as so_nguoi_tham_gia,
+                count(distinct case when u.doi_tuong = 'dang_vien' then bt.thi_sinh_id end)::int as so_dang_vien_tham_gia,
+                count(bt.id)::int as so_luot_nop_bai
+            from thi.bai_thi bt
+            inner join auth.users u on u.id = bt.thi_sinh_id
+            inner join thi.de_thi dt on dt.id = bt.de_thi_id
+            inner join thi.dot_thi dtt on dtt.id = dt.dot_thi_id
+            where ${sql.join(participationConditions, sql` and `)}
+            group by u.don_vi_id
+        )
+        select
+            dv.id,
+            dv.ten,
+            coalesce(us.tong_tai_khoan_thi_sinh, 0)::int as tong_tai_khoan_thi_sinh,
+            coalesce(ps.so_nguoi_tham_gia, 0)::int as so_nguoi_tham_gia,
+            coalesce(us.tong_tai_khoan_dang_vien, 0)::int as tong_tai_khoan_dang_vien,
+            coalesce(ps.so_dang_vien_tham_gia, 0)::int as so_dang_vien_tham_gia,
+            coalesce(ps.so_luot_nop_bai, 0)::int as so_luot_nop_bai
+        from dm_chung.don_vi dv
+        left join user_stats us on us.don_vi_id = dv.id
+        left join participation_stats ps on ps.don_vi_id = dv.id
+        order by
+            coalesce(ps.so_nguoi_tham_gia, 0) desc,
+            dv.ten asc
+    `);
+
+    return (result.rows || []).map((row, index) => {
+        const tongTaiKhoanThiSinh = Number(row.tong_tai_khoan_thi_sinh || 0);
+        const soNguoiThamGia = Number(row.so_nguoi_tham_gia || 0);
+        const tongTaiKhoanDangVien = Number(row.tong_tai_khoan_dang_vien || 0);
+        const soDangVienThamGia = Number(row.so_dang_vien_tham_gia || 0);
+        const soLuotNopBai = Number(row.so_luot_nop_bai || 0);
+        const tyLeThamGia =
+            tongTaiKhoanThiSinh > 0
+                ? Number(((soNguoiThamGia / tongTaiKhoanThiSinh) * 100).toFixed(2))
+                : 0;
+
+        return {
+            stt: index + 1,
+            id: Number(row.id),
+            ten_don_vi: row.ten || "-",
+            cuoc_thi_id: normalizedDotThiId ? null : normalizedCuocThiId,
+            dot_thi_id: normalizedDotThiId,
+            tong_tai_khoan_thi_sinh: tongTaiKhoanThiSinh,
+            so_nguoi_tham_gia: soNguoiThamGia,
+            tong_tai_khoan_dang_vien: tongTaiKhoanDangVien,
+            so_dang_vien_tham_gia: soDangVienThamGia,
+            so_luot_nop_bai: soLuotNopBai,
+            ty_le_tham_gia: tyLeThamGia,
+        };
+    });
+};
+

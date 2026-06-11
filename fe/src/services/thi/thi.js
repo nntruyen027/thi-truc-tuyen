@@ -736,3 +736,62 @@ export async function layBangXepHangCongKhai({
 
     }
 }
+
+export async function layThongKeThamGiaTheoDonVi({
+    cuocThiId = null,
+    dotThiId = null,
+} = {}) {
+
+    try {
+        const res =
+            await api.get(
+                BASE_PATH + "/thong-ke-tham-gia-theo-don-vi",
+                {
+                    params: {
+                        cuocThiId,
+                        dotThiId,
+                    },
+                }
+            )
+
+        return res.data.data
+
+    }
+    catch (e) {
+
+        throw new Error(
+            e?.response?.data?.message || "Không thể tải thống kê tham gia theo đơn vị"
+        )
+
+    }
+}
+
+export async function xuatThongKeThamGiaTheoDonViExcel({
+    cuocThiId = null,
+    dotThiId = null,
+} = {}) {
+
+    try {
+        const res =
+            await api.get(
+                BASE_PATH + "/thong-ke-tham-gia-theo-don-vi/export",
+                {
+                    params: {
+                        cuocThiId,
+                        dotThiId,
+                    },
+                    responseType: "blob",
+                }
+            )
+
+        return res.data
+
+    }
+    catch (e) {
+
+        throw new Error(
+            e?.response?.data?.message || "Không thể xuất file Excel"
+        )
+
+    }
+}

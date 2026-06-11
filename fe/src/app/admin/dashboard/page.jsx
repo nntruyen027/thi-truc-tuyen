@@ -408,7 +408,7 @@ export default function Dashboard() {
 
                         <Col xs={24} lg={12}>
                             <Card className="rounded-[28px] border-0 shadow-sm">
-                                <Space direction="vertical" size={12} className="w-full">
+                                <Space orientation="vertical" size={12} className="w-full">
                                     <Text className="!text-xs uppercase tracking-[0.18em] !text-slate-400">
                                         Gợi ý điều hành
                                     </Text>

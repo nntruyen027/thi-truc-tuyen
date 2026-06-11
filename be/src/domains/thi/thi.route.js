@@ -729,4 +729,64 @@ router.get("/bang-vang-don-vi/cuoc-thi/:cuocThiId", async (req, res) => {
     }
 })
 
+router.get(
+    "/thong-ke-tham-gia-theo-don-vi",
+    auth,
+    role(["admin"]),
+    async (req, res) => {
+        try {
+            const dotThiId =
+                Number.isInteger(Number(req.query?.dotThiId)) && Number(req.query.dotThiId) > 0
+                    ? Number(req.query.dotThiId)
+                    : null;
+            const cuocThiId =
+                Number.isInteger(Number(req.query?.cuocThiId)) && Number(req.query.cuocThiId) > 0
+                    ? Number(req.query.cuocThiId)
+                    : null;
+            const data = await query.thongKeThamGiaTheoDonVi({
+                cuocThiId,
+                dotThiId,
+            });
+            resUtil.ok(res, data);
+        } catch (err) {
+            resUtil.error(res, err);
+        }
+    }
+)
+
+router.get(
+    "/thong-ke-tham-gia-theo-don-vi/export",
+    auth,
+    role(["admin"]),
+    async (req, res) => {
+        try {
+            const dotThiId =
+                Number.isInteger(Number(req.query?.dotThiId)) && Number(req.query.dotThiId) > 0
+                    ? Number(req.query.dotThiId)
+                    : null;
+            const cuocThiId =
+                Number.isInteger(Number(req.query?.cuocThiId)) && Number(req.query.cuocThiId) > 0
+                    ? Number(req.query.cuocThiId)
+                    : null;
+            const result = await getExportService().exportThongKeThamGiaTheoDonVi({
+                cuocThiId,
+                dotThiId,
+            });
+
+            res.setHeader(
+                "Content-Type",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            );
+            res.setHeader(
+                "Content-Disposition",
+                `attachment; filename="${result.fileName}"`
+            );
+
+            res.send(Buffer.from(result.buffer));
+        } catch (err) {
+            resUtil.error(res, err)
+        }
+    }
+)
+
 module.exports = router
