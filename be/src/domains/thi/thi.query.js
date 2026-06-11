@@ -17,7 +17,7 @@ const {
 
 const EXAM_FLOW_DEBUG = process.env.EXAM_FLOW_DEBUG === "1";
 const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
-const RANKING_CACHE_TTL_MS = Number(process.env.RANKING_CACHE_TTL_MS || 30000);
+const RANKING_CACHE_TTL_MS = Number(process.env.RANKING_CACHE_TTL_MS || 60000);
 
 const LOAI_CAU_HOI = {
     CHON_MOT: "chon_mot",
@@ -95,23 +95,38 @@ function writeRankingCache(key, data) {
     });
 }
 
-async function loadRankingDetailStats(whereClause) {
-    return db
-        .select({
-            baiThiId: baiThiChiTiet.baiThiId,
-            tong: sql`count(*)::int`,
-            dung: sql`coalesce(sum(case when ${baiThiChiTiet.dung} then 1 else 0 end), 0)::int`,
-        })
-        .from(baiThiChiTiet)
-        .innerJoin(baiThi, eq(baiThi.id, baiThiChiTiet.baiThiId))
-        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
-        .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
-        .where(and(
-            whereClause,
-            eq(baiThi.trangThai, 1),
-            sql`coalesce(${baiThi.diem}, 0) >= coalesce(${dotThi.tyLeDanhGiaDat}, 0)`
-        ))
-        .groupBy(baiThiChiTiet.baiThiId);
+async function loadRankingDetailStatsByExamIds(baiThiIds = []) {
+    const normalizedIds = Array.from(
+        new Set(
+            baiThiIds
+                .map((value) => Number(value))
+                .filter((value) => Number.isInteger(value) && value > 0)
+        )
+    );
+
+    if (!normalizedIds.length) {
+        return [];
+    }
+
+    const chunkSize = 500;
+    const results = [];
+
+    for (let index = 0; index < normalizedIds.length; index += chunkSize) {
+        const currentChunk = normalizedIds.slice(index, index + chunkSize);
+        const rows = await db
+            .select({
+                baiThiId: baiThiChiTiet.baiThiId,
+                tong: sql`count(*)::int`,
+                dung: sql`coalesce(sum(case when ${baiThiChiTiet.dung} then 1 else 0 end), 0)::int`,
+            })
+            .from(baiThiChiTiet)
+            .where(inArray(baiThiChiTiet.baiThiId, currentChunk))
+            .groupBy(baiThiChiTiet.baiThiId);
+
+        results.push(...rows);
+    }
+
+    return results;
 }
 
 function withLegacyKeys(data) {
@@ -1447,6 +1462,7 @@ exports.autoSubmitBaiThi = async (baiThiIdValue, payload = {}) => {
 };
 
 async function layDanhSachBaiThiXepHang(whereClause) {
+    const trace = createExamTrace("lay-danh-sach-bai-thi-xep-hang");
     const examRows = await db
         .select({
             baiThiId: baiThi.id,
@@ -1474,12 +1490,17 @@ async function layDanhSachBaiThiXepHang(whereClause) {
             eq(baiThi.trangThai, 1),
             sql`coalesce(${baiThi.diem}, 0) >= coalesce(${dotThi.tyLeDanhGiaDat}, 0)`
         ));
+    trace.step("load-exam-rows", { examCount: examRows.length });
 
     if (!examRows.length) {
+        trace.finish({ examCount: 0, uniqueThiSinh: 0 });
         return [];
     }
 
-    const detailRows = await loadRankingDetailStats(whereClause);
+    const detailRows = await loadRankingDetailStatsByExamIds(
+        examRows.map((row) => row.baiThiId)
+    );
+    trace.step("load-detail-stats", { detailCount: detailRows.length });
 
     const detailStats = new Map(
         detailRows.map((row) => [
@@ -1524,13 +1545,22 @@ async function layDanhSachBaiThiXepHang(whereClause) {
         }
     }
 
-    return Array.from(bestByThiSinh.values())
+    const rankedRows = Array.from(bestByThiSinh.values())
         .map((row) => ({
             ...row,
             soNguoi100,
             saiSo: Math.abs(Number(row.soDuDoan || 0) - soNguoi100),
         }))
         .sort(compareRankingRow);
+
+    trace.finish({
+        examCount: examRows.length,
+        detailCount: detailRows.length,
+        uniqueThiSinh: rankedRows.length,
+        soNguoi100,
+    });
+
+    return rankedRows;
 }
 
 async function layXepHangDonViTheoDieuKien(whereClause) {
