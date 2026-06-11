@@ -20,6 +20,7 @@ function captureMemoryStats() {
         externalMb: toMb(memory.external),
         arrayBuffersMb: toMb(memory.arrayBuffers),
         activeRequests: Array.isArray(snapshot.activeRequests) ? snapshot.activeRequests.length : 0,
+        activeRequestDetails: Array.isArray(snapshot.activeRequests) ? snapshot.activeRequests.slice(0, 10) : [],
         currentInFlight: Number(snapshot?.totals?.currentInFlight || 0),
         requestsPerMinute: Number(snapshot?.totals?.requestsPerMinute || 0),
         topPaths: Array.isArray(snapshot.topPaths) ? snapshot.topPaths.slice(0, 5) : [],
