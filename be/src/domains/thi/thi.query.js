@@ -28,6 +28,7 @@ const LOAI_CAU_HOI = {
 
 let baiThiChiTietColumnsPromise = null;
 const rankingCache = new Map();
+const rankingInFlight = new Map();
 
 function createExamTrace(name, meta = {}) {
     const startedAt = process.hrtime.bigint();
@@ -116,6 +117,34 @@ function writeRankingCache(key, data) {
         data,
     });
     pruneRankingCache();
+}
+
+async function runRankingTask(cacheKey, loader) {
+    const cached = readRankingCache(cacheKey);
+
+    if (cached) {
+        return cached;
+    }
+
+    const existing = rankingInFlight.get(cacheKey);
+
+    if (existing) {
+        return existing;
+    }
+
+    const task = (async () => {
+        try {
+            const data = await loader();
+            writeRankingCache(cacheKey, data);
+            return data;
+        } finally {
+            rankingInFlight.delete(cacheKey);
+        }
+    })();
+
+    rankingInFlight.set(cacheKey, task);
+
+    return task;
 }
 
 async function loadRankingDetailStatsByExamIds(baiThiIds = []) {
@@ -1616,45 +1645,31 @@ async function layXepHangDonViTheoDieuKien(whereClause) {
 exports.xepHangTracNghiemTheoDotThi = async (dotThiId, topGiai) => {
     const top = Number(topGiai) || 10;
     const cacheKey = getRankingCacheKey("ranking-dot-thi", dotThiId, top);
-    const cached = readRankingCache(cacheKey);
 
-    if (cached) {
-        return cached;
-    }
+    return runRankingTask(cacheKey, async () => {
+        const rows = await layDanhSachBaiThiXepHang(
+            eq(deThi.dotThiId, Number(dotThiId))
+        );
 
-    const rows = await layDanhSachBaiThiXepHang(
-        eq(deThi.dotThiId, Number(dotThiId))
-    );
-
-    const data = rows
-        .slice(0, top)
-        .map(mapRankingRow);
-
-    writeRankingCache(cacheKey, data);
-
-    return data;
+        return rows
+            .slice(0, top)
+            .map(mapRankingRow);
+    });
 };
 
 exports.xepHangTracNghiemTheoCuocThi = async (cuocThiId, topGiai) => {
     const top = Number(topGiai) || 10;
     const cacheKey = getRankingCacheKey("ranking-cuoc-thi", cuocThiId, top);
-    const cached = readRankingCache(cacheKey);
 
-    if (cached) {
-        return cached;
-    }
+    return runRankingTask(cacheKey, async () => {
+        const data = await layDanhSachBaiThiXepHang(
+            eq(dotThi.cuocThiId, Number(cuocThiId))
+        );
 
-    const data = await layDanhSachBaiThiXepHang(
-        eq(dotThi.cuocThiId, Number(cuocThiId))
-    );
-
-    const result = data
-        .slice(0, top)
-        .map(mapRankingRow);
-
-    writeRankingCache(cacheKey, result);
-
-    return result;
+        return data
+            .slice(0, top)
+            .map(mapRankingRow);
+    });
 };
 
 exports.xepHangDonViTheoDotThi = async (dotThiId, top) => {
@@ -1663,22 +1678,15 @@ exports.xepHangDonViTheoDotThi = async (dotThiId, top) => {
             ? Number(top)
             : 0;
     const cacheKey = getRankingCacheKey("honor-dot-thi", dotThiId, normalizedTop);
-    const cached = readRankingCache(cacheKey);
 
-    if (cached) {
-        return cached;
-    }
+    return runRankingTask(cacheKey, async () => {
+        const rows = await layXepHangDonViTheoDieuKien(
+            eq(deThi.dotThiId, Number(dotThiId))
+        );
 
-    const rows = await layXepHangDonViTheoDieuKien(
-        eq(deThi.dotThiId, Number(dotThiId))
-    );
-
-    const data = sliceRankingRows(rows, top)
-        .map(mapDonViRankingRow);
-
-    writeRankingCache(cacheKey, data);
-
-    return data;
+        return sliceRankingRows(rows, top)
+            .map(mapDonViRankingRow);
+    });
 };
 
 exports.xepHangDonViTheoCuocThi = async (cuocThiId, top) => {
@@ -1687,21 +1695,14 @@ exports.xepHangDonViTheoCuocThi = async (cuocThiId, top) => {
             ? Number(top)
             : 0;
     const cacheKey = getRankingCacheKey("honor-cuoc-thi", cuocThiId, normalizedTop);
-    const cached = readRankingCache(cacheKey);
 
-    if (cached) {
-        return cached;
-    }
+    return runRankingTask(cacheKey, async () => {
+        const data = await layXepHangDonViTheoDieuKien(
+            eq(dotThi.cuocThiId, Number(cuocThiId))
+        );
 
-    const data = await layXepHangDonViTheoDieuKien(
-        eq(dotThi.cuocThiId, Number(cuocThiId))
-    );
-
-    const result = sliceRankingRows(data, top)
-        .map(mapDonViRankingRow);
-
-    writeRankingCache(cacheKey, result);
-
-    return result;
+        return sliceRankingRows(data, top)
+            .map(mapDonViRankingRow);
+    });
 };
 

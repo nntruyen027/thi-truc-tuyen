@@ -13,6 +13,7 @@ const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
 const PUBLIC_RANKINGS_CACHE_TTL_MS = Number(process.env.PUBLIC_RANKINGS_CACHE_TTL_MS || 60000);
 const MAX_PUBLIC_RANKINGS_CACHE_ENTRIES = Number(process.env.MAX_PUBLIC_RANKINGS_CACHE_ENTRIES || 20);
 const publicRankingsCache = new Map();
+const publicRankingsInFlight = new Map();
 
 function getExportService() {
     return require("./thi_export.service");
@@ -106,6 +107,34 @@ function writePublicRankingsCache(key, data) {
         data,
     });
     prunePublicRankingsCache();
+}
+
+async function runPublicRankingsTask(cacheKey, loader) {
+    const cached = readPublicRankingsCache(cacheKey);
+
+    if (cached) {
+        return cached;
+    }
+
+    const existing = publicRankingsInFlight.get(cacheKey);
+
+    if (existing) {
+        return existing;
+    }
+
+    const task = (async () => {
+        try {
+            const data = await loader();
+            writePublicRankingsCache(cacheKey, data);
+            return data;
+        } finally {
+            publicRankingsInFlight.delete(cacheKey);
+        }
+    })();
+
+    publicRankingsInFlight.set(cacheKey, task);
+
+    return task;
 }
 
 
@@ -621,36 +650,30 @@ router.get("/public-rankings", async (req, res) => {
         const rankingTop = validation.normalizeTopParam(req.query?.rankingTop ?? 10);
         const honorTop = validation.normalizeTopParam(req.query?.honorTop ?? 5);
         const cacheKey = getPublicRankingsCacheKey(dotThiId, cuocThiId, rankingTop, honorTop);
-        const cached = readPublicRankingsCache(cacheKey);
+        const data = await runPublicRankingsTask(cacheKey, async () => {
+            const [
+                rankingsDotThi,
+                rankingsCuocThi,
+                honorDotThi,
+                honorCuocThi,
+            ] = await Promise.all([
+                query.xepHangTracNghiemTheoDotThi(dotThiId, rankingTop),
+                query.xepHangTracNghiemTheoCuocThi(cuocThiId, rankingTop),
+                query.xepHangDonViTheoDotThi(dotThiId, honorTop),
+                query.xepHangDonViTheoCuocThi(cuocThiId, honorTop),
+            ]);
 
-        if (cached) {
-            return resUtil.ok(res, cached);
-        }
-
-        const [
-            rankingsDotThi,
-            rankingsCuocThi,
-            honorDotThi,
-            honorCuocThi,
-        ] = await Promise.all([
-            query.xepHangTracNghiemTheoDotThi(dotThiId, rankingTop),
-            query.xepHangTracNghiemTheoCuocThi(cuocThiId, rankingTop),
-            query.xepHangDonViTheoDotThi(dotThiId, honorTop),
-            query.xepHangDonViTheoCuocThi(cuocThiId, honorTop),
-        ]);
-
-        const data = {
-            rankings: {
-                "dot-thi": rankingsDotThi,
-                "cuoc-thi": rankingsCuocThi,
-            },
-            honorBoard: {
-                "dot-thi": honorDotThi,
-                "cuoc-thi": honorCuocThi,
-            },
-        };
-
-        writePublicRankingsCache(cacheKey, data);
+            return {
+                rankings: {
+                    "dot-thi": rankingsDotThi,
+                    "cuoc-thi": rankingsCuocThi,
+                },
+                honorBoard: {
+                    "dot-thi": honorDotThi,
+                    "cuoc-thi": honorCuocThi,
+                },
+            };
+        });
 
         resUtil.ok(res, data)
     } catch (err) {
