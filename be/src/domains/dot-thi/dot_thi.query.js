@@ -128,6 +128,55 @@ async function getDotThiWithCuocThi(id) {
     };
 }
 
+function buildDotThiProjection() {
+    return {
+        id: dotThi.id,
+        cuocThiId: dotThi.cuocThiId,
+        ten: dotThi.ten,
+        moTa: dotThi.moTa,
+        soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
+        thoiGianThi: dotThi.thoiGianThi,
+        tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
+        thoiGianBatDau: dotThi.thoiGianBatDau,
+        thoiGianKetThuc: dotThi.thoiGianKetThuc,
+        coTronCauHoi: dotThi.coTronCauHoi,
+        choPhepLuuBai: dotThi.choPhepLuuBai,
+        duDoan: dotThi.duDoan,
+        trangThai: dotThi.trangThai,
+        createdAt: dotThi.createdAt,
+        cuoc_thi_id: cuocThi.id,
+        cuoc_thi_ten: cuocThi.ten,
+        cuoc_thi_mo_ta: cuocThi.moTa,
+        cuoc_thi_thoi_gian_bat_dau: cuocThi.thoiGianBatDau,
+        cuoc_thi_thoi_gian_ket_thuc: cuocThi.thoiGianKetThuc,
+        cuoc_thi_trang_thai: cuocThi.trangThai,
+        cuoc_thi_cho_phep_xem_lich_su: cuocThi.choPhepXemLichSu,
+        cuoc_thi_cho_phep_xem_lai_dap_an: cuocThi.choPhepXemLaiDapAn,
+        cuoc_thi_co_tu_luan: cuocThi.coTuLuan,
+        cuoc_thi_created_at: cuocThi.createdAt,
+    };
+}
+
+async function layMotDotThiTheoDieuKien(condition, orderBy, laSapDienRa = false) {
+    const [row] = await db
+        .select(buildDotThiProjection())
+        .from(dotThi)
+        .leftJoin(cuocThi, eq(dotThi.cuocThiId, cuocThi.id))
+        .where(condition)
+        .orderBy(...orderBy)
+        .limit(1);
+
+    if (!row) {
+        return null;
+    }
+
+    return {
+        ...mapDotThi(row),
+        la_sap_dien_ra: laSapDienRa,
+        cuoc_thi: mapCuocThi(row),
+    };
+}
+
 exports.layDsDotThi = async (
     cuocThiId,
     size,
@@ -231,96 +280,71 @@ exports.layDotThiTheoId = async (dotThiId) => {
 
 exports.layDotThiHienTai = async () => {
     const now = new Date();
-    let row;
-    let laSapDienRa = false;
-    [row] = await db
-                .select({
-                    id: dotThi.id,
-                    cuocThiId: dotThi.cuocThiId,
-                    ten: dotThi.ten,
-                    moTa: dotThi.moTa,
-                    soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
-                    thoiGianThi: dotThi.thoiGianThi,
-                    tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
-                    thoiGianBatDau: dotThi.thoiGianBatDau,
-                    thoiGianKetThuc: dotThi.thoiGianKetThuc,
-                    coTronCauHoi: dotThi.coTronCauHoi,
-                    choPhepLuuBai: dotThi.choPhepLuuBai,
-                    duDoan: dotThi.duDoan,
-                    trangThai: dotThi.trangThai,
-                    createdAt: dotThi.createdAt,
-                    cuoc_thi_id: cuocThi.id,
-                    cuoc_thi_ten: cuocThi.ten,
-                    cuoc_thi_mo_ta: cuocThi.moTa,
-                    cuoc_thi_thoi_gian_bat_dau: cuocThi.thoiGianBatDau,
-                    cuoc_thi_thoi_gian_ket_thuc: cuocThi.thoiGianKetThuc,
-                    cuoc_thi_trang_thai: cuocThi.trangThai,
-                    cuoc_thi_cho_phep_xem_lich_su: cuocThi.choPhepXemLichSu,
-                    cuoc_thi_cho_phep_xem_lai_dap_an: cuocThi.choPhepXemLaiDapAn,
-                    cuoc_thi_co_tu_luan: cuocThi.coTuLuan,
-                    cuoc_thi_created_at: cuocThi.createdAt,
-                })
-                .from(dotThi)
-                .leftJoin(cuocThi, eq(dotThi.cuocThiId, cuocThi.id))
-                .where(and(
-                    eq(dotThi.trangThai, true),
-                    eq(cuocThi.trangThai, true),
-                    lte(dotThi.thoiGianBatDau, now),
-                    gte(dotThi.thoiGianKetThuc, now)
-                ))
-                .orderBy(desc(dotThi.thoiGianBatDau))
-                .limit(1);
+    const dangDienRa = await layMotDotThiTheoDieuKien(
+        and(
+            eq(dotThi.trangThai, true),
+            eq(cuocThi.trangThai, true),
+            lte(dotThi.thoiGianBatDau, now),
+            gte(dotThi.thoiGianKetThuc, now)
+        ),
+        [desc(dotThi.thoiGianBatDau)]
+    );
 
-    if (!row) {
-        [row] = await db
-                    .select({
-                        id: dotThi.id,
-                        cuocThiId: dotThi.cuocThiId,
-                        ten: dotThi.ten,
-                        moTa: dotThi.moTa,
-                        soLanThamGiaToiDa: dotThi.soLanThamGiaToiDa,
-                        thoiGianThi: dotThi.thoiGianThi,
-                        tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
-                        thoiGianBatDau: dotThi.thoiGianBatDau,
-                        thoiGianKetThuc: dotThi.thoiGianKetThuc,
-                        coTronCauHoi: dotThi.coTronCauHoi,
-                        choPhepLuuBai: dotThi.choPhepLuuBai,
-                        duDoan: dotThi.duDoan,
-                        trangThai: dotThi.trangThai,
-                        createdAt: dotThi.createdAt,
-                        cuoc_thi_id: cuocThi.id,
-                        cuoc_thi_ten: cuocThi.ten,
-                        cuoc_thi_mo_ta: cuocThi.moTa,
-                        cuoc_thi_thoi_gian_bat_dau: cuocThi.thoiGianBatDau,
-                        cuoc_thi_thoi_gian_ket_thuc: cuocThi.thoiGianKetThuc,
-                        cuoc_thi_trang_thai: cuocThi.trangThai,
-                        cuoc_thi_cho_phep_xem_lich_su: cuocThi.choPhepXemLichSu,
-                        cuoc_thi_cho_phep_xem_lai_dap_an: cuocThi.choPhepXemLaiDapAn,
-                        cuoc_thi_co_tu_luan: cuocThi.coTuLuan,
-                        cuoc_thi_created_at: cuocThi.createdAt,
-                    })
-                    .from(dotThi)
-                    .leftJoin(cuocThi, eq(dotThi.cuocThiId, cuocThi.id))
-                    .where(and(
-                        eq(dotThi.trangThai, true),
-                        eq(cuocThi.trangThai, true),
-                        gte(dotThi.thoiGianBatDau, now)
-                    ))
-                    .orderBy(dotThi.thoiGianBatDau)
-                    .limit(1);
-
-        laSapDienRa = Boolean(row);
+    if (dangDienRa) {
+        return dangDienRa;
     }
 
-    if (!row) {
-        return null;
+    return layMotDotThiTheoDieuKien(
+        and(
+            eq(dotThi.trangThai, true),
+            eq(cuocThi.trangThai, true),
+            gte(dotThi.thoiGianBatDau, now)
+        ),
+        [dotThi.thoiGianBatDau],
+        true
+    );
+};
+
+exports.layDotThiDaiDienChoBangVang = async () => {
+    const now = new Date();
+    const baseCondition = and(
+        eq(dotThi.trangThai, true),
+        eq(cuocThi.trangThai, true)
+    );
+
+    const dangDienRa = await layMotDotThiTheoDieuKien(
+        and(
+            baseCondition,
+            lte(dotThi.thoiGianBatDau, now),
+            gte(dotThi.thoiGianKetThuc, now)
+        ),
+        [desc(dotThi.thoiGianBatDau)]
+    );
+
+    if (dangDienRa) {
+        return dangDienRa;
     }
 
-    return {
-        ...mapDotThi(row),
-        la_sap_dien_ra: laSapDienRa,
-        cuoc_thi: mapCuocThi(row),
-    };
+    const daKetThuc = await layMotDotThiTheoDieuKien(
+        and(
+            baseCondition,
+            lte(dotThi.thoiGianKetThuc, now)
+        ),
+        [desc(dotThi.thoiGianKetThuc)]
+    );
+
+    if (daKetThuc) {
+        return daKetThuc;
+    }
+
+    return layMotDotThiTheoDieuKien(
+        and(
+            baseCondition,
+            gte(dotThi.thoiGianBatDau, now)
+        ),
+        [dotThi.thoiGianBatDau],
+        true
+    );
 };
 
 exports.themDotThi = async (

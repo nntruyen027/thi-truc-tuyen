@@ -84,12 +84,12 @@ async function getPublicRankingsSnapshotOrRefresh(dotThiId, cuocThiId) {
 }
 
 async function refreshNearestPublicRankingsSnapshot() {
-    const dotThi = await dotThiQuery.layDotThiHienTai();
+    const dotThi = await dotThiQuery.layDotThiDaiDienChoBangVang();
 
     if (!dotThi?.id || !dotThi?.cuoc_thi_id) {
         return {
             updated: false,
-            reason: "Không có đợt thi hiện tại hoặc sắp diễn ra gần nhất",
+            reason: "Không có đợt thi phù hợp để làm bảng vàng công khai",
         };
     }
 
