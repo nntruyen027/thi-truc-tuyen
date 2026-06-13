@@ -31,11 +31,34 @@ const {Text} = Typography;
 function chonCuocThiGanNhat(dsCuocThi = []) {
     const now = dayjs();
     const dsHopLe = [...dsCuocThi]
-        .filter((item) => item?.trang_thai)
-        .filter((item) => {
-            const ketThuc = dayjs(item.thoi_gian_ket_thuc);
-            return ketThuc.isValid() && !ketThuc.isBefore(now);
-        });
+        .filter((item) => item?.trang_thai);
+
+    const dsDangDienRa = dsHopLe.filter((item) => {
+        const batDau = dayjs(item.thoi_gian_bat_dau);
+        const ketThuc = dayjs(item.thoi_gian_ket_thuc);
+
+        return batDau.isValid()
+            && ketThuc.isValid()
+            && !batDau.isAfter(now)
+            && !ketThuc.isBefore(now);
+    });
+
+    if (dsDangDienRa.length) {
+        return dsDangDienRa.sort(
+            (a, b) => dayjs(b.thoi_gian_bat_dau).valueOf() - dayjs(a.thoi_gian_bat_dau).valueOf()
+        )[0];
+    }
+
+    const dsDaKetThuc = dsHopLe.filter((item) => {
+        const ketThuc = dayjs(item.thoi_gian_ket_thuc);
+        return ketThuc.isValid() && ketThuc.isBefore(now);
+    });
+
+    if (dsDaKetThuc.length) {
+        return dsDaKetThuc.sort(
+            (a, b) => dayjs(b.thoi_gian_ket_thuc).valueOf() - dayjs(a.thoi_gian_ket_thuc).valueOf()
+        )[0];
+    }
 
     const dsSapDienRa =
         dsHopLe.filter((item) => dayjs(item.thoi_gian_bat_dau).isAfter(now));
@@ -58,15 +81,6 @@ function chonDotThiDaiDien(dsDotThi = []) {
         return null;
     }
 
-    const dsSapDienRa =
-        dsDotThi.filter((item) => dayjs(item.thoi_gian_bat_dau).isAfter(now));
-
-    if (dsSapDienRa.length) {
-        return [...dsSapDienRa].sort(
-            (a, b) => dayjs(a.thoi_gian_bat_dau).valueOf() - dayjs(b.thoi_gian_bat_dau).valueOf()
-        )[0];
-    }
-
     const dangDienRa =
         dsDotThi.find((item) => {
             const batDau = dayjs(item.thoi_gian_bat_dau);
@@ -76,6 +90,24 @@ function chonDotThiDaiDien(dsDotThi = []) {
 
     if (dangDienRa) {
         return dangDienRa;
+    }
+
+    const dsDaKetThuc =
+        dsDotThi.filter((item) => dayjs(item.thoi_gian_ket_thuc).isBefore(now));
+
+    if (dsDaKetThuc.length) {
+        return [...dsDaKetThuc].sort(
+            (a, b) => dayjs(b.thoi_gian_ket_thuc).valueOf() - dayjs(a.thoi_gian_ket_thuc).valueOf()
+        )[0];
+    }
+
+    const dsSapDienRa =
+        dsDotThi.filter((item) => dayjs(item.thoi_gian_bat_dau).isAfter(now));
+
+    if (dsSapDienRa.length) {
+        return [...dsSapDienRa].sort(
+            (a, b) => dayjs(a.thoi_gian_bat_dau).valueOf() - dayjs(b.thoi_gian_bat_dau).valueOf()
+        )[0];
     }
 
     return [...dsDotThi].sort(
