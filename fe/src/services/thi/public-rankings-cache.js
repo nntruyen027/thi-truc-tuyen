@@ -95,6 +95,13 @@ export function getCachedPublicRankings(type, dotThiId, cuocThiId, top) {
         return null;
     }
 
+    if (type === "honor-board") {
+        return {
+            "dot-thi": bucket?.["dot-thi"] || {},
+            "cuoc-thi": bucket?.["cuoc-thi"] || {},
+        };
+    }
+
     return {
         "dot-thi": bucket["dot-thi"] || [],
         "cuoc-thi": bucket["cuoc-thi"] || [],
@@ -112,6 +119,13 @@ export function loadPublicRankings(type, dotThiId, cuocThiId, top) {
             type === "honor-board"
                 ? bundle?.honorBoard
                 : bundle?.rankings;
+
+        if (type === "honor-board") {
+            return {
+                "dot-thi": bucket?.["dot-thi"] || {},
+                "cuoc-thi": bucket?.["cuoc-thi"] || {},
+            };
+        }
 
         return {
             "dot-thi": bucket?.["dot-thi"] || [],

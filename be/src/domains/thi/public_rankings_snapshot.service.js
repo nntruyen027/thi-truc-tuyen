@@ -21,17 +21,40 @@ function isFreshSnapshot(snapshot, now = Date.now()) {
     return (now - createdAtMs) <= PUBLIC_RANKINGS_SNAPSHOT_TTL_MS;
 }
 
+function mapParticipationHonorBoardRows(rows = []) {
+    return rows.map((row) => ({
+        donViId: Number(row?.id || 0),
+        don_vi_id: Number(row?.id || 0),
+        tenDonVi: row?.ten_don_vi || "-",
+        ten_don_vi: row?.ten_don_vi || "-",
+        soLuongThiSinh: Number(row?.so_luot_nop_bai || 0),
+        so_luong_thi_sinh: Number(row?.so_luot_nop_bai || 0),
+        soLuotNopBai: Number(row?.so_luot_nop_bai || 0),
+        so_luot_nop_bai: Number(row?.so_luot_nop_bai || 0),
+        soNguoiThamGia: Number(row?.so_nguoi_tham_gia || 0),
+        so_nguoi_tham_gia: Number(row?.so_nguoi_tham_gia || 0),
+    }));
+}
+
+function sliceHonorBoardRows(rows = [], top) {
+    return rows.slice(0, Number(top) || PUBLIC_HONOR_TOP);
+}
+
 async function buildPublicRankingsPayload(dotThiId, cuocThiId) {
     const [
         rankingsDotThi,
         rankingsCuocThi,
-        honorDotThi,
-        honorCuocThi,
+        honorDotThiByAttempts,
+        honorCuocThiByAttempts,
+        honorDotThiByParticipants,
+        honorCuocThiByParticipants,
     ] = await Promise.all([
         query.xepHangTracNghiemTheoDotThi(dotThiId, PUBLIC_RANKING_TOP),
         query.xepHangTracNghiemTheoCuocThi(cuocThiId, PUBLIC_RANKING_TOP),
         query.xepHangDonViTheoDotThi(dotThiId, PUBLIC_HONOR_TOP),
         query.xepHangDonViTheoCuocThi(cuocThiId, PUBLIC_HONOR_TOP),
+        query.thongKeThamGiaTheoDonVi({dotThiId}),
+        query.thongKeThamGiaTheoDonVi({cuocThiId}),
     ]);
 
     return {
@@ -40,8 +63,20 @@ async function buildPublicRankingsPayload(dotThiId, cuocThiId) {
             "cuoc-thi": rankingsCuocThi,
         },
         honorBoard: {
-            "dot-thi": honorDotThi,
-            "cuoc-thi": honorCuocThi,
+            "dot-thi": {
+                "luot-thi": honorDotThiByAttempts,
+                "nguoi-tham-gia": sliceHonorBoardRows(
+                    mapParticipationHonorBoardRows(honorDotThiByParticipants),
+                    PUBLIC_HONOR_TOP
+                ),
+            },
+            "cuoc-thi": {
+                "luot-thi": honorCuocThiByAttempts,
+                "nguoi-tham-gia": sliceHonorBoardRows(
+                    mapParticipationHonorBoardRows(honorCuocThiByParticipants),
+                    PUBLIC_HONOR_TOP
+                ),
+            },
         },
     };
 }

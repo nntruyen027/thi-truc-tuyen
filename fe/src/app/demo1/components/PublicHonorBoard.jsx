@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useState} from "react";
 import {Card, Empty, Segmented, Spin, Typography} from "antd";
-import {TrophyFilled} from "@ant-design/icons";
+import {SwapOutlined, TrophyFilled} from "@ant-design/icons";
 
 import Reveal from "~/app/components/common/Reveal";
 import {alphaColor} from "~/utils/workspaceTheme";
@@ -10,6 +10,10 @@ import {getCachedPublicRankings, loadPublicRankings} from "~/services/thi/public
 
 const {Text} = Typography;
 const HONOR_BOARD_LIMIT = 5;
+const HONOR_BOARD_MODES = {
+    attempts: "luot-thi",
+    participants: "nguoi-tham-gia",
+};
 
 function getTenDonVi(record) {
     return record?.tenDonVi || record?.ten_don_vi || "-";
@@ -17,6 +21,20 @@ function getTenDonVi(record) {
 
 function getSoLuongThiSinh(record) {
     return record?.soLuongThiSinh ?? record?.so_luong_thi_sinh ?? 0;
+}
+
+function getSoNguoiThamGia(record) {
+    return record?.soNguoiThamGia ?? record?.so_nguoi_tham_gia ?? 0;
+}
+
+function getHonorBoardRows(bundle, scope, mode) {
+    const scopeData = bundle?.[scope];
+
+    if (Array.isArray(scopeData)) {
+        return scopeData;
+    }
+
+    return scopeData?.[mode] || [];
 }
 
 const MEDAL_STYLES = [
@@ -36,6 +54,7 @@ const MEDAL_STYLES = [
 
 export default function PublicHonorBoard({dotThi, colorPrimary, deepPrimary, demoData = null}) {
     const [scope, setScope] = useState("dot-thi");
+    const [mode, setMode] = useState(HONOR_BOARD_MODES.attempts);
     const [loading, setLoading] = useState(false);
     const [data, setData] = useState([]);
 
@@ -44,7 +63,7 @@ export default function PublicHonorBoard({dotThi, colorPrimary, deepPrimary, dem
 
     useEffect(() => {
         if (demoData) {
-            setData(demoData[scope] || []);
+            setData(getHonorBoardRows(demoData, scope, mode));
             setLoading(false);
             return undefined;
         }
@@ -58,7 +77,7 @@ export default function PublicHonorBoard({dotThi, colorPrimary, deepPrimary, dem
         const cached = getCachedPublicRankings("honor-board", dotThi.id, dotThi.cuoc_thi_id, HONOR_BOARD_LIMIT);
 
         if (cached) {
-            setData(cached[scope] || []);
+            setData(getHonorBoardRows(cached, scope, mode));
             setLoading(false);
         } else {
             setLoading(true);
@@ -74,7 +93,7 @@ export default function PublicHonorBoard({dotThi, colorPrimary, deepPrimary, dem
                 );
 
                 if (active) {
-                    setData(res?.[scope] || []);
+                    setData(getHonorBoardRows(res, scope, mode));
                 }
             } finally {
                 if (active) {
@@ -88,9 +107,16 @@ export default function PublicHonorBoard({dotThi, colorPrimary, deepPrimary, dem
         return () => {
             active = false;
         };
-    }, [choPhepCongBo, demoData, dotThi?.cuoc_thi_id, dotThi?.id, scope]);
+    }, [choPhepCongBo, demoData, dotThi?.cuoc_thi_id, dotThi?.id, mode, scope]);
 
     const rows = useMemo(() => data.slice(0, HONOR_BOARD_LIMIT), [data]);
+    const laCheDoLuotThi = mode === HONOR_BOARD_MODES.attempts;
+    const title = laCheDoLuotThi
+        ? "Đơn vị có nhiều lượt thi"
+        : "Đơn vị có nhiều người tham gia";
+    const nextLabel = laCheDoLuotThi
+        ? "Xem người tham gia"
+        : "Xem lượt thi";
 
     return (
         <Reveal delay={95} className="h-full w-full">
@@ -100,15 +126,29 @@ export default function PublicHonorBoard({dotThi, colorPrimary, deepPrimary, dem
                 styles={{body: {padding: 0, height: "100%"}}}
             >
                 <div className="h-full" style={{background: alphaColor(colorPrimary, 0.05)}}>
-                    <h3
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setMode((current) => (
+                                current === HONOR_BOARD_MODES.attempts
+                                    ? HONOR_BOARD_MODES.participants
+                                    : HONOR_BOARD_MODES.attempts
+                            ));
+                        }}
                         style={{
                             background: deepPrimary || colorPrimary,
                             margin: 0,
                         }}
-                        className="px-4 py-3 text-center text-sm font-semibold uppercase tracking-[0.18em] text-white md:text-base"
+                        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-white transition-opacity hover:opacity-95"
                     >
-                        Bảng vàng thi đua
-                    </h3>
+                        <span className="min-w-0 text-sm font-semibold uppercase tracking-[0.12em] md:text-base">
+                            {title}
+                        </span>
+                        <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] md:text-xs">
+                            <SwapOutlined />
+                            {nextLabel}
+                        </span>
+                    </button>
 
                     <div className="flex h-full flex-col px-4 py-4 md:px-5 md:py-5">
                         {choPhepCongBo ? (
@@ -140,7 +180,9 @@ export default function PublicHonorBoard({dotThi, colorPrimary, deepPrimary, dem
                         ) : (
                             <div className="space-y-3 pb-1">
                                 {rows.map((item, index) => {
-                                    const soLuongThiSinh = getSoLuongThiSinh(item);
+                                    const giaTri = laCheDoLuotThi
+                                        ? getSoLuongThiSinh(item)
+                                        : getSoNguoiThamGia(item);
                                     const medalStyle =
                                         MEDAL_STYLES[index] || {
                                             bg: alphaColor(colorPrimary, 0.12),
@@ -171,10 +213,10 @@ export default function PublicHonorBoard({dotThi, colorPrimary, deepPrimary, dem
 
                                             <div className="shrink-0 text-right leading-none">
                                                 <Text className="!block !text-[11px] !font-semibold !uppercase !tracking-[0.14em] !text-slate-400">
-                                                    Thí sinh
+                                                    {laCheDoLuotThi ? "Lượt thi" : "Tham gia"}
                                                 </Text>
                                                 <div className="mt-1 text-[1.75rem] font-bold leading-none" style={{color: colorPrimary}}>
-                                                    {Intl.NumberFormat("vi-VN").format(soLuongThiSinh)}
+                                                    {Intl.NumberFormat("vi-VN").format(giaTri)}
                                                 </div>
                                             </div>
                                         </div>
