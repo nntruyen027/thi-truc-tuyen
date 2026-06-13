@@ -9,7 +9,7 @@ import {useRouter} from "next/navigation";
 import {layCauHinh} from "~/services/cau-hinh";
 import {layCuocThi, layLuotThiHienTai} from "~/services/thi/cuoc-thi";
 import {layDotThi} from "~/services/thi/dot-thi";
-import {layThongKeThamGiaTheoDonVi, xepHangDonViTheoDotThi, xepHangTracNghiemTheoDotThi} from "~/services/thi/thi";
+import {layBangXepHangCongKhai, xepHangDonViTheoDotThi, xepHangTracNghiemTheoDotThi} from "~/services/thi/thi";
 import {getDonVi} from "~/services/dm_chung/don_vi";
 import PublicPageBanner from "~/app/(public)/components/PublicPageBanner";
 import PublicContestTimeline from "~/app/(public)/components/PublicContestTimeline";
@@ -783,13 +783,19 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 setUnitLoading(true);
             }
 
-            const [participantsResult, allUnitsResult] = await Promise.allSettled([
+            const [participantsResult, allUnitsResult, publicRankingsResult] = await Promise.allSettled([
                 xepHangTracNghiemTheoDotThi(dotThi.id, 20),
                 getDonVi({
                     page: 1,
                     size: 1000,
                     sortField: "id",
                     sortType: "asc",
+                }),
+                layBangXepHangCongKhai({
+                    dotThiId: dotThi.id,
+                    cuocThiId: dotThi.cuoc_thi_id,
+                    rankingTop: 20,
+                    honorTop: UNIT_RANKING_FETCH_LIMIT,
                 }),
             ]);
 
@@ -806,13 +812,20 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             const allUnits = allUnitsResult.status === "fulfilled"
                 ? allUnitsResult.value?.data || []
                 : [];
-            const [unitsResult, participantUnitsResult] = await Promise.all([
-                loadUnitRankingsForCurrentRound(dotThi.id)
-                    .then((data) => ({status: "fulfilled", value: data}))
-                    .catch(() => ({status: "rejected"})),
-                layThongKeThamGiaTheoDonVi({dotThiId: dotThi.id})
-                    .then((data) => ({status: "fulfilled", value: data}))
-                    .catch(() => ({status: "rejected"})),
+            const publicHonorBoard =
+                publicRankingsResult.status === "fulfilled"
+                    ? publicRankingsResult.value?.honorBoard?.["dot-thi"] || null
+                    : null;
+            const publicAttemptRows =
+                publicHonorBoard?.["luot-thi"] || null;
+            const publicParticipantRows =
+                publicHonorBoard?.["nguoi-tham-gia"] || null;
+            const [unitsResult] = await Promise.all([
+                publicAttemptRows
+                    ? Promise.resolve({status: "fulfilled", value: publicAttemptRows})
+                    : loadUnitRankingsForCurrentRound(dotThi.id)
+                        .then((data) => ({status: "fulfilled", value: data}))
+                        .catch(() => ({status: "rejected"})),
             ]);
 
             if (!active) {
@@ -831,8 +844,8 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 setTopUnits([]);
             }
 
-            if (participantUnitsResult.status === "fulfilled") {
-                const participantUnitRows = normalizeParticipantUnitRankings(participantUnitsResult.value || []);
+            if (Array.isArray(publicParticipantRows)) {
+                const participantUnitRows = normalizeParticipantUnitRankings(publicParticipantRows || []);
 
                 setTopUnitsByParticipants(
                     allUnits.length
@@ -858,7 +871,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             active = false;
             window.clearTimeout(timeoutId);
         };
-    }, [dotThi?.id]);
+    }, [dotThi?.cuoc_thi_id, dotThi?.id]);
 
     useEffect(() => {
         const cuocThi = dotThi?.cuoc_thi;
