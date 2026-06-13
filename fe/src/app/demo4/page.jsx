@@ -2,14 +2,14 @@
 
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";
 import dayjs from "dayjs";
-import {ArrowRightOutlined, ClockCircleFilled, TrophyFilled, UserOutlined} from "@ant-design/icons";
+import {ArrowRightOutlined, ClockCircleFilled, SwapOutlined, TrophyFilled, UserOutlined} from "@ant-design/icons";
 import {Button, Card, Col, Empty, QRCode, Row, Spin, Statistic, Typography, theme} from "antd";
 import {useRouter} from "next/navigation";
 
 import {layCauHinh} from "~/services/cau-hinh";
 import {layCuocThi, layLuotThiHienTai} from "~/services/thi/cuoc-thi";
 import {layDotThi} from "~/services/thi/dot-thi";
-import {xepHangDonViTheoDotThi, xepHangTracNghiemTheoDotThi} from "~/services/thi/thi";
+import {layThongKeThamGiaTheoDonVi, xepHangDonViTheoDotThi, xepHangTracNghiemTheoDotThi} from "~/services/thi/thi";
 import {getDonVi} from "~/services/dm_chung/don_vi";
 import PublicPageBanner from "~/app/(public)/components/PublicPageBanner";
 import PublicContestTimeline from "~/app/(public)/components/PublicContestTimeline";
@@ -236,6 +236,16 @@ function normalizeUnitRankings(rows = []) {
         .sort(compareUnitRankingItem);
 }
 
+function normalizeParticipantUnitRankings(rows = []) {
+    return rows
+        .map((item, index) => ({
+            id: item?.id || item?.donViId || item?.don_vi_id || index,
+            tenDonVi: getTenDonVi(item),
+            diem: Number(item?.so_nguoi_tham_gia ?? item?.soNguoiThamGia ?? 0),
+        }))
+        .sort(compareUnitRankingItem);
+}
+
 function mergeUnitRankings(allUnits = [], rankingRows = []) {
     const rankingMap = new Map(
         rankingRows.map((item) => [
@@ -336,6 +346,70 @@ function AnimatedNumber({
     );
 }
 
+const DEMO4_HEADER_CLASS =
+    "flex min-h-[64px] items-center justify-between gap-3 px-5 py-4";
+
+const DEMO4_HEADER_TEXT_CLASS =
+    "flex min-w-0 items-center gap-3 text-sm font-black uppercase tracking-[0.18em] leading-[1.2]";
+
+function Demo4CardHeader({
+    title,
+    icon,
+    background,
+    color,
+    onClick = null,
+    titleHint = "",
+    trailing = null,
+    centered = false,
+}) {
+    const content = (
+        <>
+            <span className={DEMO4_HEADER_TEXT_CLASS}>
+                <span className="shrink-0">{icon}</span>
+                <span className="truncate">{title}</span>
+            </span>
+            {trailing ? (
+                <span className="shrink-0">{trailing}</span>
+            ) : null}
+        </>
+    );
+
+    const className = centered
+        ? `${DEMO4_HEADER_CLASS} justify-center`
+        : DEMO4_HEADER_CLASS;
+
+    if (onClick) {
+        return (
+            <button
+                type="button"
+                onClick={onClick}
+                className={`${className} m-0 w-full border-0 text-left transition-opacity hover:opacity-95`}
+                style={{
+                    background,
+                    color,
+                    fontFamily: "inherit",
+                    appearance: "none",
+                }}
+                title={titleHint}
+            >
+                {content}
+            </button>
+        );
+    }
+
+    return (
+        <div
+            className={className}
+            style={{
+                background,
+                color,
+            }}
+        >
+            {content}
+        </div>
+    );
+}
+
 function RankingColumn({
     title,
     icon,
@@ -344,6 +418,8 @@ function RankingColumn({
     deepPrimary,
     emptyText,
     loading = false,
+    onTitleClick = null,
+    titleHint = "",
 }) {
     const headerBackground = `linear-gradient(135deg, ${alphaColor(colorPrimary, 0.18)} 0%, ${alphaColor(colorPrimary, 0.32)} 100%)`;
     const itemRefs = useRef(new Map());
@@ -395,16 +471,19 @@ function RankingColumn({
             styles={{body: {padding: 0, height: "100%"}}}
         >
             <div className="flex h-full flex-col bg-white">
-                <div
-                    className="flex items-center gap-3 px-5 py-4 text-sm font-black uppercase tracking-[0.18em]"
-                    style={{
-                        background: headerBackground,
-                        color: deepPrimary,
-                    }}
-                >
-                    {icon}
-                    {title}
-                </div>
+                <Demo4CardHeader
+                    title={title}
+                    icon={icon}
+                    background={headerBackground}
+                    color={deepPrimary}
+                    onClick={onTitleClick}
+                    titleHint={titleHint}
+                    trailing={onTitleClick ? (
+                        <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#efb5b5] bg-white/70 text-xs transition-colors">
+                            <SwapOutlined />
+                        </span>
+                    ) : null}
+                />
 
                 <div className="demo4-scroll flex-1 space-y-3 px-4 py-4" style={{maxHeight: 560, overflowY: "auto"}}>
                     {loading ? (
@@ -484,9 +563,11 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     const [dsDotThi, setDsDotThi] = useState([]);
     const [tongLuotThi, setTongLuotThi] = useState(0);
     const [topUnits, setTopUnits] = useState([]);
+    const [topUnitsByParticipants, setTopUnitsByParticipants] = useState([]);
     const [topParticipants, setTopParticipants] = useState([]);
     const [unitLoading, setUnitLoading] = useState(true);
     const [participantLoading, setParticipantLoading] = useState(true);
+    const [unitRankingMode, setUnitRankingMode] = useState("luot-thi");
 
     const {token} = theme.useToken();
     const {colorPrimary} = token;
@@ -495,6 +576,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     const timelineSectionRef = useRef(null);
     const giaiTapTheSectionRef = useRef(null);
     const topUnitsRef = useRef([]);
+    const topUnitsByParticipantsRef = useRef([]);
     const topParticipantsRef = useRef([]);
     const bannerViewportModeRef = useRef(null);
     const router = useRouter();
@@ -515,6 +597,10 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     useEffect(() => {
         topUnitsRef.current = topUnits;
     }, [topUnits]);
+
+    useEffect(() => {
+        topUnitsByParticipantsRef.current = topUnitsByParticipants;
+    }, [topUnitsByParticipants]);
 
     useEffect(() => {
         topParticipantsRef.current = topParticipants;
@@ -682,6 +768,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 if (active) {
                     setTopParticipants([]);
                     setTopUnits([]);
+                    setTopUnitsByParticipants([]);
                     setParticipantLoading(false);
                     setUnitLoading(false);
                 }
@@ -719,9 +806,14 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             const allUnits = allUnitsResult.status === "fulfilled"
                 ? allUnitsResult.value?.data || []
                 : [];
-            const unitsResult = await loadUnitRankingsForCurrentRound(dotThi.id)
-                .then((data) => ({status: "fulfilled", value: data}))
-                .catch(() => ({status: "rejected"}));
+            const [unitsResult, participantUnitsResult] = await Promise.all([
+                loadUnitRankingsForCurrentRound(dotThi.id)
+                    .then((data) => ({status: "fulfilled", value: data}))
+                    .catch(() => ({status: "rejected"})),
+                layThongKeThamGiaTheoDonVi({dotThiId: dotThi.id})
+                    .then((data) => ({status: "fulfilled", value: data}))
+                    .catch(() => ({status: "rejected"})),
+            ]);
 
             if (!active) {
                 return;
@@ -737,6 +829,18 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 );
             } else if (!topUnitsRef.current.length) {
                 setTopUnits([]);
+            }
+
+            if (participantUnitsResult.status === "fulfilled") {
+                const participantUnitRows = normalizeParticipantUnitRankings(participantUnitsResult.value || []);
+
+                setTopUnitsByParticipants(
+                    allUnits.length
+                        ? mergeUnitRankings(allUnits, participantUnitRows)
+                        : participantUnitRows
+                );
+            } else if (!topUnitsByParticipantsRef.current.length) {
+                setTopUnitsByParticipants([]);
             }
 
             setUnitLoading(false);
@@ -842,6 +946,13 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
         router.push("/user");
     };
 
+    const unitRankingTitle = unitRankingMode === "luot-thi"
+        ? "Đơn vị có nhiều lượt thi"
+        : "Đơn vị nhiều người tham gia";
+    const displayedUnitItems = unitRankingMode === "luot-thi"
+        ? topUnits
+        : topUnitsByParticipants;
+
     if (!canRender) {
         return null;
     }
@@ -910,16 +1021,13 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                                 styles={{body: {padding: 0, height: "100%"}}}
                             >
                                 <div className="flex h-full flex-col">
-                                    <div
-                                        className="flex items-center justify-center gap-3 px-5 py-4 text-center text-sm font-black uppercase tracking-[0.18em]"
-                                        style={{
-                                            background: alphaColor(colorPrimary, 0.32),
-                                            color: deepPrimary,
-                                        }}
-                                    >
-                                        <ClockCircleFilled />
-                                        {dotThiStatusText}
-                                    </div>
+                                    <Demo4CardHeader
+                                        title={dotThiStatusText}
+                                        icon={<ClockCircleFilled />}
+                                        background={alphaColor(colorPrimary, 0.32)}
+                                        color={deepPrimary}
+                                        centered
+                                    />
 
                                     <div
                                         className="flex h-full flex-col px-5 py-6 text-center md:px-2! md:py-8"
@@ -1012,13 +1120,23 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     <Col xs={24} xl={8} className="order-2 xl:order-3">
                         <Reveal delay={140} className="h-full">
                             <RankingColumn
-                                title="Đơn vị có nhiều lượt thi"
+                                title={unitRankingTitle}
                                 icon={<TrophyFilled />}
-                                items={topUnits}
+                                items={displayedUnitItems}
                                 colorPrimary={colorPrimary}
                                 deepPrimary={deepPrimary}
                                 loading={unitLoading}
                                 emptyText="Chưa có dữ liệu đơn vị"
+                                onTitleClick={() => {
+                                    setUnitRankingMode((current) => (
+                                        current === "luot-thi" ? "nguoi-tham-gia" : "luot-thi"
+                                    ));
+                                }}
+                                titleHint={
+                                    unitRankingMode === "luot-thi"
+                                        ? "Chuyển sang xếp hạng đơn vị có nhiều người tham gia"
+                                        : "Chuyển về xếp hạng đơn vị có nhiều lượt thi"
+                                }
                             />
                         </Reveal>
                     </Col>
