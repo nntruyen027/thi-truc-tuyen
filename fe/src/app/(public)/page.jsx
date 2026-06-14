@@ -144,14 +144,30 @@ function taoDotThiTheoCuocThi(cuocThi, dsDotThi = []) {
     };
 }
 
-function taoThongTinDemNguoc(cuocThi) {
-    if (!cuocThi) {
+function timDotThiSapDienRaKeTiep(dsDotThi = [], now = dayjs()) {
+    return dsDotThi
+        .filter((item) => dayjs(item.thoi_gian_bat_dau).isAfter(now))
+        .sort((a, b) => dayjs(a.thoi_gian_bat_dau).valueOf() - dayjs(b.thoi_gian_bat_dau).valueOf())[0] || null;
+}
+
+function taoThongTinDemNguoc(dotThi, cuocThi, dsDotThi = []) {
+    if (!cuocThi && !dotThi) {
         return null;
     }
 
     const now = dayjs();
-    const batDau = dayjs(cuocThi.thoi_gian_bat_dau);
-    const ketThuc = dayjs(cuocThi.thoi_gian_ket_thuc);
+    const dotThiSapDienRaKeTiep = timDotThiSapDienRaKeTiep(dsDotThi, now);
+    const dotThiKetThuc = dotThi?.thoi_gian_ket_thuc
+        ? dayjs(dotThi.thoi_gian_ket_thuc)
+        : null;
+    const daKetThucDotThiDaiDien =
+        dotThiKetThuc?.isValid() && dotThiKetThuc.isBefore(now);
+    const dotThiMucTieu =
+        daKetThucDotThiDaiDien && dotThiSapDienRaKeTiep
+            ? dotThiSapDienRaKeTiep
+            : dotThi;
+    const batDau = dayjs(dotThiMucTieu?.thoi_gian_bat_dau || cuocThi?.thoi_gian_bat_dau);
+    const ketThuc = dayjs(dotThiMucTieu?.thoi_gian_ket_thuc || cuocThi?.thoi_gian_ket_thuc);
 
     if (!batDau.isValid() || !ketThuc.isValid() || ketThuc.isBefore(now)) {
         return null;
@@ -184,6 +200,9 @@ function taoThongTinDemNguoc(cuocThi) {
         giay,
         dem_nguoc: !batDau.isAfter(now),
         moc_thoi_gian: batDau.isAfter(now) ? "bat_dau" : "ket_thuc",
+        tieu_de: batDau.isAfter(now)
+            ? `${dotThiMucTieu?.ten || "Đợt thi"} sắp bắt đầu`
+            : `Thời gian còn lại của ${dotThiMucTieu?.ten || "đợt thi"}`,
     };
 }
 
@@ -309,16 +328,17 @@ export function DefaultPublicHomePage() {
                 applyIfActive(() => {
                     setDotThi(selectedDotThi);
                     setDsDotThi(danhSachDotThi);
-                    setThoiGianConLai(taoThongTinDemNguoc(selectedCuocThi));
+                    setThoiGianConLai(taoThongTinDemNguoc(selectedDotThi, selectedCuocThi, danhSachDotThi));
                     setTongLuotThi(0);
                 });
             } catch (error) {
                 console.error("Không thể tải timeline đợt thi", error);
 
                 applyIfActive(() => {
-                    setDotThi(taoDotThiTheoCuocThi(selectedCuocThi, []));
+                    const fallbackDotThi = taoDotThiTheoCuocThi(selectedCuocThi, []);
+                    setDotThi(fallbackDotThi);
                     setDsDotThi([]);
-                    setThoiGianConLai(taoThongTinDemNguoc(selectedCuocThi));
+                    setThoiGianConLai(taoThongTinDemNguoc(fallbackDotThi, selectedCuocThi, []));
                     setTongLuotThi(0);
                 });
             }

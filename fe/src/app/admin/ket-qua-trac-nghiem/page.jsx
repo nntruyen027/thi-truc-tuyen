@@ -16,6 +16,19 @@ function getThiSinh(record) {
     return record?.thiSinh || record?.thi_sinh || null;
 }
 
+function getDiaChiThiSinh(record) {
+    const thiSinh = getThiSinh(record) || {};
+    const parts = [
+        thiSinh?.diaChiDong1 || thiSinh?.dia_chi_dong_1,
+        thiSinh?.xaPhuong || thiSinh?.xa_phuong,
+        thiSinh?.tinhThanh || thiSinh?.tinh_thanh,
+    ]
+        .map((item) => String(item || "").trim())
+        .filter(Boolean);
+
+    return parts.join(", ");
+}
+
 function getBaiThiId(record) {
     return record?.baiThiId || record?.bai_thi_id || null;
 }
@@ -30,6 +43,10 @@ function getSoDuDoan(record) {
 
 function getSaiSo(record) {
     return record?.saiSo ?? record?.sai_so ?? 0;
+}
+
+function getKetQuaDuDoan(record) {
+    return record?.soNguoi100 ?? record?.so_nguoi_100 ?? 0;
 }
 
 function getThoiGianThi(record) {
@@ -203,21 +220,42 @@ export default function NhomCauHoi() {
 
         {
             title: "Thí sinh",
-            width: 300,
+            width: 220,
+            ellipsis: true,
             render: (_, record) => getThiSinh(record)?.hoTen || getThiSinh(record)?.ho_ten || "-"
         },
         {
             title: "Số điện thoại",
-            width: 300,
+            width: 160,
+            ellipsis: true,
             render: (_, record) => getThiSinh(record)?.username || "-"
+        },
+        {
+            title: "Địa chỉ",
+            width: 320,
+            ellipsis: true,
+            render: (_, record) => getDiaChiThiSinh(record) || "-"
+        },
+        {
+            title: "Đơn vị",
+            width: 220,
+            ellipsis: true,
+            render: (_, record) =>
+                getThiSinh(record)?.donViTen
+                || getThiSinh(record)?.don_vi_ten
+                || getThiSinh(record)?.don_vi?.ten
+                || "-"
         },
         {
             title: "Điểm",
             dataIndex: "diem",
+            width: 100,
+            align: "center",
         },
         {
-            title: "Thơi gian làm bài",
+            title: "Thời gian làm bài",
             dataIndex: "thoi-gian-lam-bai",
+            width: 160,
             align: "center",
             render: (_, record) => {
                 const thoiGian = getThoiGian(record);
@@ -246,10 +284,20 @@ export default function NhomCauHoi() {
         },
         {
             title: "Số dự đoán",
+            width: 140,
+            align: "center",
             render: (_, record) => getSoDuDoan(record)
         },
         {
+            title: "Kết quả dự đoán",
+            width: 180,
+            align: "center",
+            render: (_, record) => getKetQuaDuDoan(record)
+        },
+        {
             title: "Sai số dự đoán",
+            width: 150,
+            align: "center",
             render: (_, record) => getSaiSo(record)
         }
 
@@ -413,7 +461,7 @@ export default function NhomCauHoi() {
                 loading={loading}
                 columns={columns}
                 dataSource={data}
-                scroll={{x: 1040}}
+                scroll={{x: 1420}}
                 pagination={{
                     responsive: true,
                     showSizeChanger: true,

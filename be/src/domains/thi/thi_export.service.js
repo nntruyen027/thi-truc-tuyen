@@ -40,6 +40,18 @@ function formatDuration(value) {
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function formatDiaChi(thiSinh = {}) {
+    const parts = [
+        thiSinh.diaChiDong1 || thiSinh.dia_chi_dong_1,
+        thiSinh.xaPhuong || thiSinh.xa_phuong,
+        thiSinh.tinhThanh || thiSinh.tinh_thanh,
+    ]
+        .map((item) => String(item || "").trim())
+        .filter(Boolean);
+
+    return parts.join(", ");
+}
+
 function buildFileName({scopeType, scopeId, top}) {
     return `ket-qua-trac-nghiem-${scopeType}-${scopeId}-top-${top}.xlsx`;
 }
@@ -73,22 +85,25 @@ async function buildKetQuaTracNghiemExport({
     workbook.creator = "Thi truc tuyen";
     workbook.created = new Date();
 
-    const worksheet = workbook.addWorksheet("Ket qua trac nghiem", {
+    const worksheet = workbook.addWorksheet("Kết quả trắc nghiệm", {
         views: [{state: "frozen", ySplit: 5}],
     });
 
     worksheet.columns = [
         {header: "STT", key: "stt", width: 8},
-        {header: "Thi sinh", key: "thiSinh", width: 32},
-        {header: "So dien thoai", key: "soDienThoai", width: 20},
-        {header: "Diem", key: "diem", width: 12},
-        {header: "Thoi gian lam bai", key: "thoiGian", width: 18},
-        {header: "So du doan", key: "soDuDoan", width: 14},
-        {header: "Sai so du doan", key: "saiSo", width: 16},
+        {header: "Thí sinh", key: "thiSinh", width: 28},
+        {header: "Số điện thoại", key: "soDienThoai", width: 18},
+        {header: "Địa chỉ", key: "diaChi", width: 38},
+        {header: "Đơn vị", key: "donVi", width: 26},
+        {header: "Điểm", key: "diem", width: 10},
+        {header: "Thời gian làm bài", key: "thoiGian", width: 18},
+        {header: "Số dự đoán", key: "soDuDoan", width: 14},
+        {header: "Kết quả dự đoán", key: "ketQuaDuDoan", width: 18},
+        {header: "Sai số dự đoán", key: "saiSo", width: 16},
     ];
 
-    worksheet.mergeCells("A1:G1");
-    worksheet.getCell("A1").value = "KET QUA THI TRAC NGHIEM";
+    worksheet.mergeCells("A1:J1");
+    worksheet.getCell("A1").value = "KẾT QUẢ THI TRẮC NGHIỆM";
     worksheet.getCell("A1").font = {
         bold: true,
         size: 16,
@@ -99,11 +114,11 @@ async function buildKetQuaTracNghiemExport({
 
     createHeaderRow(
         worksheet,
-        "Pham vi",
-        scopeType === "dot-thi" ? `Dot thi #${scopeId}` : `Cuoc thi #${scopeId}`
+        "Phạm vi",
+        scopeType === "dot-thi" ? `Đợt thi #${scopeId}` : `Cuộc thi #${scopeId}`
     );
-    createHeaderRow(worksheet, "So luong xep hang", top);
-    createHeaderRow(worksheet, "Thoi gian xuat", formatDateTime(new Date()));
+    createHeaderRow(worksheet, "Số lượng xếp hạng", top);
+    createHeaderRow(worksheet, "Thời gian xuất", formatDateTime(new Date()));
 
     const headerRow = worksheet.addRow(worksheet.columns.map((column) => column.header));
     headerRow.font = {
@@ -135,9 +150,12 @@ async function buildKetQuaTracNghiemExport({
             stt: index + 1,
             thiSinh: thiSinh.hoTen || thiSinh.ho_ten || "-",
             soDienThoai: thiSinh.username || "-",
+            diaChi: formatDiaChi(thiSinh) || "-",
+            donVi: thiSinh.donViTen || thiSinh.don_vi_ten || thiSinh?.don_vi?.ten || "-",
             diem: row?.diem ?? "",
             thoiGian: formatDuration(row?.thoiGian ?? row?.thoi_gian),
             soDuDoan: row?.soDuDoan ?? row?.so_du_doan ?? "",
+            ketQuaDuDoan: row?.soNguoi100 ?? row?.so_nguoi_100 ?? "",
             saiSo: row?.saiSo ?? row?.sai_so ?? "",
         });
 

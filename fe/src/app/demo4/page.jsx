@@ -152,6 +152,12 @@ function taoDotThiTheoCuocThi(cuocThi, dsDotThi = []) {
     };
 }
 
+function timDotThiSapDienRaKeTiep(dsDotThi = [], now = dayjs()) {
+    return dsDotThi
+        .filter((item) => dayjs(item.thoi_gian_bat_dau).isAfter(now))
+        .sort((a, b) => dayjs(a.thoi_gian_bat_dau).valueOf() - dayjs(b.thoi_gian_bat_dau).valueOf())[0] || null;
+}
+
 function taoThongTinDemNguoc(dotThi, cuocThi) {
     const now = dayjs();
     const batDau = dayjs(dotThi?.thoi_gian_bat_dau || cuocThi?.thoi_gian_bat_dau);
@@ -187,6 +193,7 @@ function taoThongTinDemNguoc(dotThi, cuocThi) {
         phut,
         giay,
         dem_nguoc: !batDau.isAfter(now),
+        moc_thoi_gian: batDau.isAfter(now) ? "bat_dau" : "ket_thuc",
     };
 }
 
@@ -587,9 +594,29 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
         [dotThi?.id, dsDotThi]
     );
     const countdownCards = useMemo(() => buildCountdownCards(countdown), [countdown]);
-    const dotThiStatusText = dotThi?.ten
-        ? `${dotThi.ten}: ${dotThi.la_sap_dien_ra ? "Sắp diễn ra" : "Đang diễn ra"}`
-        : "Cuộc thi sắp diễn ra";
+    const upcomingDotThi = useMemo(
+        () => timDotThiSapDienRaKeTiep(dsDotThi),
+        [dsDotThi]
+    );
+    const dotThiStatusText = useMemo(() => {
+        if (!dotThi?.ten) {
+            return "Cuộc thi sắp diễn ra";
+        }
+
+        const daKetThucDotThiDaiDien =
+            dotThi?.thoi_gian_ket_thuc
+                ? dayjs(dotThi.thoi_gian_ket_thuc).isBefore(dayjs())
+                : false;
+        const dotThiHienThi =
+            daKetThucDotThiDaiDien && upcomingDotThi
+                ? upcomingDotThi
+                : dotThi;
+        const nhanTrangThai = dayjs(dotThiHienThi?.thoi_gian_bat_dau).isAfter(dayjs())
+            ? "Sắp bắt đầu"
+            : "Đang diễn ra";
+
+        return `${dotThiHienThi.ten}: ${nhanTrangThai}`;
+    }, [dotThi, upcomingDotThi]);
     const qrValue = typeof window !== "undefined"
         ? `${window.location.origin}/login`
         : "";
@@ -733,7 +760,11 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 if (active) {
                     setDotThi(selectedDotThi);
                     setDsDotThi(danhSachDotThi);
-                    setCountdown(taoThongTinDemNguoc(selectedDotThi, selectedCuocThi));
+                    const dotThiDemNguoc =
+                        dayjs(selectedDotThi?.thoi_gian_ket_thuc).isBefore(dayjs()) && timDotThiSapDienRaKeTiep(danhSachDotThi)
+                            ? timDotThiSapDienRaKeTiep(danhSachDotThi)
+                            : selectedDotThi;
+                    setCountdown(taoThongTinDemNguoc(dotThiDemNguoc, selectedCuocThi));
                 }
             } catch {
                 if (active) {
@@ -882,7 +913,11 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
 
         const capNhatDemNguoc = () => {
             const dotThiMoi = taoDotThiTheoCuocThi(cuocThi, dsDotThi);
-            const countdownMoi = taoThongTinDemNguoc(dotThiMoi, cuocThi);
+            const dotThiDemNguoc =
+                dayjs(dotThiMoi?.thoi_gian_ket_thuc).isBefore(dayjs()) && timDotThiSapDienRaKeTiep(dsDotThi)
+                    ? timDotThiSapDienRaKeTiep(dsDotThi)
+                    : dotThiMoi;
+            const countdownMoi = taoThongTinDemNguoc(dotThiDemNguoc, cuocThi);
 
             setDotThi((prev) => {
                 if (

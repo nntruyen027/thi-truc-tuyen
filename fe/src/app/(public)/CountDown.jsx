@@ -128,9 +128,10 @@ export default function CountDown({time}) {
                 background: titleBackground,
                 margin: '0'
             }} className="px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white md:text-base">
-                {t?.moc_thoi_gian === "bat_dau" || t?.dem_nguoc === false
-                    ? "Cuộc thi sắp diễn ra"
-                    : "Thời gian còn lại của cuộc thi"}
+                {t?.tieu_de
+                    || (t?.moc_thoi_gian === "bat_dau" || t?.dem_nguoc === false
+                        ? "Đợt thi sắp bắt đầu"
+                        : "Thời gian còn lại của đợt thi")}
             </h3>
 
             <div
