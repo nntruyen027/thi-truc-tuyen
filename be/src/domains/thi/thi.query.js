@@ -1581,10 +1581,16 @@ async function layDanhSachBaiThiXepHang(whereClause) {
         ])
     );
 
-    const soNguoi100 = examRows.reduce((total, row) => {
+    const thiSinhDatDiemToiDa = new Set();
+
+    examRows.forEach((row) => {
         const stats = detailStats.get(Number(row.baiThiId)) || { tong: 0, dung: 0 };
-        return stats.dung === stats.tong ? total + 1 : total;
-    }, 0);
+        if (stats.tong > 0 && stats.dung === stats.tong) {
+            thiSinhDatDiemToiDa.add(Number(row.thiSinhId));
+        }
+    });
+
+    const soNguoi100 = thiSinhDatDiemToiDa.size;
 
     const bestByThiSinh = new Map();
 
