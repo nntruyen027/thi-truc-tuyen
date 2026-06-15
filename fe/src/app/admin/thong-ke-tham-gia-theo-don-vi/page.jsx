@@ -2,7 +2,7 @@
 
 import {useCallback, useEffect, useMemo, useState} from "react";
 import {App, Button, Card, Col, Row, Select, Table, Tag, Typography} from "antd";
-import {DownloadOutlined, ReloadOutlined} from "@ant-design/icons";
+import {DownloadOutlined, ReloadOutlined, SearchOutlined} from "@ant-design/icons";
 import {usePageInfoStore} from "~/store/page-info";
 import {
     layThongKeThamGiaTheoDonVi,
@@ -30,17 +30,22 @@ export default function ThongKeThamGiaTheoDonViPage() {
     const [data, setData] = useState([]);
     const [cuocThi, setCuocThi] = useState(null);
     const [dotThi, setDotThi] = useState(null);
+    const [selectedCuocThi, setSelectedCuocThi] = useState(null);
+    const [selectedDotThi, setSelectedDotThi] = useState(null);
 
     const { dsCuocThi, loading: cuocThiLoading, setSearchCuocThi, loadMore: cuocThiLoadMore } = useCuocThiSelect();
-    const { dsDotThi, loading: dotThiLoading, setSearchDotThi, loadMore: dotThiLoadMore } = useDotThiSelect(cuocThi);
+    const { dsDotThi, loading: dotThiLoading, setSearchDotThi, loadMore: dotThiLoadMore } = useDotThiSelect(selectedCuocThi);
 
-    const loadData = useCallback(async () => {
+    const loadData = useCallback(async (
+        nextCuocThi = cuocThi,
+        nextDotThi = dotThi
+    ) => {
         setLoading(true);
 
         try {
             const res = await layThongKeThamGiaTheoDonVi({
-                cuocThiId: cuocThi,
-                dotThiId: dotThi,
+                cuocThiId: nextCuocThi,
+                dotThiId: nextDotThi,
             });
             setData(res || []);
         } catch (e) {
@@ -81,14 +86,24 @@ export default function ThongKeThamGiaTheoDonViPage() {
     }, [setPageInfo]);
 
     useEffect(() => {
+        if (!selectedCuocThi) {
+            setSelectedDotThi(null);
+        }
+    }, [selectedCuocThi]);
+
+    useEffect(() => {
         void loadData();
     }, [loadData]);
 
-    useEffect(() => {
-        if (!cuocThi) {
-            setDotThi(null);
-        }
-    }, [cuocThi]);
+    const handleSearch = async () => {
+        setCuocThi(selectedCuocThi);
+        setDotThi(selectedDotThi);
+        await loadData(selectedCuocThi, selectedDotThi);
+    };
+
+    const handleRefresh = async () => {
+        await loadData(cuocThi, dotThi);
+    };
 
     const summary = useMemo(() => {
         return data.reduce((acc, item) => {
@@ -199,7 +214,7 @@ export default function ThongKeThamGiaTheoDonViPage() {
                         <Button
                             icon={<ReloadOutlined />}
                             loading={loading}
-                            onClick={() => void loadData()}
+                            onClick={() => void handleRefresh()}
                         >
                             Làm mới
                         </Button>
@@ -213,8 +228,8 @@ export default function ThongKeThamGiaTheoDonViPage() {
                         <Select
                             style={{width: "100%"}}
                             showSearch
-                            value={cuocThi}
-                            onChange={(value) => setCuocThi(value)}
+                            value={selectedCuocThi}
+                            onChange={(value) => setSelectedCuocThi(value)}
                             allowClear
                             placeholder="Chọn cuộc thi"
                             loading={cuocThiLoading}
@@ -241,8 +256,8 @@ export default function ThongKeThamGiaTheoDonViPage() {
                         <Select
                             style={{width: "100%"}}
                             showSearch
-                            value={dotThi}
-                            onChange={(value) => setDotThi(value)}
+                            value={selectedDotThi}
+                            onChange={(value) => setSelectedDotThi(value)}
                             allowClear
                             placeholder="Chọn đợt thi"
                             loading={dotThiLoading}
@@ -266,14 +281,25 @@ export default function ThongKeThamGiaTheoDonViPage() {
                         />
                     </Col>
                     <Col xs={24} lg={4}>
-                        <Button
-                            className="w-full"
-                            icon={<ReloadOutlined />}
-                            loading={loading}
-                            onClick={() => void loadData()}
-                        >
-                            Áp dụng
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                className="flex-1"
+                                type="primary"
+                                icon={<SearchOutlined />}
+                                loading={loading}
+                                onClick={() => void handleSearch()}
+                            >
+                                Tìm kiếm
+                            </Button>
+                            <Button
+                                className="flex-1"
+                                icon={<ReloadOutlined />}
+                                loading={loading}
+                                onClick={() => void handleRefresh()}
+                            >
+                                Làm mới
+                            </Button>
+                        </div>
                     </Col>
                 </Row>
             </Card>

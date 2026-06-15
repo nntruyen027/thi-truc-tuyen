@@ -10,7 +10,7 @@ import {
 } from "~/services/thi/thi";
 import {useCuocThiSelect} from "~/hook/useCuocThi";
 import {useDotThiSelect} from "~/hook/useDotThi";
-import {DownloadOutlined} from "@ant-design/icons";
+import {DownloadOutlined, ReloadOutlined, SearchOutlined} from "@ant-design/icons";
 
 function getThiSinh(record) {
     return record?.thiSinh || record?.thi_sinh || null;
@@ -73,20 +73,23 @@ export default function NhomCauHoi() {
     const [cuocThi, setCuocThi] = useState(null);
     const [dotThi, setDotThi] = useState(null);
     const [top, setTop] = useState(10);
+    const [selectedCuocThi, setSelectedCuocThi] = useState(null);
+    const [selectedDotThi, setSelectedDotThi] = useState(null);
+    const [selectedTop, setSelectedTop] = useState(10);
     const [exporting, setExporting] = useState(false);
 
     const { dsCuocThi, loading: cuocThiLoading, setSearchCuocThi, loadMore: cuocThiLoadMore } = useCuocThiSelect();
-    const { dsDotThi, loading: dotThiLoading, setSearchDotThi, loadMore: dotThiLoadMore } = useDotThiSelect(cuocThi);
+    const { dsDotThi, loading: dotThiLoading, setSearchDotThi, loadMore: dotThiLoadMore } = useDotThiSelect(selectedCuocThi);
 
     // ===== fetch =====
 
-    const fetchData = useCallback(async () => {
+    const fetchData = useCallback(async (nextDotThi = dotThi, nextTop = top) => {
 
         setLoading(true);
 
         try {
 
-            const res = await xepHangTracNghiemTheoDotThi(dotThi, top);
+            const res = await xepHangTracNghiemTheoDotThi(nextDotThi, nextTop);
 
             setData(res || []);
 
@@ -104,13 +107,13 @@ export default function NhomCauHoi() {
 
     }, [dotThi, message, top]);
 
-    const fetchDataCuocThi = useCallback(async () => {
+    const fetchDataCuocThi = useCallback(async (nextCuocThi = cuocThi, nextTop = top) => {
 
         setLoading(true);
 
         try {
 
-            const res = await xepHangTracNghiemTheoCuocThi(cuocThi, top);
+            const res = await xepHangTracNghiemTheoCuocThi(nextCuocThi, nextTop);
 
             setData(res || []);
 
@@ -129,23 +132,45 @@ export default function NhomCauHoi() {
     }, [cuocThi, message, top]);
 
     useEffect(() => {
-        if (!cuocThi) {
-            setDotThi(null);
+        if (!selectedCuocThi) {
+            setSelectedDotThi(null);
         }
-    }, [cuocThi]);
+    }, [selectedCuocThi]);
 
-    useEffect(() => {
-        if (!dotThi) {
+    const handleSearch = async () => {
+        if (!selectedCuocThi && !selectedDotThi) {
+            setCuocThi(null);
+            setDotThi(null);
+            setTop(selectedTop);
             setData([]);
-            if (cuocThi) {
-                void fetchDataCuocThi();
-            }
             return;
         }
 
-        void fetchData();
+        setCuocThi(selectedCuocThi);
+        setDotThi(selectedDotThi);
+        setTop(selectedTop);
 
-    }, [cuocThi, dotThi, fetchData, fetchDataCuocThi, top]);
+        if (selectedDotThi) {
+            await fetchData(selectedDotThi, selectedTop);
+            return;
+        }
+
+        await fetchDataCuocThi(selectedCuocThi, selectedTop);
+    };
+
+    const handleRefresh = async () => {
+        if (!dotThi && !cuocThi) {
+            setData([]);
+            return;
+        }
+
+        if (dotThi) {
+            await fetchData(dotThi, top);
+            return;
+        }
+
+        await fetchDataCuocThi(cuocThi, top);
+    };
 
     const handleExportExcel = async () => {
         if (!cuocThi && !dotThi) {
@@ -329,8 +354,8 @@ export default function NhomCauHoi() {
                                 width: "100%",
                             }}
                             showSearch
-                            value={cuocThi}
-                            onChange={(e) => setCuocThi(e)}
+                            value={selectedCuocThi}
+                            onChange={(value) => setSelectedCuocThi(value)}
                             allowClear
                             placeholder="Chọn cuộc thi"
                             loading={cuocThiLoading}
@@ -363,8 +388,8 @@ export default function NhomCauHoi() {
                                 width: "100%",
                             }}
                             showSearch
-                            value={dotThi}
-                            onChange={(e) => setDotThi(e)}
+                            value={selectedDotThi}
+                            onChange={(value) => setSelectedDotThi(value)}
                             allowClear
                             placeholder="Chọn đợt thi"
                             loading={dotThiLoading}
@@ -397,8 +422,8 @@ export default function NhomCauHoi() {
                                 width: "100%",
                             }}
                             showSearch
-                            value={top}
-                            onChange={(e) => setTop(e)}
+                            value={selectedTop}
+                            onChange={(value) => setSelectedTop(value)}
                             allowClear
                             placeholder="Chọn top"
                             loading={dotThiLoading}
@@ -429,23 +454,28 @@ export default function NhomCauHoi() {
                                     label: 'Top 100',
                                 }
                             ]}
-                            onSearch={setSearchDotThi}
-                            onPopupScroll={(e) => {
-
-                                const target = e.target;
-
-                                if (
-                                    target.scrollTop +
-                                    target.offsetHeight >=
-                                    target.scrollHeight - 10
-                                ) {
-
-                                    dotThiLoadMore();
-
-                                }
-
-                            }}
                         />
+                    </Col>
+                    <Col md={12} lg={3}>
+                        <Button
+                            className="w-full"
+                            type="primary"
+                            icon={<SearchOutlined />}
+                            loading={loading}
+                            onClick={() => void handleSearch()}
+                        >
+                            Tìm kiếm
+                        </Button>
+                    </Col>
+                    <Col md={12} lg={3}>
+                        <Button
+                            className="w-full"
+                            icon={<ReloadOutlined />}
+                            loading={loading}
+                            onClick={() => void handleRefresh()}
+                        >
+                            Làm mới
+                        </Button>
                     </Col>
                 </Row>
 
