@@ -11,6 +11,13 @@ const PUBLIC_HONOR_TOP = 200;
 const cacheStore = new Map();
 const inflightStore = new Map();
 
+function hasDotThiResultsBundle(bundle) {
+    return Boolean(bundle)
+        && Object.prototype.hasOwnProperty.call(bundle, "dotThiResults")
+        && bundle.dotThiResults
+        && typeof bundle.dotThiResults === "object";
+}
+
 function isFresh(entry) {
     return entry && (Date.now() - entry.createdAt) < CACHE_TTL_MS;
 }
@@ -35,6 +42,7 @@ function readCache(key) {
 }
 
 async function loadBundle(
+    type,
     dotThiId,
     cuocThiId,
     rankingTop = PUBLIC_RANKING_TOP,
@@ -43,7 +51,7 @@ async function loadBundle(
     const key = getBundleKey(dotThiId, cuocThiId, rankingTop, honorTop);
     const cached = readCache(key);
 
-    if (cached) {
+    if (cached && (type !== "dot-thi-results" || hasDotThiResultsBundle(cached))) {
         return cached;
     }
 
@@ -87,7 +95,7 @@ export function getCachedPublicRankings(type, dotThiId, cuocThiId, top) {
         )
     );
     if (type === "dot-thi-results") {
-        return bundle?.dotThiResults || {};
+        return hasDotThiResultsBundle(bundle) ? bundle.dotThiResults : null;
     }
 
     const bucket =
@@ -114,6 +122,7 @@ export function getCachedPublicRankings(type, dotThiId, cuocThiId, top) {
 
 export function loadPublicRankings(type, dotThiId, cuocThiId, top) {
     return loadBundle(
+        type,
         dotThiId,
         cuocThiId,
         PUBLIC_RANKING_TOP,

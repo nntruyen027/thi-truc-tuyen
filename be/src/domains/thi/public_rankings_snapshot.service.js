@@ -8,8 +8,19 @@ const PUBLIC_RANKINGS_SNAPSHOT_TTL_MS = Number(
     process.env.PUBLIC_RANKINGS_SNAPSHOT_TTL_MS || 120000
 );
 
+function hasDotThiResultsPayload(payload) {
+    return Boolean(payload)
+        && Object.prototype.hasOwnProperty.call(payload, "dotThiResults")
+        && payload.dotThiResults
+        && typeof payload.dotThiResults === "object";
+}
+
 function isFreshSnapshot(snapshot, now = Date.now()) {
     if (!snapshot?.createdAt) {
+        return false;
+    }
+
+    if (!hasDotThiResultsPayload(snapshot?.payload)) {
         return false;
     }
 

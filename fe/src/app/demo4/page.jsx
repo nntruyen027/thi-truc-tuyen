@@ -1311,9 +1311,18 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 footer={null}
                 width={720}
                 title={
-                    selectedKetQuaDotThi?.ten
-                        ? `Kết quả ${selectedKetQuaDotThi.ten}`
-                        : "Kết quả đợt thi"
+                    <div className="flex justify-center pr-8">
+                        <span
+                            className="inline-flex items-center rounded-full px-4 py-2 text-sm font-black uppercase tracking-[0.18em]"
+                            style={{
+                                background: alphaColor(colorPrimary, 0.12),
+                                color: colorPrimary,
+                                border: `1px solid ${alphaColor(colorPrimary, 0.18)}`,
+                            }}
+                        >
+                            {`Kết quả ${selectedKetQuaDotThi?.ten || "đợt thi"}`}
+                        </span>
+                    </div>
                 }
             >
                 <div className="pt-2">

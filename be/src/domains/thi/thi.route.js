@@ -16,6 +16,13 @@ const MAX_PUBLIC_RANKINGS_CACHE_ENTRIES = Number(process.env.MAX_PUBLIC_RANKINGS
 const publicRankingsCache = new Map();
 const publicRankingsInFlight = new Map();
 
+function hasDotThiResultsPayload(payload) {
+    return Boolean(payload)
+        && Object.prototype.hasOwnProperty.call(payload, "dotThiResults")
+        && payload.dotThiResults
+        && typeof payload.dotThiResults === "object";
+}
+
 function getExportService() {
     return require("./thi_export.service");
 }
@@ -93,6 +100,11 @@ function readPublicRankingsCache(key) {
     }
 
     if ((Date.now() - entry.createdAt) > PUBLIC_RANKINGS_CACHE_TTL_MS) {
+        publicRankingsCache.delete(key);
+        return null;
+    }
+
+    if (!hasDotThiResultsPayload(entry.data)) {
         publicRankingsCache.delete(key);
         return null;
     }
