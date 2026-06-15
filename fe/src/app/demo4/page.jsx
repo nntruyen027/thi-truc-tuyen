@@ -229,6 +229,7 @@ function normalizeSimpleRankingParticipants(rows = []) {
     return rows.map((item, index) => ({
         id: item?.baiThiId || item?.bai_thi_id || item?.id || index,
         hoTen: getThiSinh(item)?.hoTen || getThiSinh(item)?.ho_ten || "-",
+        donVi: getDonViThiSinh(item),
         diem: Number(item?.diem || 0),
     }));
 }
@@ -1357,6 +1358,11 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                                             <div className="text-base font-black leading-6 text-slate-900">
                                                 {item.hoTen}
                                             </div>
+                                            {item.donVi ? (
+                                                <div className="mt-1 text-sm text-slate-500">
+                                                    {item.donVi}
+                                                </div>
+                                            ) : null}
                                         </div>
                                         <div className="text-right">
                                             <div className="text-2xl font-black leading-none" style={{color: colorPrimary, fontVariantNumeric: "tabular-nums"}}>
