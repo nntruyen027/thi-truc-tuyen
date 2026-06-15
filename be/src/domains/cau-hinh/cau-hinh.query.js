@@ -12,6 +12,9 @@ const FILE_SCOPED_KEYS = new Set([
     "the_le",
     "document",
 ]);
+const CONFIG_CACHE_TTL_MS = Number(process.env.CAU_HINH_CACHE_TTL_MS || 15000);
+const configCache = new Map();
+const configInFlight = new Map();
 
 function normalizeUploadPath(value) {
     if (!value || typeof value !== "string") {
@@ -145,7 +148,36 @@ function mapConfig(row) {
     };
 }
 
-exports.layCauHinh = async (khoa) => {
+function readCachedConfig(khoa) {
+    const cached = configCache.get(khoa);
+
+    if (!cached) {
+        return null;
+    }
+
+    if (cached.expiresAt <= Date.now()) {
+        configCache.delete(khoa);
+        return null;
+    }
+
+    return cached.value;
+}
+
+function writeCachedConfig(khoa, value) {
+    configCache.set(khoa, {
+        value,
+        expiresAt: Date.now() + Math.max(CONFIG_CACHE_TTL_MS, 0),
+    });
+
+    return value;
+}
+
+function invalidateCachedConfig(khoa) {
+    configCache.delete(khoa);
+    configInFlight.delete(khoa);
+}
+
+async function fetchCauHinhFromDb(khoa) {
     const [row] = await db
         .select()
         .from(cauHinh)
@@ -153,10 +185,34 @@ exports.layCauHinh = async (khoa) => {
         .limit(1);
 
     return mapConfig(row);
+}
+
+exports.layCauHinh = async (khoa) => {
+    const cached = readCachedConfig(khoa);
+
+    if (cached) {
+        return cached;
+    }
+
+    const inFlightTask = configInFlight.get(khoa);
+
+    if (inFlightTask) {
+        return inFlightTask;
+    }
+
+    const task = fetchCauHinhFromDb(khoa)
+        .then((row) => writeCachedConfig(khoa, row))
+        .finally(() => {
+            configInFlight.delete(khoa);
+        });
+
+    configInFlight.set(khoa, task);
+
+    return task;
 };
 
 exports.suaCauHinh = async (khoa, giaTri) => {
-    const existing = await exports.layCauHinh(khoa);
+    const existing = await fetchCauHinhFromDb(khoa);
     const nextPaths = extractUploadPaths(giaTri);
 
     await ensureFilesExist(nextPaths);
@@ -170,7 +226,7 @@ exports.suaCauHinh = async (khoa, giaTri) => {
             })
             .returning();
 
-        return mapConfig(created);
+        return writeCachedConfig(khoa, mapConfig(created));
     }
 
     const [updated] = await db
@@ -187,5 +243,7 @@ exports.suaCauHinh = async (khoa, giaTri) => {
         khoa,
     });
 
-    return mapConfig(updated);
+    invalidateCachedConfig(khoa);
+
+    return writeCachedConfig(khoa, mapConfig(updated));
 };
