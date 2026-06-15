@@ -394,72 +394,15 @@ exports.ensureTracNghiemConfigPossible = async ({
     }
 
     const normalizedLoaiCauHoi = normalizeLoaiCauHoi(loaiCauHoi);
-    const hasLoaiColumn = await hasLoaiCauHoiColumn();
 
     if (!Number.isInteger(Number(soLuong)) || Number(soLuong) < 1) {
         throw "Số lượng câu hỏi phải lớn hơn 0.";
     }
 
-    let availableRow;
-    let usedRow;
-
-    if (hasLoaiColumn) {
-        [availableRow, usedRow] = await Promise.all([
-            db
-                .select({total: count()})
-                .from(tracNghiem)
-                .where(and(
-                    eq(tracNghiem.linhVucId, Number(linhVucId)),
-                    eq(tracNghiem.nhomId, Number(nhomId)),
-                    eq(tracNghiem.loaiCauHoi, normalizedLoaiCauHoi)
-                )),
-            db
-                .select({total: sql`coalesce(sum(${tracNghiemDotThi.soLuong}), 0)::int`})
-                .from(tracNghiemDotThi)
-                .where(and(
-                    eq(tracNghiemDotThi.dotThiId, Number(dotThiId)),
-                    eq(tracNghiemDotThi.linhVucId, Number(linhVucId)),
-                    eq(tracNghiemDotThi.nhomId, Number(nhomId)),
-                    eq(tracNghiemDotThi.loaiCauHoi, normalizedLoaiCauHoi),
-                    ignoreId != null
-                        ? sql`${tracNghiemDotThi.id} <> ${Number(ignoreId)}`
-                        : sql`true`
-                )),
-        ]);
-    } else {
-        [availableRow, usedRow] = await Promise.all([
-            db
-                .select({total: count()})
-                .from(tracNghiem)
-                .where(and(
-                    eq(tracNghiem.linhVucId, Number(linhVucId)),
-                    eq(tracNghiem.nhomId, Number(nhomId)),
-                    eq(tracNghiem.loaiCauHoi, normalizedLoaiCauHoi)
-                )),
-            db
-                .select({total: sql`coalesce(sum(${tracNghiemDotThi.soLuong}), 0)::int`})
-                .from(tracNghiemDotThi)
-                .where(and(
-                    eq(tracNghiemDotThi.dotThiId, Number(dotThiId)),
-                    eq(tracNghiemDotThi.linhVucId, Number(linhVucId)),
-                    eq(tracNghiemDotThi.nhomId, Number(nhomId)),
-                    ignoreId != null
-                        ? sql`${tracNghiemDotThi.id} <> ${Number(ignoreId)}`
-                        : sql`true`
-                )),
-        ]);
-    }
-
-    const available = Number(availableRow[0]?.total || 0);
-    const requested = Number(usedRow[0]?.total || 0) + Number(soLuong);
-
-    if (available === 0) {
-        throw "Tổ hợp lĩnh vực, nhóm câu hỏi và loại câu hỏi này hiện chưa có ngân hàng câu hỏi.";
-    }
-
-    if (requested > available) {
-        throw `Cấu hình vượt quá số câu hỏi hiện có. Khả dụng: ${available}, đang cấu hình: ${requested}.`;
-    }
+    return {
+        loaiCauHoi: normalizedLoaiCauHoi,
+        ignoreId,
+    };
 };
 
 exports.ensureDotThiQuestionConfigValid = async (dotThiId) => {
