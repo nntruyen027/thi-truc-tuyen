@@ -10,6 +10,8 @@ const cauHinhQuery = require("../../domains/cau-hinh/cau-hinh.query");
 
 const TELEGRAM_API_BASE = "https://api.telegram.org";
 const DEFAULT_POLL_INTERVAL_MS = Number(process.env.TELEGRAM_BOT_POLL_INTERVAL_MS || 3000);
+const DEFAULT_POLL_TIMEOUT_SECONDS = Number(process.env.TELEGRAM_BOT_POLL_TIMEOUT_SECONDS || 20);
+const DEFAULT_TELEGRAM_REQUEST_TIMEOUT_MS = Number(process.env.TELEGRAM_BOT_REQUEST_TIMEOUT_MS || 15000);
 const DEFAULT_HEALTH_INTERVAL_MS = Number(process.env.TELEGRAM_BOT_HEALTHCHECK_INTERVAL_MS || 60000);
 const DEFAULT_HEALTH_TIMEOUT_MS = Number(process.env.TELEGRAM_BOT_HEALTHCHECK_TIMEOUT_MS || 8000);
 const DEFAULT_PUBLIC_SITE_URL = process.env.PUBLIC_SITE_URL || "";
@@ -18,6 +20,10 @@ const ALERT_CPU_LOAD_PERCENT = Number(process.env.TELEGRAM_BOT_ALERT_CPU_PERCENT
 const ALERT_SERVER_ERRORS_PER_MINUTE = Number(process.env.TELEGRAM_BOT_ALERT_5XX_PER_MINUTE || 10);
 const ALERT_EVENT_LOOP_LAG_P95_MS = Number(process.env.TELEGRAM_BOT_ALERT_EVENT_LOOP_P95_MS || 150);
 const ALERT_SNAPSHOT_STALE_MULTIPLIER = Number(process.env.TELEGRAM_BOT_ALERT_SNAPSHOT_STALE_MULTIPLIER || 2);
+const DEFAULT_POLL_REQUEST_TIMEOUT_MS = Math.max(
+    DEFAULT_TELEGRAM_REQUEST_TIMEOUT_MS,
+    (DEFAULT_POLL_TIMEOUT_SECONDS * 1000) + 10000
+);
 
 function parseIdList(value) {
     return String(value || "")
@@ -393,17 +399,19 @@ function createTelegramService() {
         return allowedChatIds.has(String(chatId));
     }
 
-    async function callTelegram(method, body) {
+    async function callTelegram(method, body, options = {}) {
         if (!state.enabled) {
             return null;
         }
+
+        const timeoutMs = Number(options?.timeoutMs || DEFAULT_TELEGRAM_REQUEST_TIMEOUT_MS);
 
         const response = await requestJson(
             buildTelegramApiUrl(token, method),
             {
                 method: "POST",
                 body,
-                timeoutMs: 15000,
+                timeoutMs,
             }
         );
 
@@ -484,8 +492,10 @@ function createTelegramService() {
         try {
             const updates = await callTelegram("getUpdates", {
                 offset: state.offset,
-                timeout: 20,
+                timeout: DEFAULT_POLL_TIMEOUT_SECONDS,
                 allowed_updates: ["message"],
+            }, {
+                timeoutMs: DEFAULT_POLL_REQUEST_TIMEOUT_MS,
             });
 
             for (const update of updates || []) {

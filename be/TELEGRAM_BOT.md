@@ -9,6 +9,8 @@ TELEGRAM_BOT_TOKEN=
 TELEGRAM_BOT_ALLOWED_CHAT_IDS=
 TELEGRAM_BOT_ALERT_CHAT_IDS=
 TELEGRAM_BOT_POLL_INTERVAL_MS=3000
+TELEGRAM_BOT_POLL_TIMEOUT_SECONDS=20
+TELEGRAM_BOT_REQUEST_TIMEOUT_MS=15000
 TELEGRAM_BOT_NOTIFY_ON_STARTUP=1
 
 TELEGRAM_BOT_HEALTHCHECK_URLS=
@@ -28,6 +30,8 @@ PUBLIC_SITE_URL=
 - `TELEGRAM_BOT_TOKEN`: token bot từ BotFather.
 - `TELEGRAM_BOT_ALLOWED_CHAT_IDS`: danh sách `chat_id` được phép dùng lệnh, ngăn cách bởi dấu phẩy.
 - `TELEGRAM_BOT_ALERT_CHAT_IDS`: danh sách chat nhận cảnh báo. Nếu bỏ trống sẽ dùng danh sách trong `TELEGRAM_BOT_ALLOWED_CHAT_IDS`.
+- `TELEGRAM_BOT_POLL_TIMEOUT_SECONDS`: thời gian long-poll `getUpdates` tới Telegram.
+- `TELEGRAM_BOT_REQUEST_TIMEOUT_MS`: timeout mặc định cho các request Telegram API. Với `getUpdates`, hệ thống tự nâng timeout đủ lớn hơn thời gian poll để tránh bị cắt sớm.
 - `TELEGRAM_BOT_NOTIFY_ON_STARTUP`: đặt `1` nếu muốn bot gửi thông báo khi backend khởi động.
 - `TELEGRAM_BOT_HEALTHCHECK_URLS`: danh sách URL cần kiểm tra định kỳ, ngăn cách bởi dấu phẩy.
 - `TELEGRAM_BOT_ALERT_RAM_PERCENT`: ngưỡng % RAM để gửi cảnh báo hiệu năng.
