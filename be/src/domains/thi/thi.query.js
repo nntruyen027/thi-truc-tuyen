@@ -777,6 +777,48 @@ function compareRankingRow(left, right) {
     return Number(left.baiThiId) - Number(right.baiThiId);
 }
 
+function compareScoreTimeRow(left, right) {
+    const byDiem = compareNullableDesc(left.diem, right.diem);
+
+    if (byDiem !== 0) {
+        return byDiem;
+    }
+
+    const byThoiGian = compareNullableAsc(left.thoiGian, right.thoiGian);
+
+    if (byThoiGian !== 0) {
+        return byThoiGian;
+    }
+
+    return Number(left.baiThiId) - Number(right.baiThiId);
+}
+
+function comparePredictionWithinBestScoreRow(left, right) {
+    const byDiem = compareNullableDesc(left.diem, right.diem);
+
+    if (byDiem !== 0) {
+        return byDiem;
+    }
+
+    const bySaiSo = compareNullableAsc(left.saiSo, right.saiSo);
+
+    if (bySaiSo !== 0) {
+        return bySaiSo;
+    }
+
+    const byThoiGian = compareNullableAsc(left.thoiGian, right.thoiGian);
+
+    if (byThoiGian !== 0) {
+        return byThoiGian;
+    }
+
+    return Number(left.baiThiId) - Number(right.baiThiId);
+}
+
+function shouldKeepLegacyRankingForDotThi(dotThiId) {
+    return Number(dotThiId) === 1;
+}
+
 function mapRankingRow(row) {
     return {
         baiThiId: row.baiThiId,
@@ -1536,8 +1578,9 @@ exports.autoSubmitBaiThi = async (baiThiIdValue, payload = {}) => {
     });
 };
 
-async function layDanhSachBaiThiXepHang(whereClause) {
+async function layDanhSachBaiThiXepHang(whereClause, options = {}) {
     const trace = createExamTrace("lay-danh-sach-bai-thi-xep-hang");
+    const preserveLegacyWeekOne = Boolean(options.preserveLegacyWeekOne);
     const examRows = await db
         .select({
             baiThiId: baiThi.id,
@@ -1601,43 +1644,62 @@ async function layDanhSachBaiThiXepHang(whereClause) {
 
     const soNguoi100 = thiSinhDatDiemToiDa.size;
 
+    const preparedRows = examRows.map((row) => ({
+        baiThiId: row.baiThiId,
+        thiSinhId: row.thiSinhId,
+        dotThiId: row.dotThiId,
+        diem: row.diem,
+        thoiGian: row.thoiGian,
+        thoiGianThi: row.thoiGianThi,
+        soDuDoan: row.soDuDoan,
+        soNguoi100,
+        saiSo: Math.abs(Number(row.soDuDoan || 0) - soNguoi100),
+        thiSinh: mapThiSinh({
+            id: row.userId,
+            username: row.username,
+            hoTen: row.hoTen,
+            diaChiDong1: row.diaChiDong1,
+            xaPhuong: row.xaPhuong,
+            tinhThanh: row.tinhThanh,
+            donViId: row.donViId,
+            donViTen: row.donViTen,
+            createdAt: row.createdAt,
+        }),
+    }));
+
     const bestByThiSinh = new Map();
 
-    for (const row of examRows) {
-        const current = {
-            baiThiId: row.baiThiId,
-            thiSinhId: row.thiSinhId,
-            dotThiId: row.dotThiId,
-            diem: row.diem,
-            thoiGian: row.thoiGian,
-            thoiGianThi: row.thoiGianThi,
-            soDuDoan: row.soDuDoan,
-            thiSinh: mapThiSinh({
-                id: row.userId,
-                username: row.username,
-                hoTen: row.hoTen,
-                diaChiDong1: row.diaChiDong1,
-                xaPhuong: row.xaPhuong,
-                tinhThanh: row.tinhThanh,
-                donViId: row.donViId,
-                donViTen: row.donViTen,
-                createdAt: row.createdAt,
-            }),
-        };
-
+    for (const row of preparedRows) {
         const previous = bestByThiSinh.get(Number(row.thiSinhId));
 
-        if (!previous || compareRankingRow(current, previous) < 0) {
-            bestByThiSinh.set(Number(row.thiSinhId), current);
+        if (preserveLegacyWeekOne) {
+            if (!previous || compareScoreTimeRow(row, previous) < 0) {
+                bestByThiSinh.set(Number(row.thiSinhId), row);
+            }
+
+            continue;
+        }
+
+        if (!previous) {
+            bestByThiSinh.set(Number(row.thiSinhId), row);
+            continue;
+        }
+
+        if (Number(row.diem || 0) > Number(previous.diem || 0)) {
+            bestByThiSinh.set(Number(row.thiSinhId), row);
+            continue;
+        }
+
+        if (Number(row.diem || 0) < Number(previous.diem || 0)) {
+            continue;
+        }
+
+        if (comparePredictionWithinBestScoreRow(row, previous) < 0) {
+            bestByThiSinh.set(Number(row.thiSinhId), row);
         }
     }
 
     const rankedRows = Array.from(bestByThiSinh.values())
-        .map((row) => ({
-            ...row,
-            soNguoi100,
-            saiSo: Math.abs(Number(row.soDuDoan || 0) - soNguoi100),
-        }))
         .sort(compareRankingRow);
 
     trace.finish({
@@ -1683,7 +1745,10 @@ exports.xepHangTracNghiemTheoDotThi = async (dotThiId, topGiai) => {
 
     return runRankingTask(cacheKey, async () => {
         const rows = await layDanhSachBaiThiXepHang(
-            eq(deThi.dotThiId, Number(dotThiId))
+            eq(deThi.dotThiId, Number(dotThiId)),
+            {
+                preserveLegacyWeekOne: shouldKeepLegacyRankingForDotThi(dotThiId),
+            }
         );
 
         return rows
