@@ -234,6 +234,31 @@ function normalizeSimpleRankingParticipants(rows = []) {
     }));
 }
 
+const KET_QUA_GIAI_THUONG = [
+    {key: "giai-nhat", title: "Giải nhất", count: 1},
+    {key: "giai-nhi", title: "Giải nhì", count: 3},
+    {key: "giai-ba", title: "Giải ba", count: 5},
+    {key: "giai-khuyen-khich", title: "Giải khuyến khích", count: 10},
+];
+
+function buildAwardSections(rows = []) {
+    let startIndex = 0;
+
+    return KET_QUA_GIAI_THUONG
+        .map((section) => {
+            const items = rows.slice(startIndex, startIndex + section.count);
+            const result = {
+                ...section,
+                items,
+                startRank: startIndex + 1,
+            };
+
+            startIndex += section.count;
+            return result;
+        })
+        .filter((section) => section.items.length > 0);
+}
+
 function normalizeUnitRankings(rows = []) {
     return rows
         .map((item, index) => ({
@@ -1050,6 +1075,10 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     const displayedUnitItems = unitRankingMode === "luot-thi"
         ? topUnits
         : topUnitsByParticipants;
+    const ketQuaAwardSections = useMemo(
+        () => buildAwardSections(ketQuaModalRows),
+        [ketQuaModalRows]
+    );
 
     if (!canRender) {
         return null;
@@ -1334,41 +1363,70 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     ) : !ketQuaModalRows.length ? (
                         <Empty description="Chưa có dữ liệu kết quả cho đợt thi này" />
                     ) : (
-                        <div className="demo4-scroll space-y-3" style={{maxHeight: 560, overflowY: "auto"}}>
-                            {ketQuaModalRows.map((item, index) => (
+                        <div className="demo4-scroll space-y-5" style={{maxHeight: 560, overflowY: "auto"}}>
+                            {ketQuaAwardSections.map((section) => (
                                 <div
-                                    key={item.id}
-                                    className="rounded-[24px] border px-4 py-4"
-                                    style={{
-                                        borderColor: alphaColor(colorPrimary, 0.1),
-                                        background: "linear-gradient(180deg, #ffffff 0%, #fff7f2 100%)",
-                                    }}
+                                    key={section.key}
+                                    className="rounded-[24px] border bg-white p-4"
+                                    style={{borderColor: alphaColor(colorPrimary, 0.14)}}
                                 >
-                                    <div className="flex items-center gap-3">
+                                    <div className="mb-3 flex items-center justify-between gap-3">
                                         <div
-                                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-black"
+                                            className="inline-flex items-center rounded-full px-3 py-2 text-sm font-black uppercase tracking-[0.14em]"
                                             style={{
-                                                background: "#f8fafc",
+                                                background: alphaColor(colorPrimary, 0.1),
                                                 color: colorPrimary,
                                             }}
                                         >
-                                            {index + 1}
+                                            {section.title}
                                         </div>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="text-base font-black leading-6 text-slate-900">
-                                                {item.hoTen}
-                                            </div>
-                                            {item.donVi ? (
-                                                <div className="mt-1 text-sm text-slate-500">
-                                                    {item.donVi}
+                                        <div className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                            {`${section.items.length} thí sinh`}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {section.items.map((item, index) => {
+                                            const rank = section.startRank + index;
+
+                                            return (
+                                                <div
+                                                    key={`${section.key}-${item.id}`}
+                                                    className="rounded-[20px] border bg-[#fffaf5] px-4 py-4"
+                                                    style={{borderColor: alphaColor(colorPrimary, 0.1)}}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div
+                                                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-black"
+                                                            style={{
+                                                                background: "#f8fafc",
+                                                                color: colorPrimary,
+                                                            }}
+                                                        >
+                                                            {rank}
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="text-base font-black leading-6 text-slate-900">
+                                                                {item.hoTen}
+                                                            </div>
+                                                            {item.donVi ? (
+                                                                <div className="mt-1 text-sm text-slate-500">
+                                                                    {item.donVi}
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div
+                                                                className="text-2xl font-black leading-none"
+                                                                style={{color: colorPrimary, fontVariantNumeric: "tabular-nums"}}
+                                                            >
+                                                                <AnimatedNumber value={item.diem} />
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            ) : null}
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-2xl font-black leading-none" style={{color: colorPrimary, fontVariantNumeric: "tabular-nums"}}>
-                                                <AnimatedNumber value={item.diem} />
-                                            </div>
-                                        </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             ))}
