@@ -86,6 +86,10 @@ export function getCachedPublicRankings(type, dotThiId, cuocThiId, top) {
             PUBLIC_HONOR_TOP
         )
     );
+    if (type === "dot-thi-results") {
+        return bundle?.dotThiResults || {};
+    }
+
     const bucket =
         type === "honor-board"
             ? bundle?.honorBoard
@@ -115,6 +119,10 @@ export function loadPublicRankings(type, dotThiId, cuocThiId, top) {
         PUBLIC_RANKING_TOP,
         PUBLIC_HONOR_TOP
     ).then((bundle) => {
+        if (type === "dot-thi-results") {
+            return bundle?.dotThiResults || {};
+        }
+
         const bucket =
             type === "honor-board"
                 ? bundle?.honorBoard

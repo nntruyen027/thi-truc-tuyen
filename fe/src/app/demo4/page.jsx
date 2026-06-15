@@ -3,17 +3,12 @@
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from "react";
 import dayjs from "dayjs";
 import {ArrowRightOutlined, ClockCircleFilled, SwapOutlined, TrophyFilled, UserOutlined} from "@ant-design/icons";
-import {Button, Card, Col, Empty, QRCode, Row, Spin, Statistic, Typography, theme} from "antd";
+import {Button, Card, Col, Empty, Modal, QRCode, Row, Spin, Statistic, Typography, theme} from "antd";
 import {useRouter} from "next/navigation";
 
 import {layCauHinh} from "~/services/cau-hinh";
 import {layCuocThi} from "~/services/thi/cuoc-thi";
 import {layDotThi} from "~/services/thi/dot-thi";
-import {
-    layBangXepHangCongKhai,
-    xepHangDonViTheoCuocThi,
-    xepHangTracNghiemTheoDotThi,
-} from "~/services/thi/thi";
 import {getDonVi} from "~/services/dm_chung/don_vi";
 import PublicPageBanner from "~/app/(public)/components/PublicPageBanner";
 import PublicContestTimeline from "~/app/(public)/components/PublicContestTimeline";
@@ -24,6 +19,7 @@ import {buildTimelineStages} from "~/app/demo1/page.config";
 import {DEMO_BANNER_CONFIG} from "~/app/demo1/demo-data";
 import {useAuthStore} from "~/store/auth";
 import useDemoRouteAccess from "~/hooks/useDemoRouteAccess";
+import {getCachedPublicRankings, loadPublicRankings} from "~/services/thi/public-rankings-cache";
 import {alphaColor, darkenColor, parseMediaConfig} from "~/utils/workspaceTheme";
 
 const {Title, Text} = Typography;
@@ -35,14 +31,6 @@ const DEMO4_BACKGROUND_IMAGES = {
 const LIVE_DATA_REFRESH_MS = 120 * 1000;
 const RESIZE_DEBOUNCE_MS = 180;
 const UNIT_RANKING_FETCH_LIMIT = 1000;
-
-async function loadUnitRankingsForCurrentContest(cuocThiId) {
-    try {
-        return await xepHangDonViTheoCuocThi(cuocThiId, UNIT_RANKING_FETCH_LIMIT);
-    } catch {
-        return xepHangDonViTheoCuocThi(cuocThiId);
-    }
-}
 function chonCuocThiGanNhat(dsCuocThi = []) {
     const now = dayjs();
     const dsHopLe = [...dsCuocThi]
@@ -233,6 +221,14 @@ function normalizeRankingParticipants(rows = []) {
         id: item?.baiThiId || item?.bai_thi_id || item?.id || index,
         hoTen: getThiSinh(item)?.hoTen || getThiSinh(item)?.ho_ten || "-",
         donVi: getDonViThiSinh(item),
+        diem: Number(item?.diem || 0),
+    }));
+}
+
+function normalizeSimpleRankingParticipants(rows = []) {
+    return rows.map((item, index) => ({
+        id: item?.baiThiId || item?.bai_thi_id || item?.id || index,
+        hoTen: getThiSinh(item)?.hoTen || getThiSinh(item)?.ho_ten || "-",
         diem: Number(item?.diem || 0),
     }));
 }
@@ -567,6 +563,10 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     const [unitLoading, setUnitLoading] = useState(true);
     const [participantLoading, setParticipantLoading] = useState(true);
     const [unitRankingMode, setUnitRankingMode] = useState("luot-thi");
+    const [ketQuaModalOpen, setKetQuaModalOpen] = useState(false);
+    const [ketQuaModalLoading, setKetQuaModalLoading] = useState(false);
+    const [ketQuaModalRows, setKetQuaModalRows] = useState([]);
+    const [selectedKetQuaDotThi, setSelectedKetQuaDotThi] = useState(null);
 
     const {token} = theme.useToken();
     const {colorPrimary} = token;
@@ -791,14 +791,41 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 setParticipantLoading(true);
             }
 
-            if (!topUnitsRef.current.length) {
+            if (!topUnitsRef.current.length && !topUnitsByParticipantsRef.current.length) {
                 setUnitLoading(true);
             }
 
-            const [participantsResult, allUnitsResult, publicRankingsResult] = await Promise.allSettled([
+            const cachedRankings =
                 dotThi?.id
-                    ? xepHangTracNghiemTheoDotThi(dotThi.id, 20)
-                    : Promise.resolve([]),
+                    ? getCachedPublicRankings("rankings", dotThi.id, dotThi.cuoc_thi_id, 20)
+                    : null;
+            const cachedHonorBoard =
+                dotThi?.id
+                    ? getCachedPublicRankings("honor-board", dotThi.id, dotThi.cuoc_thi_id, UNIT_RANKING_FETCH_LIMIT)
+                    : null;
+
+            if (cachedRankings?.["dot-thi"]) {
+                setTopParticipants(normalizeRankingParticipants(cachedRankings["dot-thi"] || []));
+                setParticipantLoading(false);
+            }
+
+            if (cachedHonorBoard?.["cuoc-thi"]) {
+                const cachedAttemptRows = cachedHonorBoard["cuoc-thi"]?.["luot-thi"] || [];
+                const cachedParticipantRows = cachedHonorBoard["cuoc-thi"]?.["nguoi-tham-gia"] || [];
+
+                if (Array.isArray(cachedAttemptRows)) {
+                    setTopUnits(normalizeUnitRankings(cachedAttemptRows));
+                    setTongLuotThi(tinhTongLuotThiTuHangDonVi(cachedAttemptRows));
+                }
+
+                if (Array.isArray(cachedParticipantRows)) {
+                    setTopUnitsByParticipants(normalizeParticipantUnitRankings(cachedParticipantRows));
+                }
+
+                setUnitLoading(false);
+            }
+
+            const [allUnitsResult, rankingsResult, honorBoardResult] = await Promise.allSettled([
                 getDonVi({
                     page: 1,
                     size: 1000,
@@ -806,12 +833,20 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     sortType: "asc",
                 }),
                 dotThi?.id
-                    ? layBangXepHangCongKhai({
-                        dotThiId: dotThi.id,
-                        cuocThiId: dotThi.cuoc_thi_id,
-                        rankingTop: 20,
-                        honorTop: UNIT_RANKING_FETCH_LIMIT,
-                    })
+                    ? loadPublicRankings(
+                        "rankings",
+                        dotThi.id,
+                        dotThi.cuoc_thi_id,
+                        20
+                    )
+                    : Promise.resolve(null),
+                dotThi?.id
+                    ? loadPublicRankings(
+                        "honor-board",
+                        dotThi.id,
+                        dotThi.cuoc_thi_id,
+                        UNIT_RANKING_FETCH_LIMIT
+                    )
                     : Promise.resolve(null),
             ]);
 
@@ -819,8 +854,8 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 return;
             }
 
-            const participantRows = participantsResult.status === "fulfilled"
-                ? normalizeRankingParticipants(participantsResult.value || [])
+            const participantRows = rankingsResult.status === "fulfilled"
+                ? normalizeRankingParticipants(rankingsResult.value?.["dot-thi"] || [])
                 : [];
             setTopParticipants(participantRows);
             setParticipantLoading(false);
@@ -829,28 +864,17 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 ? allUnitsResult.value?.data || []
                 : [];
             const publicHonorBoard =
-                publicRankingsResult.status === "fulfilled"
-                    ? publicRankingsResult.value?.honorBoard?.["cuoc-thi"] || null
+                honorBoardResult.status === "fulfilled"
+                    ? honorBoardResult.value?.["cuoc-thi"] || null
                     : null;
             const publicAttemptRows =
                 publicHonorBoard?.["luot-thi"] || null;
             const publicParticipantRows =
                 publicHonorBoard?.["nguoi-tham-gia"] || null;
-            const [unitsResult] = await Promise.all([
-                publicAttemptRows
-                    ? Promise.resolve({status: "fulfilled", value: publicAttemptRows})
-                    : loadUnitRankingsForCurrentContest(dotThi.cuoc_thi_id)
-                        .then((data) => ({status: "fulfilled", value: data}))
-                        .catch(() => ({status: "rejected"})),
-            ]);
 
-            if (!active) {
-                return;
-            }
-
-            if (unitsResult.status === "fulfilled") {
-                const unitRows = normalizeUnitRankings(unitsResult.value || []);
-                setTongLuotThi(tinhTongLuotThiTuHangDonVi(unitsResult.value || []));
+            if (Array.isArray(publicAttemptRows)) {
+                const unitRows = normalizeUnitRankings(publicAttemptRows || []);
+                setTongLuotThi(tinhTongLuotThiTuHangDonVi(publicAttemptRows || []));
 
                 setTopUnits(
                     allUnits.length
@@ -979,6 +1003,44 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
         }
 
         router.push("/user");
+    };
+
+    const handleOpenKetQuaDotThi = async (timelineItem) => {
+        if (!timelineItem?.id || !dotThi?.id || !dotThi?.cuoc_thi_id) {
+            return;
+        }
+
+        const matchedDotThi =
+            dsDotThi.find((item) => Number(item?.id) === Number(timelineItem.id))
+            || null;
+
+        setSelectedKetQuaDotThi(matchedDotThi);
+        setKetQuaModalOpen(true);
+
+        const cachedDotThiResults =
+            getCachedPublicRankings("dot-thi-results", dotThi.id, dotThi.cuoc_thi_id, 20);
+        const cachedRows = cachedDotThiResults?.[String(timelineItem.id)];
+
+        if (Array.isArray(cachedRows)) {
+            setKetQuaModalRows(normalizeSimpleRankingParticipants(cachedRows));
+            setKetQuaModalLoading(false);
+            return;
+        }
+
+        setKetQuaModalRows([]);
+        setKetQuaModalLoading(true);
+
+        try {
+            const dotThiResults =
+                await loadPublicRankings("dot-thi-results", dotThi.id, dotThi.cuoc_thi_id, 20);
+            const freshRows = dotThiResults?.[String(timelineItem.id)] || [];
+
+            setKetQuaModalRows(normalizeSimpleRankingParticipants(freshRows));
+        } catch {
+            setKetQuaModalRows([]);
+        } finally {
+            setKetQuaModalLoading(false);
+        }
     };
 
     const unitRankingTitle = unitRankingMode === "luot-thi"
@@ -1188,6 +1250,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                                 items={timelineItems}
                                 colorPrimary={colorPrimary}
                                 onItemClick={handleJoinExam}
+                                onResultClick={handleOpenKetQuaDotThi}
                             />
                         </div>
                     </Reveal>
@@ -1241,6 +1304,63 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     </div>
                 </div>
             ) : null}
+
+            <Modal
+                open={ketQuaModalOpen}
+                onCancel={() => setKetQuaModalOpen(false)}
+                footer={null}
+                width={720}
+                title={
+                    selectedKetQuaDotThi?.ten
+                        ? `Kết quả ${selectedKetQuaDotThi.ten}`
+                        : "Kết quả đợt thi"
+                }
+            >
+                <div className="pt-2">
+                    {ketQuaModalLoading ? (
+                        <div className="flex min-h-[18rem] items-center justify-center">
+                            <Spin size="large" />
+                        </div>
+                    ) : !ketQuaModalRows.length ? (
+                        <Empty description="Chưa có dữ liệu kết quả cho đợt thi này" />
+                    ) : (
+                        <div className="demo4-scroll space-y-3" style={{maxHeight: 560, overflowY: "auto"}}>
+                            {ketQuaModalRows.map((item, index) => (
+                                <div
+                                    key={item.id}
+                                    className="rounded-[24px] border px-4 py-4"
+                                    style={{
+                                        borderColor: alphaColor(colorPrimary, 0.1),
+                                        background: "linear-gradient(180deg, #ffffff 0%, #fff7f2 100%)",
+                                    }}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-black"
+                                            style={{
+                                                background: "#f8fafc",
+                                                color: colorPrimary,
+                                            }}
+                                        >
+                                            {index + 1}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="text-base font-black leading-6 text-slate-900">
+                                                {item.hoTen}
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-2xl font-black leading-none" style={{color: colorPrimary, fontVariantNumeric: "tabular-nums"}}>
+                                                <AnimatedNumber value={item.diem} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </Modal>
 
             <style>{`
                 .demo4-background-layer {

@@ -1,10 +1,16 @@
 'use client';
 
 import dayjs from "dayjs";
+import {Button} from "antd";
 import {CheckCircleFilled, ClockCircleFilled} from "@ant-design/icons";
 import {alphaColor} from "~/utils/workspaceTheme";
 
-export default function PublicContestTimeline({items, colorPrimary, onItemClick}) {
+export default function PublicContestTimeline({
+    items,
+    colorPrimary,
+    onItemClick,
+    onResultClick,
+}) {
     if (!items.length) {
         return null;
     }
@@ -21,6 +27,7 @@ export default function PublicContestTimeline({items, colorPrimary, onItemClick}
                 const isCurrent = item.tone === "current";
                 const accentColor = isDone ? "#94a3b8" : colorPrimary;
                 const clickable = typeof onItemClick === "function";
+                const canOpenResult = isDone && typeof onResultClick === "function";
 
                 return (
                     <div key={item.id} className="relative min-w-0">
@@ -78,25 +85,46 @@ export default function PublicContestTimeline({items, colorPrimary, onItemClick}
                                 }}
                             >
                                 <div className="flex flex-wrap items-start justify-between gap-3">
-                                    <div
-                                        className="text-base font-bold leading-7 sm:text-lg xl:text-xl"
-                                        style={{color: isDone ? "#334155" : isCurrent ? colorPrimary : "#0f172a"}}
-                                    >
-                                        {item.ten}
+                                    <div className="min-w-0 flex-1">
+                                        <div
+                                            className="text-base font-bold leading-7 sm:text-lg xl:text-xl"
+                                            style={{color: isDone ? "#334155" : isCurrent ? colorPrimary : "#0f172a"}}
+                                        >
+                                            {item.ten}
+                                        </div>
                                     </div>
-                                    <div
-                                        className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]"
-                                        style={{
-                                            background: isDone
-                                                ? "rgba(148,163,184,0.12)"
-                                                : isCurrent
-                                                    ? colorPrimary
-                                                    : alphaColor(colorPrimary, 0.08),
-                                            color: isDone ? "#64748b" : isCurrent ? "#ffffff" : colorPrimary,
-                                            border: `1px solid ${isDone ? "rgba(148,163,184,0.18)" : isCurrent ? colorPrimary : alphaColor(colorPrimary, 0.12)}`,
-                                        }}
-                                    >
-                                        {item.status}
+                                    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                                        {canOpenResult ? (
+                                            <Button
+                                                type="default"
+                                                size="middle"
+                                                className="!rounded-xl !font-semibold"
+                                                style={{
+                                                    borderColor: alphaColor(colorPrimary, 0.18),
+                                                    color: colorPrimary,
+                                                }}
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    onResultClick(item);
+                                                }}
+                                            >
+                                                Kết quả
+                                            </Button>
+                                        ) : null}
+                                        <div
+                                            className="rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]"
+                                            style={{
+                                                background: isDone
+                                                    ? "rgba(148,163,184,0.12)"
+                                                    : isCurrent
+                                                        ? colorPrimary
+                                                        : alphaColor(colorPrimary, 0.08),
+                                                color: isDone ? "#64748b" : isCurrent ? "#ffffff" : colorPrimary,
+                                                border: `1px solid ${isDone ? "rgba(148,163,184,0.18)" : isCurrent ? colorPrimary : alphaColor(colorPrimary, 0.12)}`,
+                                            }}
+                                        >
+                                            {item.status}
+                                        </div>
                                     </div>
                                 </div>
 

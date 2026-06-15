@@ -3,6 +3,7 @@ const dotThiQuery = require("../dot-thi/dot_thi.query");
 
 const PUBLIC_RANKING_TOP = 20;
 const PUBLIC_HONOR_TOP = 200;
+const PUBLIC_RESULTS_DOT_THI_FETCH_LIMIT = 200;
 const PUBLIC_RANKINGS_SNAPSHOT_TTL_MS = Number(
     process.env.PUBLIC_RANKINGS_SNAPSHOT_TTL_MS || 120000
 );
@@ -40,6 +41,47 @@ function sliceHonorBoardRows(rows = [], top) {
     return rows.slice(0, Number(top) || PUBLIC_HONOR_TOP);
 }
 
+function isPastDate(value, nowMs = Date.now()) {
+    const timeMs = new Date(value).getTime();
+
+    if (!Number.isFinite(timeMs)) {
+        return false;
+    }
+
+    return timeMs <= nowMs;
+}
+
+async function buildDotThiResultsPayload(cuocThiId) {
+    if (!cuocThiId) {
+        return {};
+    }
+
+    const dsDotThi = await dotThiQuery.layDsDotThi(
+        cuocThiId,
+        PUBLIC_RESULTS_DOT_THI_FETCH_LIMIT,
+        1,
+        "",
+        "thoi_gian_bat_dau",
+        "asc"
+    );
+    const nowMs = Date.now();
+    const dsDotThiDaKetThuc =
+        (dsDotThi?.data || []).filter((item) => isPastDate(item?.thoi_gian_ket_thuc, nowMs));
+
+    if (!dsDotThiDaKetThuc.length) {
+        return {};
+    }
+
+    const dsKetQua = await Promise.all(
+        dsDotThiDaKetThuc.map(async (item) => ([
+            String(item.id),
+            await query.xepHangTracNghiemTheoDotThi(item.id, PUBLIC_RANKING_TOP),
+        ]))
+    );
+
+    return Object.fromEntries(dsKetQua);
+}
+
 async function buildPublicRankingsPayload(dotThiId, cuocThiId) {
     const [
         rankingsDotThi,
@@ -48,6 +90,7 @@ async function buildPublicRankingsPayload(dotThiId, cuocThiId) {
         honorCuocThiByAttempts,
         honorDotThiByParticipants,
         honorCuocThiByParticipants,
+        dotThiResults,
     ] = await Promise.all([
         query.xepHangTracNghiemTheoDotThi(dotThiId, PUBLIC_RANKING_TOP),
         query.xepHangTracNghiemTheoCuocThi(cuocThiId, PUBLIC_RANKING_TOP),
@@ -55,6 +98,7 @@ async function buildPublicRankingsPayload(dotThiId, cuocThiId) {
         query.xepHangDonViTheoCuocThi(cuocThiId, PUBLIC_HONOR_TOP),
         query.thongKeThamGiaTheoDonVi({dotThiId}),
         query.thongKeThamGiaTheoDonVi({cuocThiId}),
+        buildDotThiResultsPayload(cuocThiId),
     ]);
 
     return {
@@ -78,6 +122,7 @@ async function buildPublicRankingsPayload(dotThiId, cuocThiId) {
                 ),
             },
         },
+        dotThiResults,
     };
 }
 
