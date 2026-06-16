@@ -63,8 +63,18 @@ app.use(
         next();
 
     },
-    express.static(UPLOAD_PATH),
-    express.static(LEGACY_UPLOAD_PATH)
+    express.static(UPLOAD_PATH, {
+        maxAge: "365d",
+        immutable: true,
+        etag: false,
+        lastModified: false,
+    }),
+    express.static(LEGACY_UPLOAD_PATH, {
+        maxAge: "30d",
+        immutable: true,
+        etag: false,
+        lastModified: false,
+    })
 );
 
 app.use("/api", routes)
