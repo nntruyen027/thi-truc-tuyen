@@ -1581,132 +1581,134 @@ exports.autoSubmitBaiThi = async (baiThiIdValue, payload = {}) => {
 async function layDanhSachBaiThiXepHang(whereClause, options = {}) {
     const trace = createExamTrace("lay-danh-sach-bai-thi-xep-hang");
     const preserveLegacyWeekOne = Boolean(options.preserveLegacyWeekOne);
-    const examRows = await db
-        .select({
-            baiThiId: baiThi.id,
-            thiSinhId: baiThi.thiSinhId,
-            diem: baiThi.diem,
-            thoiGian: baiThi.tongThoiGianDaLam,
-            thoiGianThi: dotThi.thoiGianThi,
-            soDuDoan: baiThi.soDuDoan,
-            dotThiId: dotThi.id,
-            tyLeDanhGiaDat: dotThi.tyLeDanhGiaDat,
-            userId: users.id,
-            username: users.username,
-            hoTen: users.hoTen,
-            diaChiDong1: users.diaChiDong1,
-            xaPhuong: users.xaPhuong,
-            tinhThanh: users.tinhThanh,
-            donViId: users.donViId,
-            donViTen: donVi.ten,
-            createdAt: users.createdAt,
-        })
-        .from(baiThi)
-        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
-        .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
-        .innerJoin(users, eq(users.id, baiThi.thiSinhId))
-        .leftJoin(donVi, eq(donVi.id, users.donViId))
-        .where(and(
-            whereClause,
-            eq(baiThi.trangThai, 1),
-            sql`coalesce(${baiThi.diem}, 0) >= coalesce(${dotThi.tyLeDanhGiaDat}, 0)`
-        ));
-    trace.step("load-exam-rows", { examCount: examRows.length });
+    const topLimit =
+        Number.isInteger(Number(options.top)) && Number(options.top) > 0
+            ? Number(options.top)
+            : 10;
+    const partitionOrderSql =
+        preserveLegacyWeekOne
+            ? sql`
+                candidate_exams.diem desc nulls last,
+                candidate_exams.thoi_gian asc nulls last,
+                candidate_exams.bai_thi_id asc
+            `
+            : sql`
+                candidate_exams.diem desc nulls last,
+                abs(coalesce(candidate_exams.so_du_doan, 0) - coalesce(summary.so_nguoi_100, 0)) asc,
+                candidate_exams.thoi_gian asc nulls last,
+                candidate_exams.bai_thi_id asc
+            `;
+    const finalOrderSql =
+        preserveLegacyWeekOne
+            ? sql`
+                ranked_candidates.diem desc nulls last,
+                ranked_candidates.sai_so asc,
+                ranked_candidates.thoi_gian asc nulls last,
+                ranked_candidates.bai_thi_id asc
+            `
+            : sql`
+                ranked_candidates.diem desc nulls last,
+                ranked_candidates.sai_so asc,
+                ranked_candidates.thoi_gian asc nulls last,
+                ranked_candidates.bai_thi_id asc
+            `;
+    const result = await db.execute(sql`
+        with candidate_exams as (
+            select
+                ${baiThi.id} as bai_thi_id,
+                ${baiThi.thiSinhId} as thi_sinh_id,
+                ${baiThi.diem} as diem,
+                ${baiThi.tongThoiGianDaLam} as thoi_gian,
+                ${baiThi.soDuDoan} as so_du_doan,
+                ${dotThi.id} as dot_thi_id,
+                ${dotThi.thoiGianThi} as thoi_gian_thi,
+                ${users.id} as user_id,
+                ${users.username} as username,
+                ${users.hoTen} as ho_ten,
+                ${users.diaChiDong1} as dia_chi_dong_1,
+                ${users.xaPhuong} as xa_phuong,
+                ${users.tinhThanh} as tinh_thanh,
+                ${users.donViId} as don_vi_id,
+                ${donVi.ten} as don_vi_ten,
+                ${users.createdAt} as created_at
+            from ${baiThi}
+            inner join ${deThi} on ${deThi.id} = ${baiThi.deThiId}
+            inner join ${dotThi} on ${dotThi.id} = ${deThi.dotThiId}
+            inner join ${users} on ${users.id} = ${baiThi.thiSinhId}
+            left join ${donVi} on ${donVi.id} = ${users.donViId}
+            where ${and(
+                whereClause,
+                eq(baiThi.trangThai, 1),
+                sql`coalesce(${baiThi.diem}, 0) >= coalesce(${dotThi.tyLeDanhGiaDat}, 0)`
+            )}
+        ),
+        detail_stats as (
+            select
+                candidate_exams.bai_thi_id,
+                count(*)::int as tong,
+                coalesce(sum(case when ${baiThiChiTiet.dung} then 1 else 0 end), 0)::int as dung
+            from candidate_exams
+            inner join ${baiThiChiTiet}
+                on ${baiThiChiTiet.baiThiId} = candidate_exams.bai_thi_id
+            group by candidate_exams.bai_thi_id
+        ),
+        summary as (
+            select
+                count(distinct candidate_exams.thi_sinh_id)::int as so_nguoi_100
+            from candidate_exams
+            inner join detail_stats
+                on detail_stats.bai_thi_id = candidate_exams.bai_thi_id
+            where detail_stats.tong > 0
+              and detail_stats.dung = detail_stats.tong
+        ),
+        ranked_candidates as (
+            select
+                candidate_exams.*,
+                coalesce(summary.so_nguoi_100, 0)::int as so_nguoi_100,
+                abs(coalesce(candidate_exams.so_du_doan, 0) - coalesce(summary.so_nguoi_100, 0))::int as sai_so,
+                row_number() over (
+                    partition by candidate_exams.thi_sinh_id
+                    order by ${partitionOrderSql}
+                ) as rn
+            from candidate_exams
+            cross join summary
+        )
+        select *
+        from ranked_candidates
+        where rn = 1
+        order by ${finalOrderSql}
+        limit ${topLimit}
+    `);
+    const rows = result.rows || [];
+    trace.step("load-ranked-rows", { rowCount: rows.length });
 
-    if (!examRows.length) {
-        trace.finish({ examCount: 0, uniqueThiSinh: 0 });
-        return [];
-    }
-
-    const detailRows = await loadRankingDetailStatsByExamIds(
-        examRows.map((row) => row.baiThiId)
-    );
-    trace.step("load-detail-stats", { detailCount: detailRows.length });
-
-    const detailStats = new Map(
-        detailRows.map((row) => [
-            Number(row.baiThiId),
-            {
-                tong: Number(row.tong || 0),
-                dung: Number(row.dung || 0),
-            },
-        ])
-    );
-
-    const thiSinhDatDiemToiDa = new Set();
-
-    examRows.forEach((row) => {
-        const stats = detailStats.get(Number(row.baiThiId)) || { tong: 0, dung: 0 };
-        if (stats.tong > 0 && stats.dung === stats.tong) {
-            thiSinhDatDiemToiDa.add(Number(row.thiSinhId));
-        }
-    });
-
-    const soNguoi100 = thiSinhDatDiemToiDa.size;
-
-    const preparedRows = examRows.map((row) => ({
-        baiThiId: row.baiThiId,
-        thiSinhId: row.thiSinhId,
-        dotThiId: row.dotThiId,
-        diem: row.diem,
-        thoiGian: row.thoiGian,
-        thoiGianThi: row.thoiGianThi,
-        soDuDoan: row.soDuDoan,
-        soNguoi100,
-        saiSo: Math.abs(Number(row.soDuDoan || 0) - soNguoi100),
+    const rankedRows = rows.map((row) => ({
+        baiThiId: Number(row.bai_thi_id),
+        thiSinhId: Number(row.thi_sinh_id),
+        dotThiId: Number(row.dot_thi_id),
+        diem: Number(row.diem || 0),
+        thoiGian: row.thoi_gian == null ? null : Number(row.thoi_gian),
+        thoiGianThi: row.thoi_gian_thi == null ? null : Number(row.thoi_gian_thi),
+        soDuDoan: row.so_du_doan == null ? null : Number(row.so_du_doan),
+        soNguoi100: Number(row.so_nguoi_100 || 0),
+        saiSo: Number(row.sai_so || 0),
         thiSinh: mapThiSinh({
-            id: row.userId,
+            id: Number(row.user_id),
             username: row.username,
-            hoTen: row.hoTen,
-            diaChiDong1: row.diaChiDong1,
-            xaPhuong: row.xaPhuong,
-            tinhThanh: row.tinhThanh,
-            donViId: row.donViId,
-            donViTen: row.donViTen,
-            createdAt: row.createdAt,
+            hoTen: row.ho_ten,
+            diaChiDong1: row.dia_chi_dong_1,
+            xaPhuong: row.xa_phuong,
+            tinhThanh: row.tinh_thanh,
+            donViId: row.don_vi_id == null ? null : Number(row.don_vi_id),
+            donViTen: row.don_vi_ten,
+            createdAt: row.created_at,
         }),
     }));
 
-    const bestByThiSinh = new Map();
-
-    for (const row of preparedRows) {
-        const previous = bestByThiSinh.get(Number(row.thiSinhId));
-
-        if (preserveLegacyWeekOne) {
-            if (!previous || compareScoreTimeRow(row, previous) < 0) {
-                bestByThiSinh.set(Number(row.thiSinhId), row);
-            }
-
-            continue;
-        }
-
-        if (!previous) {
-            bestByThiSinh.set(Number(row.thiSinhId), row);
-            continue;
-        }
-
-        if (Number(row.diem || 0) > Number(previous.diem || 0)) {
-            bestByThiSinh.set(Number(row.thiSinhId), row);
-            continue;
-        }
-
-        if (Number(row.diem || 0) < Number(previous.diem || 0)) {
-            continue;
-        }
-
-        if (comparePredictionWithinBestScoreRow(row, previous) < 0) {
-            bestByThiSinh.set(Number(row.thiSinhId), row);
-        }
-    }
-
-    const rankedRows = Array.from(bestByThiSinh.values())
-        .sort(compareRankingRow);
-
     trace.finish({
-        examCount: examRows.length,
-        detailCount: detailRows.length,
         uniqueThiSinh: rankedRows.length,
-        soNguoi100,
+        topLimit,
+        preserveLegacyWeekOne,
     });
 
     return rankedRows;
@@ -1748,11 +1750,11 @@ exports.xepHangTracNghiemTheoDotThi = async (dotThiId, topGiai) => {
             eq(deThi.dotThiId, Number(dotThiId)),
             {
                 preserveLegacyWeekOne: shouldKeepLegacyRankingForDotThi(dotThiId),
+                top,
             }
         );
 
         return rows
-            .slice(0, top)
             .map(mapRankingRow);
     });
 };
@@ -1763,11 +1765,13 @@ exports.xepHangTracNghiemTheoCuocThi = async (cuocThiId, topGiai) => {
 
     return runRankingTask(cacheKey, async () => {
         const data = await layDanhSachBaiThiXepHang(
-            eq(dotThi.cuocThiId, Number(cuocThiId))
+            eq(dotThi.cuocThiId, Number(cuocThiId)),
+            {
+                top,
+            }
         );
 
         return data
-            .slice(0, top)
             .map(mapRankingRow);
     });
 };
@@ -1817,6 +1821,28 @@ exports.layPublicRankingSnapshot = async (dotThiId, cuocThiId) => {
         .limit(1);
 
     return mapPublicRankingSnapshot(row);
+};
+
+exports.layScopePublicRankingTheoBaiThi = async (baiThiIdValue) => {
+    const [row] = await db
+        .select({
+            dotThiId: dotThi.id,
+            cuocThiId: dotThi.cuocThiId,
+        })
+        .from(baiThi)
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
+        .where(eq(baiThi.id, Number(baiThiIdValue)))
+        .limit(1);
+
+    if (!row) {
+        return null;
+    }
+
+    return {
+        dotThiId: Number(row.dotThiId),
+        cuocThiId: Number(row.cuocThiId),
+    };
 };
 
 exports.luuPublicRankingSnapshot = async ({

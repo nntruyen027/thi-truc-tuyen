@@ -23,6 +23,14 @@ function hasDotThiResultsPayload(payload) {
         && typeof payload.dotThiResults === "object";
 }
 
+function hasPublicRankingsPayload(payload) {
+    return Boolean(payload)
+        && payload.rankings
+        && typeof payload.rankings === "object"
+        && payload.honorBoard
+        && typeof payload.honorBoard === "object";
+}
+
 function getExportService() {
     return require("./thi_export.service");
 }
@@ -104,7 +112,7 @@ function readPublicRankingsCache(key) {
         return null;
     }
 
-    if (!hasDotThiResultsPayload(entry.data)) {
+    if (!hasPublicRankingsPayload(entry.data)) {
         publicRankingsCache.delete(key);
         return null;
     }
@@ -120,6 +128,19 @@ function writePublicRankingsCache(key, data) {
         data,
     });
     prunePublicRankingsCache();
+}
+
+function stripDotThiResults(payload) {
+    if (!payload || typeof payload !== "object") {
+        return payload;
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(payload, "dotThiResults")) {
+        return payload;
+    }
+
+    const { dotThiResults, ...rest } = payload;
+    return rest;
 }
 
 async function runPublicRankingsTask(cacheKey, loader) {
@@ -443,6 +464,11 @@ router.post(
                 await query.nopBai(
                     normalizedBaiThiId,
                 )
+            void publicRankingsSnapshotService
+                .refreshPublicRankingsSnapshotByBaiThiId(normalizedBaiThiId)
+                .catch((error) => {
+                    console.error("[public-rankings] Post-submit refresh failed:", error?.message || error);
+                });
             trace.finish({
                 baiThiId: normalizedBaiThiId,
             });
@@ -480,6 +506,11 @@ router.post(
                 baiThiId,
                 payload
             );
+            void publicRankingsSnapshotService
+                .refreshPublicRankingsSnapshotByBaiThiId(baiThiId)
+                .catch((error) => {
+                    console.error("[public-rankings] Post-auto-submit refresh failed:", error?.message || error);
+                });
             trace.finish({
                 baiThiId,
             });
@@ -636,6 +667,21 @@ router.post("/du-doan/:baiThiId", auth, async (req, res) => {
     }
 })
 
+router.get("/public-rankings/dot-thi-results", async (req, res) => {
+    try {
+        const dotThiId = validation.ensureRequiredId(req.query?.dotThiId, "Đợt thi");
+        const cuocThiId = validation.ensureRequiredId(req.query?.cuocThiId, "Cuộc thi");
+        const data = await publicRankingsSnapshotService.getPublicRankingDotThiResults(
+            dotThiId,
+            cuocThiId
+        );
+
+        resUtil.ok(res, data)
+    } catch (err) {
+        resUtil.error(res, err)
+    }
+})
+
 router.get("/ket-qua-trac-nghiem/export", auth, role(["admin"]), async (req, res) => {
     try {
         const scope = validation.normalizeKetQuaTracNghiemExportScope(req.query);
@@ -664,10 +710,19 @@ router.get("/public-rankings", async (req, res) => {
         const honorTop = publicRankingsSnapshotService.PUBLIC_HONOR_TOP;
         const cacheKey = getPublicRankingsCacheKey(dotThiId, cuocThiId, rankingTop, honorTop);
         const data = await runPublicRankingsTask(cacheKey, async () => {
-            return publicRankingsSnapshotService.getPublicRankingsSnapshotOrRefresh(
+            const snapshot = await publicRankingsSnapshotService.getPublicRankingsSnapshot(
                 dotThiId,
                 cuocThiId
             );
+
+            if (!snapshot) {
+                throw {
+                    status: 503,
+                    message: "Bảng xếp hạng công khai đang được cập nhật. Vui lòng thử lại sau ít phút.",
+                };
+            }
+
+            return stripDotThiResults(snapshot);
         });
 
         resUtil.ok(res, data)
@@ -676,7 +731,7 @@ router.get("/public-rankings", async (req, res) => {
     }
 })
 
-router.get("/ket-qua-trac-nghiem/dot-thi/:dotThiId/:top", async (req, res) => {
+router.get("/ket-qua-trac-nghiem/dot-thi/:dotThiId/:top", auth, role(["admin"]), async (req, res) => {
     try {
         const dotThiId = validation.ensureRequiredId(req.params.dotThiId, "Đợt thi");
         const top = validation.normalizeTopParam(req.params.top);
@@ -688,7 +743,7 @@ router.get("/ket-qua-trac-nghiem/dot-thi/:dotThiId/:top", async (req, res) => {
 })
 
 
-router.get("/ket-qua-trac-nghiem/cuoc-thi/:cuocThiId/:top", async (req, res) => {
+router.get("/ket-qua-trac-nghiem/cuoc-thi/:cuocThiId/:top", auth, role(["admin"]), async (req, res) => {
     try {
         const cuocThiId = validation.ensureRequiredId(req.params.cuocThiId, "Cuộc thi");
         const top = validation.normalizeTopParam(req.params.top);

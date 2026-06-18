@@ -1,0 +1,86 @@
+{
+  "createdAt": "2026-06-18T00:51:49.309Z",
+  "rows": [
+    {
+      "username": "0369995141",
+      "hoTen": "Võ thị hà trân",
+      "baiThiId": 129130,
+      "diem": 25,
+      "oldSoDuDoan": 14719,
+      "newSoDuDoan": 14663,
+      "thoiGian": 549
+    },
+    {
+      "username": "0385114055",
+      "hoTen": "Phạm Hoài Đức",
+      "baiThiId": 260259,
+      "diem": 25,
+      "oldSoDuDoan": 14704,
+      "newSoDuDoan": 14678,
+      "thoiGian": 205
+    },
+    {
+      "username": "0385114055",
+      "hoTen": "Phạm Hoài Đức",
+      "baiThiId": 201328,
+      "diem": 25,
+      "oldSoDuDoan": 14704,
+      "newSoDuDoan": 14678,
+      "thoiGian": 301
+    },
+    {
+      "username": "0385114055",
+      "hoTen": "Phạm Hoài Đức",
+      "baiThiId": 259981,
+      "diem": 25,
+      "oldSoDuDoan": 14704,
+      "newSoDuDoan": 14678,
+      "thoiGian": 345
+    },
+    {
+      "username": "0385114055",
+      "hoTen": "Phạm Hoài Đức",
+      "baiThiId": 200961,
+      "diem": 25,
+      "oldSoDuDoan": 14704,
+      "newSoDuDoan": 14678,
+      "thoiGian": 476
+    },
+    {
+      "username": "0385114055",
+      "hoTen": "Phạm Hoài Đức",
+      "baiThiId": 200474,
+      "diem": 25,
+      "oldSoDuDoan": 14704,
+      "newSoDuDoan": 14678,
+      "thoiGian": 495
+    },
+    {
+      "username": "0385114055",
+      "hoTen": "Phạm Hoài Đức",
+      "baiThiId": 200625,
+      "diem": 25,
+      "oldSoDuDoan": 14704,
+      "newSoDuDoan": 14678,
+      "thoiGian": 512
+    },
+    {
+      "username": "0918262011",
+      "hoTen": "Phan Văn Bình",
+      "baiThiId": 49681,
+      "diem": 25,
+      "oldSoDuDoan": 14729,
+      "newSoDuDoan": 14653,
+      "thoiGian": 212
+    },
+    {
+      "username": "0939011221",
+      "hoTen": "Nguyễn Văn Học",
+      "baiThiId": 61869,
+      "diem": 25,
+      "oldSoDuDoan": 14704,
+      "newSoDuDoan": 14678,
+      "thoiGian": 1897
+    }
+  ]
+}

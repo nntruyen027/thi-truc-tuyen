@@ -292,7 +292,7 @@ async function buildReportMessage() {
     }
 
     const [snapshot, participationRows] = await Promise.all([
-        publicRankingsSnapshotService.getPublicRankingsSnapshotOrRefresh(
+        publicRankingsSnapshotService.getPublicRankingsSnapshot(
             dotThi.id,
             dotThi.cuoc_thi_id
         ),
@@ -300,6 +300,10 @@ async function buildReportMessage() {
             cuocThiId: dotThi.cuoc_thi_id,
         }),
     ]);
+    if (!snapshot) {
+        return "Bảng vàng công khai đang được cập nhật. Vui lòng thử lại sau ít phút.";
+    }
+
     const cuocThiAttemptRows = snapshot?.honorBoard?.["cuoc-thi"]?.["luot-thi"] || [];
     const topParticipants = snapshot?.rankings?.["dot-thi"] || [];
     const tongSoNguoiThamGia = participationRows.reduce(

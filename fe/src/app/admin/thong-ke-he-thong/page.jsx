@@ -31,6 +31,7 @@ import {usePageInfoStore} from "~/store/page-info";
 import {layThongKeHeThong} from "~/services/thong-ke-he-thong";
 
 const {Title, Text, Paragraph} = Typography;
+const AUTO_REFRESH_INTERVAL_MS = 60 * 1000;
 
 function formatBytes(value) {
     const normalized = Number(value || 0);
@@ -216,8 +217,12 @@ export default function ThongKeHeThongPage() {
         void loadData();
 
         const timer = setInterval(() => {
+            if (typeof document !== "undefined" && document.hidden) {
+                return;
+            }
+
             void loadData({silent: true});
-        }, 30000);
+        }, AUTO_REFRESH_INTERVAL_MS);
 
         return () => clearInterval(timer);
     }, [loadData]);
@@ -652,7 +657,7 @@ export default function ThongKeHeThongPage() {
                 <Col xs={24} xl={16}>
                     <Card
                         title="Lượt truy cập theo giờ"
-                        extra={<Text className="text-slate-500">30 phút tự làm mới</Text>}
+                        extra={<Text className="text-slate-500">60 giây tự làm mới khi đang mở tab</Text>}
                         className="rounded-[28px] border-0 shadow-sm"
                     >
                         <SimpleLineChart

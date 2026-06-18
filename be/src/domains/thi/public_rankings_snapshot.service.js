@@ -3,10 +3,13 @@ const dotThiQuery = require("../dot-thi/dot_thi.query");
 
 const PUBLIC_RANKING_TOP = 20;
 const PUBLIC_HONOR_TOP = 200;
-const PUBLIC_RESULTS_DOT_THI_FETCH_LIMIT = 200;
+const PUBLIC_RESULTS_DOT_THI_FETCH_LIMIT = Number(
+    process.env.PUBLIC_RESULTS_DOT_THI_FETCH_LIMIT || 200
+);
 const PUBLIC_RANKINGS_SNAPSHOT_TTL_MS = Number(
     process.env.PUBLIC_RANKINGS_SNAPSHOT_TTL_MS || 120000
 );
+const snapshotRefreshInFlight = new Map();
 
 function hasDotThiResultsPayload(payload) {
     return Boolean(payload)
@@ -15,12 +18,20 @@ function hasDotThiResultsPayload(payload) {
         && typeof payload.dotThiResults === "object";
 }
 
+function hasPublicRankingsPayload(payload) {
+    return Boolean(payload)
+        && payload.rankings
+        && typeof payload.rankings === "object"
+        && payload.honorBoard
+        && typeof payload.honorBoard === "object";
+}
+
 function isFreshSnapshot(snapshot, now = Date.now()) {
     if (!snapshot?.createdAt) {
         return false;
     }
 
-    if (!hasDotThiResultsPayload(snapshot?.payload)) {
+    if (!hasPublicRankingsPayload(snapshot?.payload)) {
         return false;
     }
 
@@ -77,7 +88,12 @@ async function buildDotThiResultsPayload(cuocThiId) {
     );
     const nowMs = Date.now();
     const dsDotThiDaKetThuc =
-        (dsDotThi?.data || []).filter((item) => isPastDate(item?.thoi_gian_ket_thuc, nowMs));
+        (dsDotThi?.data || [])
+            .filter((item) => isPastDate(item?.thoi_gian_ket_thuc, nowMs))
+            .sort((left, right) =>
+                new Date(right?.thoi_gian_ket_thuc || 0).getTime()
+                - new Date(left?.thoi_gian_ket_thuc || 0).getTime()
+            );
 
     if (!dsDotThiDaKetThuc.length) {
         return {};
@@ -150,9 +166,52 @@ async function writePublicRankingsSnapshot(dotThiId, cuocThiId, payload) {
 }
 
 async function refreshPublicRankingsSnapshot(dotThiId, cuocThiId) {
-    const payload = await buildPublicRankingsPayload(dotThiId, cuocThiId);
-    await writePublicRankingsSnapshot(dotThiId, cuocThiId, payload);
-    return payload;
+    const key = `${Number(dotThiId || 0)}:${Number(cuocThiId || 0)}`;
+    const existing = snapshotRefreshInFlight.get(key);
+
+    if (existing) {
+        return existing;
+    }
+
+    const task = (async () => {
+        const payload = await buildPublicRankingsPayload(dotThiId, cuocThiId);
+        await writePublicRankingsSnapshot(dotThiId, cuocThiId, payload);
+        return payload;
+    })();
+
+    snapshotRefreshInFlight.set(key, task);
+
+    try {
+        return await task;
+    } finally {
+        snapshotRefreshInFlight.delete(key);
+    }
+}
+
+async function getPublicRankingsSnapshot(dotThiId, cuocThiId, options = {}) {
+    const allowStale = options?.allowStale !== false;
+    const snapshot =
+        await query.layPublicRankingSnapshot(dotThiId, cuocThiId);
+
+    if (!snapshot?.payload || !hasPublicRankingsPayload(snapshot.payload)) {
+        return null;
+    }
+
+    if (isFreshSnapshot(snapshot)) {
+        return snapshot.payload;
+    }
+
+    return allowStale ? snapshot.payload : null;
+}
+
+async function getPublicRankingDotThiResults(dotThiId, cuocThiId, options = {}) {
+    const snapshot = await getPublicRankingsSnapshot(dotThiId, cuocThiId, options);
+
+    if (!snapshot || !hasDotThiResultsPayload(snapshot)) {
+        return {};
+    }
+
+    return snapshot.dotThiResults;
 }
 
 async function getPublicRankingsSnapshotOrRefresh(dotThiId, cuocThiId) {
@@ -194,12 +253,34 @@ async function refreshNearestPublicRankingsSnapshot() {
     };
 }
 
+async function refreshPublicRankingsSnapshotByBaiThiId(baiThiId) {
+    const scope = await query.layScopePublicRankingTheoBaiThi(baiThiId);
+
+    if (!scope?.dotThiId || !scope?.cuocThiId) {
+        return {
+            updated: false,
+            reason: "Không xác định được phạm vi snapshot cho bài thi.",
+        };
+    }
+
+    await refreshPublicRankingsSnapshot(scope.dotThiId, scope.cuocThiId);
+
+    return {
+        updated: true,
+        dotThiId: Number(scope.dotThiId),
+        cuocThiId: Number(scope.cuocThiId),
+    };
+}
+
 module.exports = {
     PUBLIC_RANKING_TOP,
     PUBLIC_HONOR_TOP,
     PUBLIC_RANKINGS_SNAPSHOT_TTL_MS,
     buildPublicRankingsPayload,
+    getPublicRankingDotThiResults,
+    getPublicRankingsSnapshot,
     refreshPublicRankingsSnapshot,
+    refreshPublicRankingsSnapshotByBaiThiId,
     refreshNearestPublicRankingsSnapshot,
     getPublicRankingsSnapshotOrRefresh,
 };

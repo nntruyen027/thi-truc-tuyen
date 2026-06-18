@@ -737,6 +737,40 @@ export async function layBangXepHangCongKhai({
     }
 }
 
+export async function layKetQuaCacDotThiCongKhai({
+    dotThiId,
+    cuocThiId,
+}) {
+
+    try {
+        const requestKey =
+            `public-dot-thi-results:${Number(dotThiId || 0)}:${Number(cuocThiId || 0)}`;
+        const res =
+            await runSharedRankingRequest(
+                requestKey,
+                () => api.get(
+                    BASE_PATH + "/public-rankings/dot-thi-results",
+                    {
+                        params: {
+                            dotThiId,
+                            cuocThiId,
+                        },
+                    }
+                )
+            )
+
+        return res.data.data
+
+    }
+    catch (e) {
+
+        throw new Error(
+            e?.response?.data?.message || "Không thể tải kết quả các đợt thi"
+        )
+
+    }
+}
+
 export async function layThongKeThamGiaTheoDonVi({
     cuocThiId = null,
     dotThiId = null,

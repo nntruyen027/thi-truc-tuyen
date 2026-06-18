@@ -2,6 +2,7 @@
 
 import {
     layBangXepHangCongKhai,
+    layKetQuaCacDotThiCongKhai,
 } from "~/services/thi/thi";
 
 const CACHE_TTL_MS = 120 * 1000;
@@ -29,10 +30,19 @@ function getBundleKey(
     honorTop = PUBLIC_HONOR_TOP
 ) {
     return [
+        "bundle",
         Number(dotThiId || 0),
         Number(cuocThiId || 0),
         Number(rankingTop || 0),
         Number(honorTop || 0),
+    ].join(":");
+}
+
+function getDotThiResultsKey(dotThiId, cuocThiId) {
+    return [
+        "dot-thi-results",
+        Number(dotThiId || 0),
+        Number(cuocThiId || 0),
     ].join(":");
 }
 
@@ -48,10 +58,13 @@ async function loadBundle(
     rankingTop = PUBLIC_RANKING_TOP,
     honorTop = PUBLIC_HONOR_TOP
 ) {
-    const key = getBundleKey(dotThiId, cuocThiId, rankingTop, honorTop);
+    const key =
+        type === "dot-thi-results"
+            ? getDotThiResultsKey(dotThiId, cuocThiId)
+            : getBundleKey(dotThiId, cuocThiId, rankingTop, honorTop);
     const cached = readCache(key);
 
-    if (cached && (type !== "dot-thi-results" || hasDotThiResultsBundle(cached))) {
+    if (cached && (type !== "dot-thi-results" || typeof cached === "object")) {
         return cached;
     }
 
@@ -61,12 +74,17 @@ async function loadBundle(
 
     const request = (async () => {
         const data =
-            await layBangXepHangCongKhai({
-                dotThiId,
-                cuocThiId,
-                rankingTop,
-                honorTop,
-            });
+            type === "dot-thi-results"
+                ? await layKetQuaCacDotThiCongKhai({
+                    dotThiId,
+                    cuocThiId,
+                })
+                : await layBangXepHangCongKhai({
+                    dotThiId,
+                    cuocThiId,
+                    rankingTop,
+                    honorTop,
+                });
 
         cacheStore.set(key, {
             createdAt: Date.now(),
@@ -86,6 +104,14 @@ async function loadBundle(
 }
 
 export function getCachedPublicRankings(type, dotThiId, cuocThiId, top) {
+    if (type === "dot-thi-results") {
+        const bundle = readCache(
+            getDotThiResultsKey(dotThiId, cuocThiId)
+        );
+
+        return hasDotThiResultsBundle(bundle) ? bundle.dotThiResults : (bundle || null);
+    }
+
     const bundle = readCache(
         getBundleKey(
             dotThiId,
@@ -94,9 +120,6 @@ export function getCachedPublicRankings(type, dotThiId, cuocThiId, top) {
             PUBLIC_HONOR_TOP
         )
     );
-    if (type === "dot-thi-results") {
-        return hasDotThiResultsBundle(bundle) ? bundle.dotThiResults : null;
-    }
 
     const bucket =
         type === "honor-board"
@@ -129,7 +152,9 @@ export function loadPublicRankings(type, dotThiId, cuocThiId, top) {
         PUBLIC_HONOR_TOP
     ).then((bundle) => {
         if (type === "dot-thi-results") {
-            return bundle?.dotThiResults || {};
+            return hasDotThiResultsBundle(bundle)
+                ? (bundle?.dotThiResults || {})
+                : (bundle || {});
         }
 
         const bucket =
