@@ -143,6 +143,23 @@ function stripDotThiResults(payload) {
     return rest;
 }
 
+function logPublicRankingsRefreshError(label, error, meta = {}) {
+    const cause = error?.cause || error?.originalError || null;
+
+    console.error(label, JSON.stringify({
+        message: error?.message || String(error),
+        errorName: error?.name || null,
+        errorCode: error?.code || cause?.code || null,
+        causeMessage: cause?.message || null,
+        detail: cause?.detail || null,
+        hint: cause?.hint || null,
+        table: cause?.table || null,
+        column: cause?.column || null,
+        constraint: cause?.constraint || null,
+        ...meta,
+    }));
+}
+
 async function runPublicRankingsTask(cacheKey, loader) {
     const cached = readPublicRankingsCache(cacheKey);
 
@@ -467,7 +484,14 @@ router.post(
             void publicRankingsSnapshotService
                 .refreshPublicRankingsSnapshotByBaiThiId(normalizedBaiThiId)
                 .catch((error) => {
-                    console.error("[public-rankings] Post-submit refresh failed:", error?.message || error);
+                    logPublicRankingsRefreshError(
+                        "[public-rankings] Post-submit refresh failed:",
+                        error,
+                        {
+                            baiThiId: normalizedBaiThiId,
+                            userId: Number(req.user?.id || 0),
+                        }
+                    );
                 });
             trace.finish({
                 baiThiId: normalizedBaiThiId,
@@ -509,7 +533,15 @@ router.post(
             void publicRankingsSnapshotService
                 .refreshPublicRankingsSnapshotByBaiThiId(baiThiId)
                 .catch((error) => {
-                    console.error("[public-rankings] Post-auto-submit refresh failed:", error?.message || error);
+                    logPublicRankingsRefreshError(
+                        "[public-rankings] Post-auto-submit refresh failed:",
+                        error,
+                        {
+                            baiThiId,
+                            userId: Number(req.user?.id || 0),
+                            answerCount: payload.answers.length,
+                        }
+                    );
                 });
             trace.finish({
                 baiThiId,
