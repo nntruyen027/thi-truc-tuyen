@@ -214,11 +214,6 @@ export default function PublicHonorBoard({dotThi, colorPrimary, deepPrimary, dem
                                                 <div className="truncate text-[1.05rem] font-bold leading-6 text-slate-900">
                                                     {getTenDonVi(item)}
                                                 </div>
-                                                {!laCheDoLuotThi && Number.isFinite(soDangVienThamGia) ? (
-                                                    <div className="mt-1 truncate text-[0.82rem] font-medium leading-5 text-slate-500">
-                                                        Trong đó Đảng viên: {Intl.NumberFormat("vi-VN").format(soDangVienThamGia)}
-                                                    </div>
-                                                ) : null}
                                             </div>
 
                                             <div className="shrink-0 text-right leading-none">
@@ -228,6 +223,11 @@ export default function PublicHonorBoard({dotThi, colorPrimary, deepPrimary, dem
                                                 <div className="mt-1 text-[1.75rem] font-bold leading-none" style={{color: colorPrimary}}>
                                                     {Intl.NumberFormat("vi-VN").format(giaTri)}
                                                 </div>
+                                                {!laCheDoLuotThi && Number.isFinite(soDangVienThamGia) ? (
+                                                    <div className="mt-1 text-[0.82rem] font-medium leading-none text-slate-400">
+                                                        Đảng viên: {Intl.NumberFormat("vi-VN").format(soDangVienThamGia)}
+                                                    </div>
+                                                ) : null}
                                             </div>
                                         </div>
                                     );

@@ -549,20 +549,15 @@ function RankingColumn({
                                 >
                                     {index + 1}
                                 </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="text-base font-black leading-6 text-slate-900">
-                                            {item.tenDonVi || item.hoTen}
+                                <div className="min-w-0 flex-1">
+                                    <div className="text-base font-black leading-6 text-slate-900">
+                                        {item.tenDonVi || item.hoTen}
+                                    </div>
+                                    {item.donVi ? (
+                                        <div className="mt-1 text-sm text-slate-500">
+                                            {item.donVi}
                                         </div>
-                                        {item.soDangVienThamGia > 0 ? (
-                                            <div className="mt-1 text-sm font-medium text-slate-500">
-                                                Trong đó Đảng viên: {Intl.NumberFormat("vi-VN").format(item.soDangVienThamGia)}
-                                            </div>
-                                        ) : null}
-                                        {item.donVi ? (
-                                            <div className="mt-1 text-sm text-slate-500">
-                                                {item.donVi}
-                                            </div>
-                                        ) : null}
+                                    ) : null}
                                 </div>
                                 <div className="text-right">
                                     <div className="text-2xl font-black leading-none" style={{color: colorPrimary, fontVariantNumeric: "tabular-nums"}}>
@@ -570,6 +565,11 @@ function RankingColumn({
                                             <AnimatedNumber value={item.diem} />
                                         )}
                                     </div>
+                                    {item.soDangVienThamGia > 0 ? (
+                                        <div className="mt-1 text-sm font-medium leading-none text-slate-400" style={{fontVariantNumeric: "tabular-nums"}}>
+                                            Đảng viên: {Intl.NumberFormat("vi-VN").format(item.soDangVienThamGia)}
+                                        </div>
+                                    ) : null}
                                 </div>
                             </div>
                         </div>
