@@ -9,7 +9,11 @@ const PUBLIC_RESULTS_DOT_THI_FETCH_LIMIT = Number(
 const PUBLIC_RANKINGS_SNAPSHOT_TTL_MS = Number(
     process.env.PUBLIC_RANKINGS_SNAPSHOT_TTL_MS || 120000
 );
+const PUBLIC_RANKINGS_REFRESH_DEBOUNCE_MS = Number(
+    process.env.PUBLIC_RANKINGS_REFRESH_DEBOUNCE_MS || 15000
+);
 const snapshotRefreshInFlight = new Map();
+const snapshotRefreshTimers = new Map();
 
 function hasDotThiResultsPayload(payload) {
     return Boolean(payload)
@@ -190,6 +194,63 @@ async function refreshPublicRankingsSnapshot(dotThiId, cuocThiId) {
     }
 }
 
+function schedulePublicRankingsSnapshotRefresh(
+    dotThiId,
+    cuocThiId,
+    options = {}
+) {
+    const normalizedDotThiId = Number(dotThiId || 0);
+    const normalizedCuocThiId = Number(cuocThiId || 0);
+
+    if (!normalizedDotThiId || !normalizedCuocThiId) {
+        return {
+            scheduled: false,
+            reason: "Không xác định được phạm vi snapshot công khai.",
+        };
+    }
+
+    const key = `${normalizedDotThiId}:${normalizedCuocThiId}`;
+    const existingTimer = snapshotRefreshTimers.get(key);
+
+    if (existingTimer) {
+        clearTimeout(existingTimer);
+    }
+
+    const timer = setTimeout(() => {
+        snapshotRefreshTimers.delete(key);
+        void refreshPublicRankingsSnapshot(
+            normalizedDotThiId,
+            normalizedCuocThiId
+        ).catch((error) => {
+            if (typeof options.onError === "function") {
+                options.onError(error, {
+                    dotThiId: normalizedDotThiId,
+                    cuocThiId: normalizedCuocThiId,
+                });
+                return;
+            }
+
+            console.error(
+                "[public-rankings] Scheduled refresh failed:",
+                error
+            );
+        });
+    }, Math.max(0, PUBLIC_RANKINGS_REFRESH_DEBOUNCE_MS));
+
+    if (typeof timer.unref === "function") {
+        timer.unref();
+    }
+
+    snapshotRefreshTimers.set(key, timer);
+
+    return {
+        scheduled: true,
+        dotThiId: normalizedDotThiId,
+        cuocThiId: normalizedCuocThiId,
+        debounceMs: Math.max(0, PUBLIC_RANKINGS_REFRESH_DEBOUNCE_MS),
+    };
+}
+
 async function getPublicRankingsSnapshot(dotThiId, cuocThiId, options = {}) {
     const allowStale = options?.allowStale !== false;
     const snapshot =
@@ -274,15 +335,38 @@ async function refreshPublicRankingsSnapshotByBaiThiId(baiThiId) {
     };
 }
 
+async function schedulePublicRankingsSnapshotRefreshByBaiThiId(
+    baiThiId,
+    options = {}
+) {
+    const scope = await query.layScopePublicRankingTheoBaiThi(baiThiId);
+
+    if (!scope?.dotThiId || !scope?.cuocThiId) {
+        return {
+            scheduled: false,
+            reason: "Không xác định được phạm vi snapshot cho bài thi.",
+        };
+    }
+
+    return schedulePublicRankingsSnapshotRefresh(
+        scope.dotThiId,
+        scope.cuocThiId,
+        options
+    );
+}
+
 module.exports = {
     PUBLIC_RANKING_TOP,
     PUBLIC_HONOR_TOP,
+    PUBLIC_RANKINGS_REFRESH_DEBOUNCE_MS,
     PUBLIC_RANKINGS_SNAPSHOT_TTL_MS,
     buildPublicRankingsPayload,
     getPublicRankingDotThiResults,
     getPublicRankingsSnapshot,
     refreshPublicRankingsSnapshot,
     refreshPublicRankingsSnapshotByBaiThiId,
+    schedulePublicRankingsSnapshotRefresh,
+    schedulePublicRankingsSnapshotRefreshByBaiThiId,
     refreshNearestPublicRankingsSnapshot,
     getPublicRankingsSnapshotOrRefresh,
 };

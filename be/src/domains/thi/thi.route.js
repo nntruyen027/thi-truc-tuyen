@@ -482,7 +482,21 @@ router.post(
                     normalizedBaiThiId,
                 )
             void publicRankingsSnapshotService
-                .refreshPublicRankingsSnapshotByBaiThiId(normalizedBaiThiId)
+                .schedulePublicRankingsSnapshotRefreshByBaiThiId(
+                    normalizedBaiThiId,
+                    {
+                        onError: (error) => {
+                            logPublicRankingsRefreshError(
+                                "[public-rankings] Post-submit refresh failed:",
+                                error,
+                                {
+                                    baiThiId: normalizedBaiThiId,
+                                    userId: Number(req.user?.id || 0),
+                                }
+                            );
+                        },
+                    }
+                )
                 .catch((error) => {
                     logPublicRankingsRefreshError(
                         "[public-rankings] Post-submit refresh failed:",
@@ -531,7 +545,22 @@ router.post(
                 payload
             );
             void publicRankingsSnapshotService
-                .refreshPublicRankingsSnapshotByBaiThiId(baiThiId)
+                .schedulePublicRankingsSnapshotRefreshByBaiThiId(
+                    baiThiId,
+                    {
+                        onError: (error) => {
+                            logPublicRankingsRefreshError(
+                                "[public-rankings] Post-auto-submit refresh failed:",
+                                error,
+                                {
+                                    baiThiId,
+                                    userId: Number(req.user?.id || 0),
+                                    answerCount: payload.answers.length,
+                                }
+                            );
+                        },
+                    }
+                )
                 .catch((error) => {
                     logPublicRankingsRefreshError(
                         "[public-rankings] Post-auto-submit refresh failed:",
