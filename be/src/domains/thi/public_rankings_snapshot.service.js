@@ -56,6 +56,8 @@ function mapParticipationHonorBoardRows(rows = []) {
         so_luot_nop_bai: Number(row?.so_luot_nop_bai || 0),
         soNguoiThamGia: Number(row?.so_nguoi_tham_gia || 0),
         so_nguoi_tham_gia: Number(row?.so_nguoi_tham_gia || 0),
+        soDangVienThamGia: Number(row?.so_dang_vien_tham_gia || 0),
+        so_dang_vien_tham_gia: Number(row?.so_dang_vien_tham_gia || 0),
     }));
 }
 

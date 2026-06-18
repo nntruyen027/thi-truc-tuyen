@@ -275,6 +275,7 @@ function normalizeParticipantUnitRankings(rows = []) {
             id: item?.id || item?.donViId || item?.don_vi_id || index,
             tenDonVi: getTenDonVi(item),
             diem: Number(item?.so_nguoi_tham_gia ?? item?.soNguoiThamGia ?? 0),
+            soDangVienThamGia: Number(item?.so_dang_vien_tham_gia ?? item?.soDangVienThamGia ?? 0),
         }))
         .sort(compareUnitRankingItem);
 }
@@ -283,16 +284,21 @@ function mergeUnitRankings(allUnits = [], rankingRows = []) {
     const rankingMap = new Map(
         rankingRows.map((item) => [
             Number(item?.id),
-            Number(item?.diem ?? 0),
+            item,
         ])
     );
 
     return [...allUnits]
-        .map((item, index) => ({
-            id: item?.id || index,
-            tenDonVi: item?.ten || "-",
-            diem: rankingMap.get(Number(item?.id)) ?? 0,
-        }))
+        .map((item, index) => {
+            const rankingItem = rankingMap.get(Number(item?.id));
+
+            return {
+                ...rankingItem,
+                id: item?.id || index,
+                tenDonVi: rankingItem?.tenDonVi || item?.ten || "-",
+                diem: Number(rankingItem?.diem ?? 0),
+            };
+        })
         .sort(compareUnitRankingItem);
 }
 
@@ -543,15 +549,20 @@ function RankingColumn({
                                 >
                                     {index + 1}
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                    <div className="text-base font-black leading-6 text-slate-900">
-                                        {item.tenDonVi || item.hoTen}
-                                    </div>
-                                    {item.donVi ? (
-                                        <div className="mt-1 text-sm text-slate-500">
-                                            {item.donVi}
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-base font-black leading-6 text-slate-900">
+                                            {item.tenDonVi || item.hoTen}
                                         </div>
-                                    ) : null}
+                                        {item.soDangVienThamGia > 0 ? (
+                                            <div className="mt-1 text-sm font-medium text-slate-500">
+                                                Trong đó Đảng viên: {Intl.NumberFormat("vi-VN").format(item.soDangVienThamGia)}
+                                            </div>
+                                        ) : null}
+                                        {item.donVi ? (
+                                            <div className="mt-1 text-sm text-slate-500">
+                                                {item.donVi}
+                                            </div>
+                                        ) : null}
                                 </div>
                                 <div className="text-right">
                                     <div className="text-2xl font-black leading-none" style={{color: colorPrimary, fontVariantNumeric: "tabular-nums"}}>
