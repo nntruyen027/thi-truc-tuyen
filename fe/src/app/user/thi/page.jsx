@@ -8,6 +8,7 @@ import {useRouter} from "next/navigation"
 import CountDown from "../CountDown"
 import {
     autoSubmitBaiThi,
+    autoSubmitKeepAlive,
     startThi,
 } from "~/services/thi/thi"
 import {layDotThiHienTai} from "~/services/thi/dot-thi"
@@ -234,6 +235,7 @@ export default function Thi() {
 
             if (isReloadLikeTrigger) {
                 markReloadExit()
+                autoSubmitKeepAlive(baiThiId, buildAutoSubmitPayload())
             }
         }
 
