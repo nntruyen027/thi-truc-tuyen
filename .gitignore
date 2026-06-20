@@ -4,3 +4,14 @@ be/uploads/
 week2_trac_nghiem_import_copy.tsv
 week2_trac_nghiem_import.json
 week2_trac_nghiem_import.xlsx
+be/scripts/adjust-top20-similar.js
+be/scripts/adjust-time-user-0787880244.js
+be/scripts/audit-suspicious-bai-thi.js
+be/scripts/audit-summary.js
+.gitignore
+be/scripts/adjust-score-25-time-threshold.js
+be/scripts/investigate-two-users-summary.js
+be/scripts/check-score-25-distribution.js
+be/scripts/investigate-two-users.js
+be/scripts/investigate-user-0787880244.js
+be/scripts/list-recent-perfect-with-prediction.js

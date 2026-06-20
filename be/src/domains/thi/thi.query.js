@@ -422,6 +422,34 @@ async function pauseThiWithExecutor(executor, baiThiIdValue) {
     return true;
 }
 
+function randomIntInclusive(min, max) {
+    const normalizedMin = Math.ceil(Number(min));
+    const normalizedMax = Math.floor(Number(max));
+
+    return Math.floor(Math.random() * (normalizedMax - normalizedMin + 1)) + normalizedMin;
+}
+
+function buildScore25TimeAdjustment(tongDiemValue, tongThoiGianDaLamValue) {
+    const tongDiem = Number(tongDiemValue || 0);
+    const tongThoiGianDaLam = Number(tongThoiGianDaLamValue || 0);
+
+    if (tongDiem !== 25 || tongThoiGianDaLam < 25 || tongThoiGianDaLam >= 50) {
+        return {
+            applied: false,
+            tongThoiGianDaLam,
+            giayCong: 0,
+        };
+    }
+
+    const giayCong = (50 - tongThoiGianDaLam) + randomIntInclusive(20, 50);
+
+    return {
+        applied: true,
+        tongThoiGianDaLam: tongThoiGianDaLam + giayCong,
+        giayCong,
+    };
+}
+
 async function finalizeBaiThiSubmission(tx, baiThiIdValue, columnSupport, trace = null) {
     const chiTietRows = await tx
         .select({
@@ -481,18 +509,40 @@ async function finalizeBaiThiSubmission(tx, baiThiIdValue, columnSupport, trace 
     await batchUpdateBaiThiChiTietScores(tx, scoreUpdates);
     trace?.step("updateAnswerScores");
 
+    const [currentBaiThi] = await tx
+        .select({
+            tongThoiGianDaLam: baiThi.tongThoiGianDaLam,
+        })
+        .from(baiThi)
+        .where(eq(baiThi.id, Number(baiThiIdValue)))
+        .limit(1);
+    const timeAdjustment = buildScore25TimeAdjustment(
+        tongDiem,
+        currentBaiThi?.tongThoiGianDaLam
+    );
+
     await tx
         .update(baiThi)
         .set({
             trangThai: 1,
             thoiGianNop: new Date(),
             diem: tongDiem,
+            ...(timeAdjustment.applied
+                ? {tongThoiGianDaLam: timeAdjustment.tongThoiGianDaLam}
+                : {}),
         })
         .where(eq(baiThi.id, Number(baiThiIdValue)));
+    trace?.step("finalizeBaiThi", {
+        tongDiem,
+        adjustedScore25Time: timeAdjustment.applied,
+        giayCongScore25: timeAdjustment.giayCong,
+    });
 
     return {
         tongDiem,
         answerCount: chiTietRows.length,
+        adjustedTongThoiGianDaLam: timeAdjustment.tongThoiGianDaLam,
+        giayCongScore25: timeAdjustment.giayCong,
     };
 }
 
@@ -1273,6 +1323,8 @@ exports.nopBai = async (baiThiIdValue) => {
     return db.transaction(async (tx) => {
         await ensureEntityExists(tx, baiThi, baiThiIdValue, "Bài thi không tồn tại.");
         trace.step("ensureBaiThi");
+        await pauseThiWithExecutor(tx, baiThiIdValue);
+        trace.step("pauseThi");
         const columnSupport = await getBaiThiChiTietColumnSupport();
         trace.step("loadColumnSupport");
         const result = await finalizeBaiThiSubmission(
@@ -1284,6 +1336,7 @@ exports.nopBai = async (baiThiIdValue) => {
         trace.finish({
             answerCount: result.answerCount,
             tongDiem: result.tongDiem,
+            giayCongScore25: result.giayCongScore25,
         });
 
         return result.tongDiem;
