@@ -256,6 +256,23 @@ export async function traLoiTuLuan(
 
 
 /**
+ * lấy CSRF token trước khi nộp bài
+ */
+async function getCsrfToken() {
+    try {
+        const res = await api.get(
+            BASE_PATH + "/csrf-token"
+        )
+        return res.data.data.csrfToken
+    } catch (e) {
+        throw new Error(
+            e?.response?.data?.message || "Không thể lấy CSRF token"
+        )
+    }
+}
+
+
+/**
  * nộp bài
  */
 export async function nopBai(
@@ -263,12 +280,15 @@ export async function nopBai(
 ) {
 
     try {
+        // Lấy CSRF token trước
+        const csrfToken = await getCsrfToken()
 
         const res =
             await api.post(
                 BASE_PATH + "/nop-bai",
                 {
-                    baiThiId
+                    baiThiId,
+                    csrfToken
                 }
             )
 

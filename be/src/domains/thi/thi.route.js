@@ -8,6 +8,7 @@ const publicRankingsSnapshotService = require("./public_rankings_snapshot.servic
 const resUtil = require("../../core/utils/response")
 const auth = require("../../core/middlewares/auth")
 const role = require("../../core/middlewares/role")
+const csrfUtil = require("../../core/utils/csrf")
 
 const EXAM_FLOW_DEBUG = process.env.EXAM_FLOW_DEBUG === "1";
 const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
@@ -187,6 +188,25 @@ async function runPublicRankingsTask(cacheKey, loader) {
 
     return task;
 }
+
+
+/**
+ * lấy CSRF token cho nộp bài
+ */
+router.get(
+    "/csrf-token",
+    auth,
+    (req, res) => {
+        try {
+            const userId = req.user.id;
+            const csrfToken = csrfUtil.generateCsrfToken(userId);
+
+            resUtil.ok(res, { csrfToken });
+        } catch (err) {
+            resUtil.error(res, err);
+        }
+    }
+)
 
 
 /**
@@ -470,11 +490,21 @@ router.post(
         try {
             const {
                 baiThiId,
+                csrfToken,
             } = req.body
             const normalizedBaiThiId =
                 validation.ensureRequiredId(baiThiId, "Bài thi")
+            
+            // Validate CSRF token
+            if (!csrfToken) {
+                throw new Error("CSRF token không được cung cấp");
+            }
+            
+            csrfUtil.verifyCsrfToken(csrfToken, req.user.id);
+            
             trace.step("validated", {
                 baiThiId: normalizedBaiThiId,
+                csrfTokenValid: true,
             });
 
             const data =

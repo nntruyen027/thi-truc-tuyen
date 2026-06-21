@@ -10,19 +10,121 @@ const resUtil = require("./core/utils/response");
 
 const app = express()
 const JSON_BODY_LIMIT = process.env.JSON_BODY_LIMIT || "5mb";
+
+function parseCsvEnv(value, fallback = []) {
+    if (!value || typeof value !== "string") {
+        return fallback;
+    }
+
+    const parsed = value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    return parsed.length ? parsed : fallback;
+}
+
+function normalizeOrigin(origin) {
+    if (!origin || typeof origin !== "string") {
+        return "";
+    }
+
+    return origin.trim().replace(/\/$/, "").toLowerCase();
+}
+
+const DEFAULT_ALLOWED_ORIGINS = [
+    "https://cuocthi.thanhuycantho.gov.vn",
+    "https://cuocthi.thanhuycantho.vn",
+];
+
+const allowedOrigins = new Set(
+    parseCsvEnv(process.env.CORS_ALLOWED_ORIGINS, DEFAULT_ALLOWED_ORIGINS)
+        .map((item) => normalizeOrigin(item))
+        .filter(Boolean)
+);
+
+const blockedUserAgentPatterns = parseCsvEnv(
+    process.env.CORS_BLOCKED_USER_AGENTS,
+    [
+        "PostmanRuntime",
+        "Insomnia",
+        "Paw",
+        "HTTPie",
+        "curl",
+        "Wget",
+        "python-requests",
+        "okhttp",
+    ]
+).map((item) => item.toLowerCase());
+
+const corsAllowedMethods = parseCsvEnv(
+    process.env.CORS_ALLOWED_METHODS,
+    ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+);
+
+const corsAllowedHeaders = parseCsvEnv(
+    process.env.CORS_ALLOWED_HEADERS,
+    ["Content-Type", "Authorization"]
+);
+
+const corsRequireOrigin = String(process.env.CORS_REQUIRE_ORIGIN || "true") !== "false";
+const corsAllowCredentials = String(process.env.CORS_ALLOW_CREDENTIALS || "true") !== "false";
+
+function isBlockedUserAgent(userAgent) {
+    const normalizedUa = String(userAgent || "").toLowerCase();
+
+    if (!normalizedUa) {
+        return false;
+    }
+
+    return blockedUserAgentPatterns.some((pattern) => normalizedUa.includes(pattern));
+}
+
 const corsOptions = {
-    origin: true,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: [
-        "Content-Type",
-        "Authorization",
-    ],
+    origin(origin, callback) {
+        const normalizedOrigin = normalizeOrigin(origin);
+
+        if (!normalizedOrigin) {
+            if (!corsRequireOrigin) {
+                return callback(null, true);
+            }
+
+            return callback(new Error("CORS_ORIGIN_REQUIRED"));
+        }
+
+        if (!allowedOrigins.has(normalizedOrigin)) {
+            return callback(new Error("CORS_ORIGIN_NOT_ALLOWED"));
+        }
+
+        return callback(null, true);
+    },
+    credentials: corsAllowCredentials,
+    methods: corsAllowedMethods,
+    allowedHeaders: corsAllowedHeaders,
 }
 
 app.use(express.json({limit: JSON_BODY_LIMIT}))
 app.use(cors(corsOptions))
 app.options(/.*/, cors(corsOptions))
+app.use("/api", (req, res, next) => {
+    const userAgent = req.get("user-agent") || "";
+
+    if (isBlockedUserAgent(userAgent)) {
+        return resUtil.error(res, {
+            status: 403,
+            message: "Yêu cầu bị từ chối: công cụ API test không được phép sử dụng.",
+        });
+    }
+
+    if (corsRequireOrigin && !req.get("origin")) {
+        return resUtil.error(res, {
+            status: 403,
+            message: "Yêu cầu bị từ chối: thiếu Origin hợp lệ từ trình duyệt.",
+        });
+    }
+
+    next();
+})
 app.use(systemAnalyticsTracker.middleware)
 app.use(
     helmet({
@@ -91,6 +193,20 @@ app.use((err, req, res, next) => {
         return resUtil.error(res, {
             status: 400,
             message: err.message,
+        })
+    }
+
+    if (err?.message === "CORS_ORIGIN_REQUIRED") {
+        return resUtil.error(res, {
+            status: 403,
+            message: "CORS bị từ chối: thiếu Origin hợp lệ.",
+        })
+    }
+
+    if (err?.message === "CORS_ORIGIN_NOT_ALLOWED") {
+        return resUtil.error(res, {
+            status: 403,
+            message: "CORS bị từ chối: Origin không nằm trong danh sách cho phép.",
         })
     }
 
