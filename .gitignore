@@ -5,3 +5,4 @@ week2_trac_nghiem_import_copy.tsv
 week2_trac_nghiem_import.json
 week2_trac_nghiem_import.xlsx
 .gitignore
+be/scripts/test-csrf-token.js

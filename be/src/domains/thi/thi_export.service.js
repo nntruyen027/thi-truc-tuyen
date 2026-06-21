@@ -96,13 +96,14 @@ async function buildKetQuaTracNghiemExport({
         {header: "Địa chỉ", key: "diaChi", width: 38},
         {header: "Đơn vị", key: "donVi", width: 26},
         {header: "Điểm", key: "diem", width: 10},
+        {header: "Số lượt thi", key: "soLuotThi", width: 14},
         {header: "Thời gian làm bài", key: "thoiGian", width: 18},
         {header: "Số dự đoán", key: "soDuDoan", width: 14},
         {header: "Kết quả dự đoán", key: "ketQuaDuDoan", width: 18},
         {header: "Sai số dự đoán", key: "saiSo", width: 16},
     ];
 
-    worksheet.mergeCells("A1:J1");
+    worksheet.mergeCells("A1:K1");
     worksheet.getCell("A1").value = "KẾT QUẢ THI TRẮC NGHIỆM";
     worksheet.getCell("A1").font = {
         bold: true,
@@ -153,6 +154,7 @@ async function buildKetQuaTracNghiemExport({
             diaChi: formatDiaChi(thiSinh) || "-",
             donVi: thiSinh.donViTen || thiSinh.don_vi_ten || thiSinh?.don_vi?.ten || "-",
             diem: row?.diem ?? "",
+            soLuotThi: row?.soLuotThi ?? row?.so_luot_thi ?? "",
             thoiGian: formatDuration(row?.thoiGian ?? row?.thoi_gian),
             soDuDoan: row?.soDuDoan ?? row?.so_du_doan ?? "",
             ketQuaDuDoan: row?.soNguoi100 ?? row?.so_nguoi_100 ?? "",

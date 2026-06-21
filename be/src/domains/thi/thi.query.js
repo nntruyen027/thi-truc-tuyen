@@ -888,6 +888,8 @@ function mapRankingRow(row) {
         so_nguoi_100: row.soNguoi100,
         saiSo: row.saiSo,
         sai_so: row.saiSo,
+        soLuotThi: row.soLuotThi,
+        so_luot_thi: row.soLuotThi,
     };
 }
 
@@ -1695,6 +1697,16 @@ async function layDanhSachBaiThiXepHang(whereClause, options = {}) {
                 sql`coalesce(${baiThi.diem}, 0) >= coalesce(${dotThi.tyLeDanhGiaDat}, 0)`
             )}
         ),
+        attempt_counts as (
+            select
+                ${baiThi.thiSinhId} as thi_sinh_id,
+                count(*)::int as so_luot_thi
+            from ${baiThi}
+            inner join ${deThi} on ${deThi.id} = ${baiThi.deThiId}
+            inner join ${dotThi} on ${dotThi.id} = ${deThi.dotThiId}
+            where ${and(whereClause, eq(baiThi.trangThai, 1))}
+            group by ${baiThi.thiSinhId}
+        ),
         detail_stats as (
             select
                 candidate_exams.bai_thi_id,
@@ -1719,12 +1731,14 @@ async function layDanhSachBaiThiXepHang(whereClause, options = {}) {
                 candidate_exams.*,
                 coalesce(summary.so_nguoi_100, 0)::int as so_nguoi_100,
                 abs(coalesce(candidate_exams.so_du_doan, 0) - coalesce(summary.so_nguoi_100, 0))::int as sai_so,
+                coalesce(attempt_counts.so_luot_thi, 1)::int as so_luot_thi,
                 row_number() over (
                     partition by candidate_exams.thi_sinh_id
                     order by ${partitionOrderSql}
                 ) as rn
             from candidate_exams
             cross join summary
+            left join attempt_counts on attempt_counts.thi_sinh_id = candidate_exams.thi_sinh_id
         )
         select *
         from ranked_candidates
@@ -1745,6 +1759,7 @@ async function layDanhSachBaiThiXepHang(whereClause, options = {}) {
         soDuDoan: row.so_du_doan == null ? null : Number(row.so_du_doan),
         soNguoi100: Number(row.so_nguoi_100 || 0),
         saiSo: Number(row.sai_so || 0),
+        soLuotThi: Number(row.so_luot_thi || 1),
         thiSinh: mapThiSinh({
             id: Number(row.user_id),
             username: row.username,

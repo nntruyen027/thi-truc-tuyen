@@ -33,6 +33,10 @@ function getBaiThiId(record) {
     return record?.baiThiId || record?.bai_thi_id || null;
 }
 
+function getSoLuotThi(record) {
+    return record?.soLuotThi ?? record?.so_luot_thi ?? null;
+}
+
 function getThoiGian(record) {
     return record?.thoiGian ?? record?.thoi_gian ?? null;
 }
@@ -276,6 +280,12 @@ export default function NhomCauHoi() {
             dataIndex: "diem",
             width: 100,
             align: "center",
+        },
+        {
+            title: "Số lượt thi",
+            width: 120,
+            align: "center",
+            render: (_, record) => getSoLuotThi(record) ?? "-"
         },
         {
             title: "Thời gian làm bài",
