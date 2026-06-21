@@ -69,6 +69,7 @@ const corsAllowedHeaders = parseCsvEnv(
 
 const corsRequireOrigin = String(process.env.CORS_REQUIRE_ORIGIN || "true") !== "false";
 const corsAllowCredentials = String(process.env.CORS_ALLOW_CREDENTIALS || "true") !== "false";
+const corsMethodsAllowedWithoutOrigin = new Set(["GET", "HEAD", "OPTIONS"]);
 
 function isBlockedUserAgent(userAgent) {
     const normalizedUa = String(userAgent || "").toLowerCase();
@@ -80,34 +81,42 @@ function isBlockedUserAgent(userAgent) {
     return blockedUserAgentPatterns.some((pattern) => normalizedUa.includes(pattern));
 }
 
-const corsOptions = {
-    origin(origin, callback) {
-        const normalizedOrigin = normalizeOrigin(origin);
+function buildCorsOptions(req, callback) {
+    const origin = req.get("origin");
+    const normalizedOrigin = normalizeOrigin(origin);
+    const method = String(req.method || "GET").toUpperCase();
 
-        if (!normalizedOrigin) {
-            if (!corsRequireOrigin) {
-                return callback(null, true);
-            }
-
-            return callback(new Error("CORS_ORIGIN_REQUIRED"));
+    if (!normalizedOrigin) {
+        if (!corsRequireOrigin || corsMethodsAllowedWithoutOrigin.has(method)) {
+            return callback(null, {
+                origin: true,
+                credentials: corsAllowCredentials,
+                methods: corsAllowedMethods,
+                allowedHeaders: corsAllowedHeaders,
+            });
         }
 
-        if (!allowedOrigins.has(normalizedOrigin)) {
-            return callback(new Error("CORS_ORIGIN_NOT_ALLOWED"));
-        }
+        return callback(new Error("CORS_ORIGIN_REQUIRED"));
+    }
 
-        return callback(null, true);
-    },
-    credentials: corsAllowCredentials,
-    methods: corsAllowedMethods,
-    allowedHeaders: corsAllowedHeaders,
+    if (!allowedOrigins.has(normalizedOrigin)) {
+        return callback(new Error("CORS_ORIGIN_NOT_ALLOWED"));
+    }
+
+    return callback(null, {
+        origin: true,
+        credentials: corsAllowCredentials,
+        methods: corsAllowedMethods,
+        allowedHeaders: corsAllowedHeaders,
+    });
 }
 
 app.use(express.json({limit: JSON_BODY_LIMIT}))
-app.use(cors(corsOptions))
-app.options(/.*/, cors(corsOptions))
+app.use(cors(buildCorsOptions))
+app.options(/.*/, cors(buildCorsOptions))
 app.use("/api", (req, res, next) => {
     const userAgent = req.get("user-agent") || "";
+    const method = String(req.method || "GET").toUpperCase();
 
     if (isBlockedUserAgent(userAgent)) {
         return resUtil.error(res, {
@@ -116,7 +125,11 @@ app.use("/api", (req, res, next) => {
         });
     }
 
-    if (corsRequireOrigin && !req.get("origin")) {
+    if (
+        corsRequireOrigin
+        && !req.get("origin")
+        && !corsMethodsAllowedWithoutOrigin.has(method)
+    ) {
         return resUtil.error(res, {
             status: 403,
             message: "Yêu cầu bị từ chối: thiếu Origin hợp lệ từ trình duyệt.",
