@@ -132,7 +132,7 @@ app.use("/api", (req, res, next) => {
     ) {
         return resUtil.error(res, {
             status: 403,
-            message: "Yêu cầu bị từ chối: thiếu Origin hợp lệ từ trình duyệt.",
+            message: "Yêu cầu không hợp lệ hoặc chưa được cho phép.",
         });
     }
 
@@ -212,7 +212,7 @@ app.use((err, req, res, next) => {
     if (err?.message === "CORS_ORIGIN_REQUIRED") {
         return resUtil.error(res, {
             status: 403,
-            message: "CORS bị từ chối: thiếu Origin hợp lệ.",
+            message: "Yêu cầu không hợp lệ hoặc chưa được cho phép.",
         })
     }
 
