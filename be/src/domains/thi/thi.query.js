@@ -21,6 +21,10 @@ const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
 const RANKING_CACHE_TTL_MS = Number(process.env.RANKING_CACHE_TTL_MS || 60000);
 const MAX_RANKING_CACHE_ENTRIES = Number(process.env.MAX_RANKING_CACHE_ENTRIES || 50);
 const MIN_EXAM_SUBMIT_SECONDS = Number(process.env.MIN_EXAM_SUBMIT_SECONDS || 25);
+const EXAM_START_RATE_LIMIT_COUNT = Number(process.env.EXAM_START_RATE_LIMIT_COUNT || 10);
+const EXAM_START_RATE_LIMIT_WINDOW_MINUTES = Number(
+    process.env.EXAM_START_RATE_LIMIT_WINDOW_MINUTES || 5
+);
 
 const LOAI_CAU_HOI = {
     CHON_MOT: "chon_mot",
@@ -435,6 +439,49 @@ function normalizeSubmitTimeFloor(value) {
     }
 
     return Math.max(normalized, MIN_EXAM_SUBMIT_SECONDS);
+}
+
+function getExamStartRateLimitConfig() {
+    const countLimit = Number(EXAM_START_RATE_LIMIT_COUNT);
+    const windowMinutes = Number(EXAM_START_RATE_LIMIT_WINDOW_MINUTES);
+
+    if (!Number.isFinite(countLimit) || countLimit <= 0) {
+        return null;
+    }
+
+    if (!Number.isFinite(windowMinutes) || windowMinutes <= 0) {
+        return null;
+    }
+
+    return {
+        countLimit: Math.floor(countLimit),
+        windowMinutes: Math.floor(windowMinutes),
+    };
+}
+
+async function ensureExamStartRateLimit(executor, thiSinhId) {
+    const config = getExamStartRateLimitConfig();
+
+    if (!config) {
+        return;
+    }
+
+    const [row] = await executor
+        .select({
+            total: sql`count(*)::int`,
+        })
+        .from(baiThi)
+        .where(and(
+            eq(baiThi.thiSinhId, Number(thiSinhId)),
+            sql`${baiThi.thoiGianBatDau} >= now() - (${config.windowMinutes} * interval '1 minute')`
+        ))
+        .limit(1);
+
+    const total = Number(row?.total || 0);
+
+    if (total >= config.countLimit) {
+        throw "Bạn đã lặp lại thao tác liên tục quá nhiều lần. Vui lòng tiếp tục sau ít phút nữa";
+    }
 }
 
 function randomIntInclusive(min, max) {
@@ -1706,6 +1753,9 @@ exports.startThi = async (dotThiId, thiSinhId) => {
         let lanBatDau = currentExisting?.lanBatDau || null;
 
         if (!baiThiIdValue) {
+            await ensureExamStartRateLimit(tx, thiSinhId);
+            trace.step("ensureExamStartRateLimit");
+
             deThiIdValue = await exports.taoDeThi(dotThiId, thiSinhId);
             trace.step("taoDeThi", {
                 deThiId: Number(deThiIdValue || 0),
