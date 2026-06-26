@@ -9,6 +9,7 @@ import CountDown from "../CountDown"
 import {
     autoSubmitBaiThi,
     autoSubmitKeepAlive,
+    layCsrfTokenThi,
     startThi,
 } from "~/services/thi/thi"
 import {layDotThiHienTai} from "~/services/thi/dot-thi"
@@ -16,6 +17,7 @@ import {layDotThiHienTai} from "~/services/thi/dot-thi"
 const {Sider, Content} = Layout
 const {Title, Paragraph, Text} = Typography
 const RELOAD_EXIT_MARKER_KEY = "thi_reload_exit_marker"
+const CSRF_REFRESH_INTERVAL_MS = 4 * 60 * 1000
 const LOAI_CAU_HOI = {
     CHON_MOT: "chon_mot",
     CHON_NHIEU: "chon_nhieu",
@@ -141,6 +143,7 @@ export default function Thi() {
     const finishingRef = useRef(false)
     const cauHoiRef = useRef([])
     const ketQuaDuDoanRef = useRef("")
+    const csrfTokenRef = useRef("")
     const questionSectionRef = useRef(null)
 
     useEffect(() => {
@@ -235,7 +238,11 @@ export default function Thi() {
 
             if (isReloadLikeTrigger) {
                 markReloadExit()
-                autoSubmitKeepAlive(baiThiId, buildAutoSubmitPayload())
+                autoSubmitKeepAlive(
+                    baiThiId,
+                    buildAutoSubmitPayload(),
+                    csrfTokenRef.current
+                )
             }
         }
 
@@ -253,6 +260,36 @@ export default function Thi() {
             document.removeEventListener("visibilitychange", handleVisibilityChange)
 
             handleLeaveAttempt("cleanup")
+        }
+    }, [baiThiId])
+
+    useEffect(() => {
+        if (!baiThiId) {
+            return
+        }
+
+        let active = true
+
+        const refreshCsrfToken = async () => {
+            try {
+                const token = await layCsrfTokenThi()
+
+                if (!active) {
+                    return
+                }
+
+                csrfTokenRef.current = token || ""
+            } catch {}
+        }
+
+        void refreshCsrfToken()
+        const intervalId = window.setInterval(() => {
+            void refreshCsrfToken()
+        }, CSRF_REFRESH_INTERVAL_MS)
+
+        return () => {
+            active = false
+            window.clearInterval(intervalId)
         }
     }, [baiThiId])
 
@@ -462,7 +499,8 @@ export default function Thi() {
                     finishingRef.current = true
                     await autoSubmitBaiThi(
                         baiThiId,
-                        buildAutoSubmitPayload()
+                        buildAutoSubmitPayload(),
+                        csrfTokenRef.current
                     )
                     router.replace("/user")
                 } catch (error) {
@@ -502,7 +540,8 @@ export default function Thi() {
             finishingRef.current = true
             await autoSubmitBaiThi(
                 baiThiId,
-                buildAutoSubmitPayload()
+                buildAutoSubmitPayload(),
+                csrfTokenRef.current
             )
         } catch (error) {
             message.error(error.message || "Không thể tự động nộp bài khi hết giờ.")

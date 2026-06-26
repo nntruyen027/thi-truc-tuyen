@@ -271,6 +271,10 @@ async function getCsrfToken() {
     }
 }
 
+export async function layCsrfTokenThi() {
+    return getCsrfToken()
+}
+
 
 /**
  * nộp bài
@@ -405,15 +409,21 @@ export async function pauseThi(
 
 export async function autoSubmitBaiThi(
     baiThiId,
-    payload = {}
+    payload = {},
+    csrfToken = null
 ) {
 
     try {
+        const resolvedCsrfToken =
+            csrfToken || await getCsrfToken()
 
         const res =
             await api.post(
                 BASE_PATH + "/auto-submit/" + baiThiId,
-                payload
+                {
+                    ...payload,
+                    csrfToken: resolvedCsrfToken
+                }
             )
 
         return res.data.data
@@ -475,7 +485,8 @@ export function pauseThiKeepAlive(
 
 export function autoSubmitKeepAlive(
     baiThiId,
-    payload = {}
+    payload = {},
+    csrfToken = null
 ) {
 
     if (!baiThiId) {
@@ -488,12 +499,15 @@ export function autoSubmitKeepAlive(
             ? localStorage.getItem("access")
             : null);
 
-    if (!access || typeof window === "undefined" || typeof fetch !== "function") {
+    if (!access || !csrfToken || typeof window === "undefined" || typeof fetch !== "function") {
         return false;
     }
 
     try {
-        const body = JSON.stringify(payload);
+        const body = JSON.stringify({
+            ...payload,
+            csrfToken
+        });
 
         void fetch(
             API_BASE_URL + BASE_PATH + "/auto-submit/" + baiThiId,

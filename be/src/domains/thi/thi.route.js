@@ -567,11 +567,19 @@ router.post(
         try {
             const baiThiId =
                 validation.ensureRequiredId(req.params.baiThiId, "Bài thi");
+            const csrfToken = req.body?.csrfToken;
             const payload =
                 validation.normalizeAutoSubmitPayload(req.body);
+
+            if (!csrfToken) {
+                throw new Error("CSRF token không được cung cấp");
+            }
+
+            csrfUtil.verifyCsrfToken(csrfToken, req.user.id);
             trace.step("validated", {
                 baiThiId,
                 answerCount: payload.answers.length,
+                csrfTokenValid: true,
             });
 
             const data = await query.autoSubmitBaiThi(
