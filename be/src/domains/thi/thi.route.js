@@ -9,6 +9,7 @@ const resUtil = require("../../core/utils/response")
 const auth = require("../../core/middlewares/auth")
 const role = require("../../core/middlewares/role")
 const csrfUtil = require("../../core/utils/csrf")
+const { createRateLimit } = require("../../core/middlewares/rate-limit");
 
 const EXAM_FLOW_DEBUG = process.env.EXAM_FLOW_DEBUG === "1";
 const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
@@ -16,6 +17,42 @@ const PUBLIC_RANKINGS_CACHE_TTL_MS = Number(process.env.PUBLIC_RANKINGS_CACHE_TT
 const MAX_PUBLIC_RANKINGS_CACHE_ENTRIES = Number(process.env.MAX_PUBLIC_RANKINGS_CACHE_ENTRIES || 20);
 const publicRankingsCache = new Map();
 const publicRankingsInFlight = new Map();
+const thiStartLimiter = createRateLimit({
+    name: "thi-start",
+    windowMs: 5 * 60 * 1000,
+    max: Number(process.env.THI_START_HTTP_RATE_LIMIT_MAX || 20),
+    message: "Bạn thao tác bắt đầu thi quá nhanh. Vui lòng thử lại sau ít phút.",
+});
+const taoDeLimiter = createRateLimit({
+    name: "thi-tao-de",
+    windowMs: 5 * 60 * 1000,
+    max: Number(process.env.THI_TAO_DE_HTTP_RATE_LIMIT_MAX || 12),
+    message: "Bạn tạo đề liên tục quá nhanh. Vui lòng thử lại sau ít phút.",
+});
+const batDauLimiter = createRateLimit({
+    name: "thi-bat-dau",
+    windowMs: 5 * 60 * 1000,
+    max: Number(process.env.THI_BAT_DAU_HTTP_RATE_LIMIT_MAX || 12),
+    message: "Bạn thao tác bắt đầu bài thi quá nhanh. Vui lòng thử lại sau ít phút.",
+});
+const pauseLimiter = createRateLimit({
+    name: "thi-pause",
+    windowMs: 60 * 1000,
+    max: Number(process.env.THI_PAUSE_HTTP_RATE_LIMIT_MAX || 20),
+    message: "Bạn thao tác tạm dừng quá nhanh. Vui lòng thử lại sau một lúc.",
+});
+const submitLimiter = createRateLimit({
+    name: "thi-submit",
+    windowMs: 60 * 1000,
+    max: Number(process.env.THI_SUBMIT_HTTP_RATE_LIMIT_MAX || 6),
+    message: "Bạn thao tác nộp bài quá nhanh. Vui lòng thử lại sau một lúc.",
+});
+const autoSubmitLimiter = createRateLimit({
+    name: "thi-auto-submit",
+    windowMs: 60 * 1000,
+    max: Number(process.env.THI_AUTO_SUBMIT_HTTP_RATE_LIMIT_MAX || 4),
+    message: "Yêu cầu nộp bài tự động đang được gửi quá nhanh. Vui lòng thử lại sau một lúc.",
+});
 
 function hasDotThiResultsPayload(payload) {
     return Boolean(payload)
@@ -280,6 +317,7 @@ router.get(
 router.post(
     "/tao-de",
     auth,
+    taoDeLimiter,
     async (req, res) => {
 
         try {
@@ -314,6 +352,7 @@ router.post(
 router.post(
     "/bat-dau",
     auth,
+    batDauLimiter,
     async (req, res) => {
 
         try {
@@ -485,6 +524,7 @@ router.post(
 router.post(
     "/nop-bai",
     auth,
+    submitLimiter,
     async (req, res) => {
         const trace = createRouteTrace("POST /thi/nop-bai", {
             userId: Number(req.user?.id || 0),
@@ -559,6 +599,7 @@ router.post(
 router.post(
     "/auto-submit/:baiThiId",
     auth,
+    autoSubmitLimiter,
     async (req, res) => {
         const trace = createRouteTrace("POST /thi/auto-submit/:baiThiId", {
             userId: Number(req.user?.id || 0),
@@ -664,6 +705,7 @@ router.get(
 router.post(
     "/start",
     auth,
+    thiStartLimiter,
     async (req, res) => {
         const trace = createRouteTrace("POST /thi/start", {
             userId: Number(req.user?.id || 0),
@@ -725,6 +767,7 @@ router.post(
 router.post(
     "/pause/:baiThiId",
     auth,
+    pauseLimiter,
     async (req, res) => {
 
         try {
