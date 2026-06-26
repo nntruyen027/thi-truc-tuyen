@@ -1,0 +1,1037 @@
+{
+  "generatedAt": "2026-06-25T07:03:54.917Z",
+  "weeks": [
+    {
+      "id": 1,
+      "ten": "Tuần 1",
+      "thoi_gian_bat_dau": "2026-06-07T18:00:00.000Z",
+      "thoi_gian_ket_thuc": "2026-06-13T09:59:59.000Z"
+    },
+    {
+      "id": 2,
+      "ten": "Tuần 2",
+      "thoi_gian_bat_dau": "2026-06-14T18:00:00.000Z",
+      "thoi_gian_ket_thuc": "2026-06-20T09:59:59.000Z"
+    },
+    {
+      "id": 3,
+      "ten": "Tuần 3",
+      "thoi_gian_bat_dau": "2026-06-21T18:00:00.000Z",
+      "thoi_gian_ket_thuc": "2026-06-27T09:59:59.000Z"
+    }
+  ],
+  "users": [
+    {
+      "username": "0913890045",
+      "userId": 46531,
+      "hoTen": "Ngô Hoàng Thái",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-09T00:25:01.899Z",
+          "nopGanNhat": "2026-06-09T00:25:01.899Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-17T20:34:57.863Z",
+          "nopGanNhat": "2026-06-17T20:34:57.863Z"
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 20,
+          "nopDauTien": "2026-06-24T01:03:51.860Z",
+          "nopGanNhat": "2026-06-24T01:03:51.860Z"
+        }
+      ]
+    },
+    {
+      "username": "0919732222",
+      "userId": 46923,
+      "hoTen": "Từ Ngọc Ẩn",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 2,
+          "soBaiHoanThanh": 2,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-09T00:37:02.360Z",
+          "nopGanNhat": "2026-06-09T00:45:37.536Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-17T20:39:55.210Z",
+          "nopGanNhat": "2026-06-17T20:39:55.210Z"
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-24T01:13:25.256Z",
+          "nopGanNhat": "2026-06-24T01:13:25.256Z"
+        }
+      ]
+    },
+    {
+      "username": "0843078999",
+      "userId": 123318,
+      "hoTen": "Ngô Thu Thảo",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 21,
+          "nopDauTien": "2026-06-24T05:05:59.052Z",
+          "nopGanNhat": "2026-06-24T05:05:59.052Z"
+        }
+      ]
+    },
+    {
+      "username": "0886567009",
+      "userId": 123314,
+      "hoTen": "Trần Văn Nhã",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 3,
+          "soBaiHoanThanh": 3,
+          "diemCaoNhat": 20,
+          "nopDauTien": "2026-06-24T04:57:13.818Z",
+          "nopGanNhat": "2026-06-24T17:59:48.265Z"
+        }
+      ]
+    },
+    {
+      "username": "0849777575",
+      "userId": 3688,
+      "hoTen": "Phạm Lê Tân",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 3,
+          "soBaiHoanThanh": 3,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-07T18:45:56.627Z",
+          "nopGanNhat": "2026-06-08T20:19:48.845Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 23,
+          "nopDauTien": "2026-06-21T21:11:20.079Z",
+          "nopGanNhat": "2026-06-21T21:11:20.079Z"
+        }
+      ]
+    },
+    {
+      "username": "0945623653",
+      "userId": 83819,
+      "hoTen": "Phạm Thị Cẩm Nhung",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 2,
+          "soBaiHoanThanh": 2,
+          "diemCaoNhat": 24,
+          "nopDauTien": "2026-06-12T20:19:42.553Z",
+          "nopGanNhat": "2026-06-12T20:31:27.061Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 9,
+          "nopDauTien": "2026-06-14T18:03:59.207Z",
+          "nopGanNhat": "2026-06-14T18:03:59.207Z"
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 2,
+          "soBaiHoanThanh": 2,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-21T18:04:49.239Z",
+          "nopGanNhat": "2026-06-21T18:14:13.400Z"
+        }
+      ]
+    },
+    {
+      "username": "0919455374",
+      "userId": 61295,
+      "hoTen": "Đinh Minh Hoành",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 18,
+          "nopDauTien": "2026-06-10T00:13:25.992Z",
+          "nopGanNhat": "2026-06-10T00:13:25.992Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        }
+      ]
+    },
+    {
+      "username": "0916109616",
+      "userId": 124876,
+      "hoTen": "Nguyễn Ngọc Nữ",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 24,
+          "nopDauTien": "2026-06-24T18:00:36.853Z",
+          "nopGanNhat": "2026-06-24T18:00:36.853Z"
+        }
+      ]
+    },
+    {
+      "username": "0918353101",
+      "userId": 63537,
+      "hoTen": "Võ Hoàng Kiệt",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 17,
+          "nopDauTien": "2026-06-10T03:07:01.757Z",
+          "nopGanNhat": "2026-06-10T03:07:01.757Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 23,
+          "nopDauTien": "2026-06-19T19:46:50.632Z",
+          "nopGanNhat": "2026-06-19T19:46:50.632Z"
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        }
+      ]
+    },
+    {
+      "username": "0913890040",
+      "userId": 41660,
+      "hoTen": "Huỳnh Quỳnh Nga",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 2,
+          "soBaiHoanThanh": 2,
+          "diemCaoNhat": 21,
+          "nopDauTien": "2026-06-08T20:48:43.513Z",
+          "nopGanNhat": "2026-06-08T23:16:22.361Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 8,
+          "nopDauTien": "2026-06-16T23:09:11.379Z",
+          "nopGanNhat": "2026-06-16T23:09:11.379Z"
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 2,
+          "soBaiHoanThanh": 2,
+          "diemCaoNhat": 20,
+          "nopDauTien": "2026-06-22T20:50:17.483Z",
+          "nopGanNhat": "2026-06-22T21:07:21.074Z"
+        }
+      ]
+    },
+    {
+      "username": "0913338385",
+      "userId": 47455,
+      "hoTen": "Võ Văn Nhã",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-09T00:50:48.957Z",
+          "nopGanNhat": "2026-06-09T00:50:48.957Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-17T20:44:00.460Z",
+          "nopGanNhat": "2026-06-17T20:44:00.460Z"
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 24,
+          "nopDauTien": "2026-06-24T01:10:37.507Z",
+          "nopGanNhat": "2026-06-24T01:10:37.507Z"
+        }
+      ]
+    },
+    {
+      "username": "0888849584",
+      "userId": 42843,
+      "hoTen": "Nguyễn Hoài Nam",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 2,
+          "soBaiHoanThanh": 2,
+          "diemCaoNhat": 19,
+          "nopDauTien": "2026-06-08T21:14:47.237Z",
+          "nopGanNhat": "2026-06-08T21:23:11.399Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 24,
+          "nopDauTien": "2026-06-24T23:58:29.182Z",
+          "nopGanNhat": "2026-06-24T23:58:29.182Z"
+        }
+      ]
+    },
+    {
+      "username": "0944093343",
+      "userId": 3336,
+      "hoTen": "Nguyễn Thành Đông",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 2,
+          "soBaiHoanThanh": 2,
+          "diemCaoNhat": 14,
+          "nopDauTien": "2026-06-07T18:29:10.988Z",
+          "nopGanNhat": "2026-06-07T18:29:10.988Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-19T02:28:52.746Z",
+          "nopGanNhat": "2026-06-19T02:28:52.746Z"
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-22T00:43:56.820Z",
+          "nopGanNhat": "2026-06-22T00:43:56.820Z"
+        }
+      ]
+    },
+    {
+      "username": "0948477172",
+      "userId": 69691,
+      "hoTen": "Trần Thanh Duy",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 18,
+          "nopDauTien": "2026-06-10T23:44:31.798Z",
+          "nopGanNhat": "2026-06-10T23:44:31.798Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-24T03:30:02.027Z",
+          "nopGanNhat": "2026-06-24T03:30:02.027Z"
+        }
+      ]
+    },
+    {
+      "username": "0949773734",
+      "userId": 79557,
+      "hoTen": "Trần Thị Tường Vân",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 24,
+          "nopDauTien": "2026-06-12T02:51:06.229Z",
+          "nopGanNhat": "2026-06-12T02:51:06.229Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        }
+      ]
+    },
+    {
+      "username": "0822769696",
+      "userId": 40509,
+      "hoTen": "Đặng Tam Sơn",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 24,
+          "nopDauTien": "2026-06-08T20:10:35.614Z",
+          "nopGanNhat": "2026-06-08T20:10:35.614Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 3,
+          "soBaiHoanThanh": 3,
+          "diemCaoNhat": 22,
+          "nopDauTien": "2026-06-16T20:16:03.943Z",
+          "nopGanNhat": "2026-06-16T20:18:18.377Z"
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        }
+      ]
+    },
+    {
+      "username": "0916202678",
+      "userId": 83505,
+      "hoTen": "Đoàn Thị Cẩm Hương",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 3,
+          "soBaiHoanThanh": 3,
+          "diemCaoNhat": 22,
+          "nopDauTien": "2026-06-12T20:03:40.790Z",
+          "nopGanNhat": "2026-06-12T20:33:14.680Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 22,
+          "nopDauTien": "2026-06-24T03:46:10.597Z",
+          "nopGanNhat": "2026-06-24T03:46:10.597Z"
+        }
+      ]
+    },
+    {
+      "username": "0941447989",
+      "userId": 3304,
+      "hoTen": "Bùi Cẩm Nhi",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 2,
+          "soBaiHoanThanh": 2,
+          "diemCaoNhat": 15,
+          "nopDauTien": "2026-06-07T18:29:14.794Z",
+          "nopGanNhat": "2026-06-07T18:29:14.794Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 2,
+          "soBaiHoanThanh": 2,
+          "diemCaoNhat": 23,
+          "nopDauTien": "2026-06-16T03:44:13.471Z",
+          "nopGanNhat": "2026-06-16T03:51:43.655Z"
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-22T00:27:36.239Z",
+          "nopGanNhat": "2026-06-22T00:27:36.239Z"
+        }
+      ]
+    },
+    {
+      "username": "0945200052",
+      "userId": 125018,
+      "hoTen": "Phan Văn Rở",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-24T18:07:57.586Z",
+          "nopGanNhat": "2026-06-24T18:07:57.586Z"
+        }
+      ]
+    },
+    {
+      "username": "0913046881",
+      "userId": 75765,
+      "hoTen": "Võ Thành Khải",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 3,
+          "soBaiHoanThanh": 3,
+          "diemCaoNhat": 22,
+          "nopDauTien": "2026-06-11T19:51:05.711Z",
+          "nopGanNhat": "2026-06-11T20:41:03.676Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        }
+      ]
+    },
+    {
+      "username": "0988997765",
+      "userId": 40421,
+      "hoTen": "Lê Thị Diễm An",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 24,
+          "nopDauTien": "2026-06-08T20:28:49.573Z",
+          "nopGanNhat": "2026-06-08T20:28:49.573Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-24T04:04:25.477Z",
+          "nopGanNhat": "2026-06-24T04:04:25.477Z"
+        }
+      ]
+    },
+    {
+      "username": "0911600436",
+      "userId": 66634,
+      "hoTen": "Nguyễn Thị Lành",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 3,
+          "soBaiHoanThanh": 3,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-10T18:21:20.351Z",
+          "nopGanNhat": "2026-06-12T20:22:03.647Z"
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 25,
+          "nopDauTien": "2026-06-21T18:18:49.825Z",
+          "nopGanNhat": "2026-06-21T18:18:49.825Z"
+        }
+      ]
+    },
+    {
+      "username": "0888517507",
+      "userId": 123069,
+      "hoTen": "Đặng Quốc Trung",
+      "donVi": "Phường Ninh Kiều",
+      "weeks": [
+        {
+          "dotThiId": 1,
+          "dotThi": "Tuần 1",
+          "thoiGianBatDau": "2026-06-07T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-13T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 2,
+          "dotThi": "Tuần 2",
+          "thoiGianBatDau": "2026-06-14T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-20T09:59:59.000Z",
+          "thamGia": false,
+          "soLuotNop": 0,
+          "soBaiHoanThanh": 0,
+          "diemCaoNhat": null,
+          "nopDauTien": null,
+          "nopGanNhat": null
+        },
+        {
+          "dotThiId": 3,
+          "dotThi": "Tuần 3",
+          "thoiGianBatDau": "2026-06-21T18:00:00.000Z",
+          "thoiGianKetThuc": "2026-06-27T09:59:59.000Z",
+          "thamGia": true,
+          "soLuotNop": 1,
+          "soBaiHoanThanh": 1,
+          "diemCaoNhat": 19,
+          "nopDauTien": "2026-06-24T03:30:50.248Z",
+          "nopGanNhat": "2026-06-24T03:30:50.248Z"
+        }
+      ]
+    }
+  ]
+}

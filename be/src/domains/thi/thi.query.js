@@ -20,6 +20,7 @@ const EXAM_FLOW_DEBUG = process.env.EXAM_FLOW_DEBUG === "1";
 const EXAM_FLOW_SLOW_MS = Number(process.env.EXAM_FLOW_SLOW_MS || 300);
 const RANKING_CACHE_TTL_MS = Number(process.env.RANKING_CACHE_TTL_MS || 60000);
 const MAX_RANKING_CACHE_ENTRIES = Number(process.env.MAX_RANKING_CACHE_ENTRIES || 50);
+const MIN_EXAM_SUBMIT_SECONDS = Number(process.env.MIN_EXAM_SUBMIT_SECONDS || 25);
 
 const LOAI_CAU_HOI = {
     CHON_MOT: "chon_mot",
@@ -422,6 +423,20 @@ async function pauseThiWithExecutor(executor, baiThiIdValue) {
     return true;
 }
 
+function normalizeSubmitTimeFloor(value) {
+    const normalized = Number(value);
+
+    if (!Number.isFinite(normalized) || normalized < 0) {
+        return 0;
+    }
+
+    if (!Number.isFinite(MIN_EXAM_SUBMIT_SECONDS) || MIN_EXAM_SUBMIT_SECONDS <= 0) {
+        return normalized;
+    }
+
+    return Math.max(normalized, MIN_EXAM_SUBMIT_SECONDS);
+}
+
 function randomIntInclusive(min, max) {
     const normalizedMin = Math.ceil(Number(min));
     const normalizedMax = Math.floor(Number(max));
@@ -453,7 +468,8 @@ function buildScore25TimeAdjustment(tongDiemValue, tongThoiGianDaLamValue) {
 async function finalizeBaiThiSubmission(tx, baiThiIdValue, columnSupport, trace = null) {
     const chiTietRows = await tx
         .select({
-            id: baiThiChiTiet.id,
+            chiTietId: baiThiChiTiet.id,
+            cauHoiId: tracNghiem.id,
             loaiCauHoi: tracNghiem.loaiCauHoi,
             dapAnChon: baiThiChiTiet.dapAnChon,
             dapAnChonNhieu: columnSupport.hasDapAnChonNhieu
@@ -467,9 +483,18 @@ async function finalizeBaiThiSubmission(tx, baiThiIdValue, columnSupport, trace 
             dapAnText: tracNghiem.dapAnText,
             diemCauHoi: tracNghiem.diem,
         })
-        .from(baiThiChiTiet)
-        .innerJoin(tracNghiem, eq(tracNghiem.id, baiThiChiTiet.cauHoiId))
-        .where(eq(baiThiChiTiet.baiThiId, Number(baiThiIdValue)));
+        .from(baiThi)
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .innerJoin(deThiCauHoi, eq(deThiCauHoi.deThiId, deThi.id))
+        .innerJoin(tracNghiem, eq(tracNghiem.id, deThiCauHoi.cauHoiId))
+        .leftJoin(
+            baiThiChiTiet,
+            and(
+                eq(baiThiChiTiet.baiThiId, baiThi.id),
+                eq(baiThiChiTiet.cauHoiId, tracNghiem.id)
+            )
+        )
+        .where(eq(baiThi.id, Number(baiThiIdValue)));
 
     trace?.step("loadAnswers", {
         answerCount: chiTietRows.length,
@@ -500,11 +525,11 @@ async function finalizeBaiThiSubmission(tx, baiThiIdValue, columnSupport, trace 
         tongDiem += diem;
 
         return {
-            id: Number(item.id),
+            id: Number(item.chiTietId),
             dung,
             diem,
         };
-    });
+    }).filter((item) => Number.isInteger(item.id) && item.id > 0);
 
     await batchUpdateBaiThiChiTietScores(tx, scoreUpdates);
     trace?.step("updateAnswerScores");
@@ -516,10 +541,20 @@ async function finalizeBaiThiSubmission(tx, baiThiIdValue, columnSupport, trace 
         .from(baiThi)
         .where(eq(baiThi.id, Number(baiThiIdValue)))
         .limit(1);
+    const normalizedAnswerCount = scoreUpdates.length;
+    const normalizedCurrentTime = Number(currentBaiThi?.tongThoiGianDaLam || 0);
+    const effectiveBaseTime =
+        normalizedAnswerCount > 0
+            ? normalizeSubmitTimeFloor(normalizedCurrentTime)
+            : normalizedCurrentTime;
     const timeAdjustment = buildScore25TimeAdjustment(
         tongDiem,
-        currentBaiThi?.tongThoiGianDaLam
+        effectiveBaseTime
     );
+    const finalTongThoiGianDaLam =
+        timeAdjustment.applied
+            ? timeAdjustment.tongThoiGianDaLam
+            : effectiveBaseTime;
 
     await tx
         .update(baiThi)
@@ -527,13 +562,12 @@ async function finalizeBaiThiSubmission(tx, baiThiIdValue, columnSupport, trace 
             trangThai: 1,
             thoiGianNop: new Date(),
             diem: tongDiem,
-            ...(timeAdjustment.applied
-                ? {tongThoiGianDaLam: timeAdjustment.tongThoiGianDaLam}
-                : {}),
+            tongThoiGianDaLam: finalTongThoiGianDaLam,
         })
         .where(eq(baiThi.id, Number(baiThiIdValue)));
     trace?.step("finalizeBaiThi", {
         tongDiem,
+        flooredSubmitTime: effectiveBaseTime !== normalizedCurrentTime,
         adjustedScore25Time: timeAdjustment.applied,
         giayCongScore25: timeAdjustment.giayCong,
     });
@@ -541,8 +575,51 @@ async function finalizeBaiThiSubmission(tx, baiThiIdValue, columnSupport, trace 
     return {
         tongDiem,
         answerCount: chiTietRows.length,
-        adjustedTongThoiGianDaLam: timeAdjustment.tongThoiGianDaLam,
+        adjustedTongThoiGianDaLam: finalTongThoiGianDaLam,
         giayCongScore25: timeAdjustment.giayCong,
+    };
+}
+
+async function loadAllowedQuestionsForBaiThi(baiThiIdValue) {
+    const tracRows = await db
+        .select({
+            cauHoiId: deThiCauHoi.cauHoiId,
+        })
+        .from(baiThi)
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .innerJoin(deThiCauHoi, eq(deThiCauHoi.deThiId, deThi.id))
+        .where(eq(baiThi.id, Number(baiThiIdValue)));
+
+    const [dotThiRow] = await db
+        .select({
+            dotThiId: deThi.dotThiId,
+        })
+        .from(baiThi)
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .where(eq(baiThi.id, Number(baiThiIdValue)))
+        .limit(1);
+
+    const tuLuanRows =
+        dotThiRow?.dotThiId
+            ? await db
+                .select({
+                    cauHoiId: tuLuanDotThi.id,
+                })
+                .from(tuLuanDotThi)
+                .where(eq(tuLuanDotThi.dotThiId, Number(dotThiRow.dotThiId)))
+            : [];
+
+    return {
+        tracNghiemIds: new Set(
+            tracRows
+                .map((item) => Number(item.cauHoiId))
+                .filter((item) => Number.isInteger(item) && item > 0)
+        ),
+        tuLuanIds: new Set(
+            tuLuanRows
+                .map((item) => Number(item.cauHoiId))
+                .filter((item) => Number.isInteger(item) && item > 0)
+        ),
     };
 }
 
@@ -553,6 +630,7 @@ async function persistAutoSubmitAnswers(baiThiIdValue, answers = []) {
 
     const normalizedBaiThiId = Number(baiThiIdValue);
     const columnSupport = await getBaiThiChiTietColumnSupport();
+    const allowedQuestions = await loadAllowedQuestionsForBaiThi(normalizedBaiThiId);
     const tracAnswers = answers.filter((item) => Number(item?.loai) !== 2);
     const tuLuanAnswers = answers.filter((item) => Number(item?.loai) === 2);
     let persistedCount = 0;
@@ -584,7 +662,7 @@ async function persistAutoSubmitAnswers(baiThiIdValue, answers = []) {
                 const questionId = Number(answer.questionId);
                 const loaiCauHoi = questionMap.get(questionId);
 
-                if (!loaiCauHoi) {
+                if (!loaiCauHoi || !allowedQuestions.tracNghiemIds.has(questionId)) {
                     continue;
                 }
 
@@ -641,7 +719,7 @@ async function persistAutoSubmitAnswers(baiThiIdValue, answers = []) {
             for (const answer of tuLuanAnswers) {
                 const questionId = Number(answer.questionId);
 
-                if (!validQuestionIds.has(questionId)) {
+                if (!validQuestionIds.has(questionId) || !allowedQuestions.tuLuanIds.has(questionId)) {
                     continue;
                 }
 
@@ -771,6 +849,106 @@ function mapTuLuanQuestion(row) {
         dapAn: row.dapAn,
         diem: row.diem,
     });
+}
+
+async function ensureOwnedDeThiExists(tx, deThiIdValue, thiSinhIdValue, message = "Đề thi không thuộc tài khoản hiện tại.") {
+    const [row] = await tx
+        .select({
+            id: deThi.id,
+        })
+        .from(deThi)
+        .where(and(
+            eq(deThi.id, Number(deThiIdValue)),
+            eq(deThi.thiSinhId, Number(thiSinhIdValue))
+        ))
+        .limit(1);
+
+    if (!row) {
+        throw message;
+    }
+
+    return row;
+}
+
+async function ensureOwnedBaiThiExists(tx, baiThiIdValue, thiSinhIdValue, message = "Bài thi không thuộc tài khoản hiện tại.") {
+    const [row] = await tx
+        .select({
+            id: baiThi.id,
+            deThiId: baiThi.deThiId,
+        })
+        .from(baiThi)
+        .where(and(
+            eq(baiThi.id, Number(baiThiIdValue)),
+            eq(baiThi.thiSinhId, Number(thiSinhIdValue))
+        ))
+        .limit(1);
+
+    if (!row) {
+        throw message;
+    }
+
+    return row;
+}
+
+async function ensureTracNghiemQuestionBelongsToBaiThi(tx, baiThiIdValue, cauHoiIdValue, message = "Câu hỏi không thuộc bài thi hiện tại.") {
+    const [row] = await tx
+        .select({
+            cauHoiId: deThiCauHoi.cauHoiId,
+        })
+        .from(baiThi)
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .innerJoin(deThiCauHoi, eq(deThiCauHoi.deThiId, deThi.id))
+        .where(and(
+            eq(baiThi.id, Number(baiThiIdValue)),
+            eq(deThiCauHoi.cauHoiId, Number(cauHoiIdValue))
+        ))
+        .limit(1);
+
+    if (!row) {
+        throw message;
+    }
+
+    return row;
+}
+
+async function ensureTuLuanQuestionBelongsToBaiThi(tx, baiThiIdValue, cauHoiIdValue, message = "Câu hỏi tự luận không thuộc bài thi hiện tại.") {
+    const [row] = await tx
+        .select({
+            id: tuLuanDotThi.id,
+        })
+        .from(baiThi)
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .innerJoin(tuLuanDotThi, eq(tuLuanDotThi.dotThiId, deThi.dotThiId))
+        .where(and(
+            eq(baiThi.id, Number(baiThiIdValue)),
+            eq(tuLuanDotThi.id, Number(cauHoiIdValue))
+        ))
+        .limit(1);
+
+    if (!row) {
+        throw message;
+    }
+
+    return row;
+}
+
+async function ensureDeThiMatchesBaiThi(tx, deThiIdValue, baiThiIdValue, message = "Đề thi và bài thi không khớp.") {
+    const [row] = await tx
+        .select({
+            id: baiThi.id,
+        })
+        .from(baiThi)
+        .where(and(
+            eq(baiThi.id, Number(baiThiIdValue)),
+            eq(baiThi.deThiId, Number(deThiIdValue))
+        ))
+        .limit(1);
+
+    if (!row) {
+        throw message;
+    }
+
+    return row;
 }
 
 function compareNullableDesc(left, right) {
@@ -1213,33 +1391,42 @@ exports.taoDeThi = async (dotThiId, thiSinhId) => {
 };
 
 exports.batDauThi = async (deThiId, thiSinhId) => {
-    const [deRow] = await db
-        .select({
-            lanThi: deThi.lanThi,
-        })
-        .from(deThi)
-        .where(eq(deThi.id, Number(deThiId)))
-        .limit(1);
+    return db.transaction(async (tx) => {
+        const [deRow] = await tx
+            .select({
+                lanThi: deThi.lanThi,
+            })
+            .from(deThi)
+            .where(and(
+                eq(deThi.id, Number(deThiId)),
+                eq(deThi.thiSinhId, Number(thiSinhId))
+            ))
+            .limit(1);
 
-    const [created] = await db
-        .insert(baiThi)
-        .values({
-            deThiId: Number(deThiId),
-            thiSinhId: Number(thiSinhId),
-            lanThi: deRow?.lanThi || 1,
-        })
-        .returning({id: baiThi.id});
+        if (!deRow) {
+            throw "Đề thi không thuộc tài khoản hiện tại.";
+        }
 
-    return created?.id || null;
+        const [created] = await tx
+            .insert(baiThi)
+            .values({
+                deThiId: Number(deThiId),
+                thiSinhId: Number(thiSinhId),
+                lanThi: deRow?.lanThi || 1,
+            })
+            .returning({id: baiThi.id});
+
+        return created?.id || null;
+    });
 };
 
-exports.luuCauTraLoi = async (baiThiId, cauHoiId, dapAn) => {
+exports.luuCauTraLoi = async (baiThiId, cauHoiId, dapAn, thiSinhId) => {
     const trace = createExamTrace("luuCauTraLoi", {
         baiThiId: Number(baiThiId),
         cauHoiId: Number(cauHoiId),
     });
 
-    await ensureEntityExists(db, baiThi, baiThiId, "Bài thi không tồn tại.");
+    await ensureOwnedBaiThiExists(db, baiThiId, thiSinhId);
     trace.step("ensureBaiThi");
     const columnSupport = await getBaiThiChiTietColumnSupport();
     trace.step("loadColumnSupport");
@@ -1257,6 +1444,13 @@ exports.luuCauTraLoi = async (baiThiId, cauHoiId, dapAn) => {
     if (!question) {
         throw "Câu hỏi không tồn tại.";
     }
+
+    await ensureTracNghiemQuestionBelongsToBaiThi(
+        db,
+        baiThiId,
+        cauHoiId
+    );
+    trace.step("ensureQuestionInExam");
 
     const loaiCauHoi = normalizeLoaiCauHoi(question.loaiCauHoi);
     const values = {
@@ -1294,10 +1488,11 @@ exports.luuCauTraLoi = async (baiThiId, cauHoiId, dapAn) => {
     return null;
 };
 
-exports.luuCauTraLoiTuLuan = async (baiThiId, cauHoiId, dapAn) => {
+exports.luuCauTraLoiTuLuan = async (baiThiId, cauHoiId, dapAn, thiSinhId) => {
     await Promise.all([
-        ensureEntityExists(db, baiThi, baiThiId, "Bài thi không tồn tại."),
+        ensureOwnedBaiThiExists(db, baiThiId, thiSinhId),
         ensureEntityExists(db, tuLuanDotThi, cauHoiId, "Câu hỏi tự luận không tồn tại."),
+        ensureTuLuanQuestionBelongsToBaiThi(db, baiThiId, cauHoiId),
     ]);
 
     await db
@@ -1317,13 +1512,13 @@ exports.luuCauTraLoiTuLuan = async (baiThiId, cauHoiId, dapAn) => {
     return null;
 };
 
-exports.nopBai = async (baiThiIdValue) => {
+exports.nopBai = async (baiThiIdValue, thiSinhId) => {
     const trace = createExamTrace("nopBai", {
         baiThiId: Number(baiThiIdValue),
     });
 
     return db.transaction(async (tx) => {
-        await ensureEntityExists(tx, baiThi, baiThiIdValue, "Bài thi không tồn tại.");
+        await ensureOwnedBaiThiExists(tx, baiThiIdValue, thiSinhId);
         trace.step("ensureBaiThi");
         await pauseThiWithExecutor(tx, baiThiIdValue);
         trace.step("pauseThi");
@@ -1404,7 +1599,13 @@ exports.lichSuThi = async (thiSinhId, dotThiId) => {
     }));
 };
 
-exports.layCauHoiDeThi = async (deThiId, baiThiId) => {
+exports.layCauHoiDeThi = async (deThiId, baiThiId, thiSinhId) => {
+    await Promise.all([
+        ensureOwnedDeThiExists(db, deThiId, thiSinhId),
+        ensureOwnedBaiThiExists(db, baiThiId, thiSinhId),
+        ensureDeThiMatchesBaiThi(db, deThiId, baiThiId),
+    ]);
+
     return layCauHoiDeThiInternal(db, deThiId, baiThiId);
 };
 
@@ -1566,11 +1767,16 @@ exports.startThi = async (dotThiId, thiSinhId) => {
     });
 };
 
-exports.pauseThi = async (baiThiIdValue) => {
+exports.pauseThi = async (baiThiIdValue, thiSinhId) => {
+    await ensureOwnedBaiThiExists(db, baiThiIdValue, thiSinhId);
     return pauseThiWithExecutor(db, baiThiIdValue);
 };
 
-exports.nopDuDoanKetQuan = async (baiThiIdValue, soDuDoan) => {
+exports.nopDuDoanKetQuan = async (baiThiIdValue, soDuDoan, thiSinhId = null) => {
+    if (thiSinhId != null) {
+        await ensureOwnedBaiThiExists(db, baiThiIdValue, thiSinhId);
+    }
+
     const updated = await db
         .update(baiThi)
         .set({
@@ -1586,12 +1792,12 @@ exports.nopDuDoanKetQuan = async (baiThiIdValue, soDuDoan) => {
     return true;
 };
 
-exports.autoSubmitBaiThi = async (baiThiIdValue, payload = {}) => {
+exports.autoSubmitBaiThi = async (baiThiIdValue, payload = {}, thiSinhId) => {
     const trace = createExamTrace("autoSubmitBaiThi", {
         baiThiId: Number(baiThiIdValue),
     });
 
-    await ensureEntityExists(db, baiThi, baiThiIdValue, "Bài thi không tồn tại.");
+    await ensureOwnedBaiThiExists(db, baiThiIdValue, thiSinhId);
     trace.step("ensureBaiThi");
 
     const persistedCount = await persistAutoSubmitAnswers(
@@ -1605,7 +1811,8 @@ exports.autoSubmitBaiThi = async (baiThiIdValue, payload = {}) => {
     if (payload.prediction !== undefined) {
         await exports.nopDuDoanKetQuan(
             baiThiIdValue,
-            payload.prediction
+            payload.prediction,
+            thiSinhId
         );
         trace.step("savePrediction");
     }

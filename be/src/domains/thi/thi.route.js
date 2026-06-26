@@ -365,7 +365,8 @@ router.get(
             const data =
                 await query.layCauHoiDeThi(
                     normalizedDeThiId,
-                    normalizedBaiThiId
+                    normalizedBaiThiId,
+                    req.user.id
                 )
 
             resUtil.ok(res, data)
@@ -411,6 +412,7 @@ router.post(
                     normalizedBaiThiId,
                     normalizedCauHoiId,
                     dapAn,
+                    req.user.id
                 )
             trace.finish({
                 baiThiId: normalizedBaiThiId,
@@ -462,6 +464,7 @@ router.post(
                     normalizedBaiThiId,
                     normalizedCauHoiId,
                     dapAn,
+                    req.user.id
                 )
 
             resUtil.ok(res, data)
@@ -510,6 +513,7 @@ router.post(
             const data =
                 await query.nopBai(
                     normalizedBaiThiId,
+                    req.user.id
                 )
             void publicRankingsSnapshotService
                 .schedulePublicRankingsSnapshotRefreshByBaiThiId(
@@ -572,7 +576,8 @@ router.post(
 
             const data = await query.autoSubmitBaiThi(
                 baiThiId,
-                payload
+                payload,
+                req.user.id
             );
             void publicRankingsSnapshotService
                 .schedulePublicRankingsSnapshotRefreshByBaiThiId(
@@ -726,7 +731,8 @@ router.post(
 
             const data =
                 await query.pauseThi(
-                    baiThiId
+                    baiThiId,
+                    req.user.id
                 )
 
             resUtil.ok(
@@ -751,7 +757,7 @@ router.post("/du-doan/:baiThiId", auth, async (req, res) => {
         const baiThiId = validation.ensureRequiredId(req.params.baiThiId, "Bài thi");
         const soDuDoan = validation.normalizePredictionValue(req.body?.soDuDoan);
 
-        const data = await query.nopDuDoanKetQuan(baiThiId, soDuDoan);
+        const data = await query.nopDuDoanKetQuan(baiThiId, soDuDoan, req.user.id);
         resUtil.ok(res, data)
     } catch (err) {
         resUtil.error(res, err)
