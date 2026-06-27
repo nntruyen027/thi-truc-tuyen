@@ -1198,80 +1198,133 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                                         }}
                                     >
                                     <div className="flex h-full flex-col justify-around gap-6">
-                                        
-                                        <div className="mx-auto grid max-w-[540px] grid-cols-4 gap-3 md:grid-cols-4">
-                                        {countdownCards.map((item, index) => (
-                                            <Reveal key={item.label} delay={140 + (index * 40)}>
-                                                <div
-                                                    className="rounded-[14px] border bg-white px-3 py-5 text-center shadow-[0_4px_14px_rgba(185,28,28,0.08)]"
-                                                    style={{borderColor: "rgba(248, 200, 200, 0.9)"}}
-                                                >
-                                                    <Statistic
-                                                        value={item.value}
-                                                        styles={{
-                                                            content: {
-                                                                color: "#ff1f1f",
-                                                                fontWeight: 900,
-                                                                fontSize: 42,
-                                                                lineHeight: 1,
-                                                            },
+                                        {cuocThiDaKetThuc ? (
+                                            <>
+                                                <div className="flex justify-center">
+                                                    <div
+                                                        className="flex h-24 w-24 items-center justify-center rounded-full border bg-white text-4xl shadow-[0_12px_32px_rgba(127,29,29,0.12)]"
+                                                        style={{
+                                                            color: colorPrimary,
+                                                            borderColor: alphaColor(colorPrimary, 0.16),
                                                         }}
-                                                    />
-                                                    <Text className="!mt-2 !block !text-[12px] !font-semibold !uppercase !tracking-[0.22em] !text-slate-500">
-                                                        {item.label}
+                                                    >
+                                                        <TrophyFilled />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-3 text-center">
+                                                    <Title level={3} className="!mb-0 !text-2xl !font-black" style={{color: colorPrimary}}>
+                                                        Cuộc thi đã kết thúc
+                                                    </Title>
+                                                    <Text className="!block !text-base !text-slate-600">
+                                                        Kết quả từng đợt thi vẫn được hiển thị trong timeline bên dưới.
                                                     </Text>
                                                 </div>
-                                            </Reveal>
-                                        ))}
-                                        </div>
 
-                                        <div className="flex justify-center">
-                                            <div className="join-exam-pulse relative inline-flex items-center justify-center">
-                                                <span
-                                                    className="join-exam-pulse__ring join-exam-pulse__ring--outer"
-                                                    style={{"--pulse-color": alphaColor(colorPrimary, 0.22)}}
-                                                />
-                                                <span
-                                                    className="join-exam-pulse__ring join-exam-pulse__ring--inner"
-                                                    style={{"--pulse-color": alphaColor(colorPrimary, 0.34)}}
-                                                />
-                                                <Button
-                                                    type="primary"
-                                                    size="large"
-                                                    icon={<ArrowRightOutlined />}
-                                                    onClick={handleJoinExam}
-                                                    className="join-exam-pulse__button !h-14 !rounded-2xl !border-0 !px-8 !text-lg !font-bold sm:!min-w-[15rem]"
-                                                >
-                                                    THAM GIA THI
-                                                </Button>
-                                            </div>
-                                        </div>
+                                                <div className="mx-auto grid w-full max-w-[540px] grid-cols-1 gap-3 md:grid-cols-2">
+                                                    <div
+                                                        className="rounded-[18px] border bg-white px-4 py-5 text-center shadow-[0_4px_14px_rgba(185,28,28,0.08)]"
+                                                        style={{borderColor: "rgba(248, 200, 200, 0.9)"}}
+                                                    >
+                                                        <Text className="!block !text-[12px] !font-semibold !uppercase !tracking-[0.22em] !text-slate-500">
+                                                            Thời gian kết thúc
+                                                        </Text>
+                                                        <div className="mt-2 text-lg font-black text-slate-900">
+                                                            {dayjs(dotThi?.cuoc_thi?.thoi_gian_ket_thuc).format("DD/MM/YYYY HH:mm")}
+                                                        </div>
+                                                    </div>
+                                                    <div
+                                                        className="rounded-[18px] border bg-white px-4 py-5 text-center shadow-[0_4px_14px_rgba(185,28,28,0.08)]"
+                                                        style={{borderColor: "rgba(248, 200, 200, 0.9)"}}
+                                                    >
+                                                        <Text className="!block !text-[12px] !font-semibold !uppercase !tracking-[0.22em] !text-slate-500">
+                                                            Tổng lượt thi
+                                                        </Text>
+                                                        <AnimatedNumber
+                                                            value={tongLuotThi}
+                                                            className="mt-2 text-4xl font-black leading-none"
+                                                            style={{color: colorPrimary, fontVariantNumeric: "tabular-nums"}}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="mx-auto grid max-w-[540px] grid-cols-4 gap-3 md:grid-cols-4">
+                                                    {countdownCards.map((item, index) => (
+                                                        <Reveal key={item.label} delay={140 + (index * 40)}>
+                                                            <div
+                                                                className="rounded-[14px] border bg-white px-3 py-5 text-center shadow-[0_4px_14px_rgba(185,28,28,0.08)]"
+                                                                style={{borderColor: "rgba(248, 200, 200, 0.9)"}}
+                                                            >
+                                                                <Statistic
+                                                                    value={item.value}
+                                                                    styles={{
+                                                                        content: {
+                                                                            color: "#ff1f1f",
+                                                                            fontWeight: 900,
+                                                                            fontSize: 42,
+                                                                            lineHeight: 1,
+                                                                        },
+                                                                    }}
+                                                                />
+                                                                <Text className="!mt-2 !block !text-[12px] !font-semibold !uppercase !tracking-[0.22em] !text-slate-500">
+                                                                    {item.label}
+                                                                </Text>
+                                                            </div>
+                                                        </Reveal>
+                                                    ))}
+                                                </div>
 
-                                        <div className="flex justify-center">
-                                            <QRCode
-                                                value={qrValue || " "}
-                                                size={104}
-                                                bordered={false}
-                                                color={colorPrimary}
-                                                bgColor="transparent"
-                                            />
-                                        </div>
+                                                <div className="flex justify-center">
+                                                    <div className="join-exam-pulse relative inline-flex items-center justify-center">
+                                                        <span
+                                                            className="join-exam-pulse__ring join-exam-pulse__ring--outer"
+                                                            style={{"--pulse-color": alphaColor(colorPrimary, 0.22)}}
+                                                        />
+                                                        <span
+                                                            className="join-exam-pulse__ring join-exam-pulse__ring--inner"
+                                                            style={{"--pulse-color": alphaColor(colorPrimary, 0.34)}}
+                                                        />
+                                                        <Button
+                                                            type="primary"
+                                                            size="large"
+                                                            icon={<ArrowRightOutlined />}
+                                                            onClick={handleJoinExam}
+                                                            className="join-exam-pulse__button !h-14 !rounded-2xl !border-0 !px-8 !text-lg !font-bold sm:!min-w-[15rem]"
+                                                        >
+                                                            THAM GIA THI
+                                                        </Button>
+                                                    </div>
+                                                </div>
 
-                                        <div className="text-center">
-                                            <div className="flex flex-wrap items-end justify-center gap-x-3 gap-y-1">
-                                                <Text className="!mb-0 !pb-1 !text-lg !font-semibold !uppercase !text-slate-700 md:!text-xl">
-                                                    Đã có
-                                                </Text>
-                                                <AnimatedNumber
-                                                    value={tongLuotThi}
-                                                    className="text-5xl font-bold leading-none md:text-6xl"
-                                                    style={{color: colorPrimary, fontVariantNumeric: "tabular-nums"}}
-                                                />
-                                                <span className="pb-1 text-lg font-semibold uppercase text-slate-700 md:text-xl">
-                                                    lượt thi
-                                                </span>
-                                            </div>
-                                        </div>
+                                                <div className="flex justify-center">
+                                                    <QRCode
+                                                        value={qrValue || " "}
+                                                        size={104}
+                                                        bordered={false}
+                                                        color={colorPrimary}
+                                                        bgColor="transparent"
+                                                    />
+                                                </div>
+
+                                                <div className="text-center">
+                                                    <div className="flex flex-wrap items-end justify-center gap-x-3 gap-y-1">
+                                                        <Text className="!mb-0 !pb-1 !text-lg !font-semibold !uppercase !text-slate-700 md:!text-xl">
+                                                            Đã có
+                                                        </Text>
+                                                        <AnimatedNumber
+                                                            value={tongLuotThi}
+                                                            className="text-5xl font-bold leading-none md:text-6xl"
+                                                            style={{color: colorPrimary, fontVariantNumeric: "tabular-nums"}}
+                                                        />
+                                                        <span className="pb-1 text-lg font-semibold uppercase text-slate-700 md:text-xl">
+                                                            lượt thi
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                                 </div>

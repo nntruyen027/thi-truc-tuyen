@@ -225,7 +225,7 @@ export function DefaultPublicHomePage() {
     const [thoiGianConLai, setThoiGianConLai] = useState(null);
     const [tongLuotThi, setTongLuotThi] = useState(SO_LUOT_THI_MUC_TIEU_MARKETING);
     const [dsDotThi, setDsDotThi] = useState([]);
-    const [selectedKetQuaDotThi, setSelectedKetQuaDotThi] = useState(null);
+    const [selectedKetQuaDotThiId, setSelectedKetQuaDotThiId] = useState(null);
     const [isMobileViewport, setIsMobileViewport] = useState(false);
     const [activeSection, setActiveSection] = useState("thong-tin");
     const [compactTicker, setCompactTicker] = useState(false);
@@ -250,7 +250,14 @@ export function DefaultPublicHomePage() {
         () => buildTimelineStages(dsDotThi, dotThi?.id),
         [dotThi?.id, dsDotThi]
     );
-    const ketQuaDotThi = selectedKetQuaDotThi || dotThi;
+    const ketQuaDotThi = useMemo(() => {
+        if (!selectedKetQuaDotThiId) {
+            return dotThi;
+        }
+
+        return dsDotThi.find((item) => Number(item?.id) === Number(selectedKetQuaDotThiId))
+            || dotThi;
+    }, [dotThi, dsDotThi, selectedKetQuaDotThiId]);
     const qrValue = typeof window !== "undefined"
         ? `${window.location.origin}/login`
         : "";
@@ -414,18 +421,6 @@ export function DefaultPublicHomePage() {
         };
     }, [isMobileViewport]);
 
-    useEffect(() => {
-        if (!selectedKetQuaDotThi?.id) {
-            return;
-        }
-
-        const matchedDotThi =
-            dsDotThi.find((item) => Number(item?.id) === Number(selectedKetQuaDotThi.id))
-            || null;
-
-        setSelectedKetQuaDotThi(matchedDotThi);
-    }, [dsDotThi, selectedKetQuaDotThi?.id]);
-
     const handleJoinExam = () => {
         let currentUser = user;
 
@@ -487,11 +482,7 @@ export function DefaultPublicHomePage() {
             return;
         }
 
-        const matchedDotThi =
-            dsDotThi.find((item) => Number(item?.id) === Number(timelineItem.id))
-            || null;
-
-        setSelectedKetQuaDotThi(matchedDotThi);
+        setSelectedKetQuaDotThiId(Number(timelineItem.id));
         scrollToSection("ket-qua");
     };
 
