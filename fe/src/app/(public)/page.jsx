@@ -13,7 +13,13 @@ import {parseCuocThiMeta} from "~/utils/cuocThiMeta";
 import {darkenColor, parseMediaConfig} from "~/utils/workspaceTheme";
 import TaiLieuTongHop from "~/app/(public)/TaiLieuTongHop";
 import GiaiThuongCuocThi from "~/app/(public)/GiaiThuongCuocThi";
-import {buildTimelineStages, formatLongVietnameseDate, SO_LUOT_THI_TOI_THIEU, tabItems} from "~/app/(public)/page.config";
+import {
+    buildTimelineStages,
+    formatLongVietnameseDate,
+    SO_LUOT_THI_MUC_TIEU_MARKETING,
+    SO_LUOT_THI_OFFSET_MARKETING,
+    tabItems,
+} from "~/app/(public)/page.config";
 import PublicPageBanner from "~/app/(public)/components/PublicPageBanner";
 import PublicPageTicker from "~/app/(public)/components/PublicPageTicker";
 import PublicContestOverview from "~/app/(public)/components/PublicContestOverview";
@@ -27,6 +33,10 @@ import Demo4Page from "~/app/demo4/page";
 import {layCauHinhTrangChu} from "~/services/trang-chu";
 
 const {Text} = Typography;
+
+function tinhTongLuotThiHienThi(tongLuotThiThucTe = 0) {
+    return Number(tongLuotThiThucTe || 0) + SO_LUOT_THI_OFFSET_MARKETING;
+}
 
 function chonCuocThiGanNhat(dsCuocThi = []) {
     const now = dayjs();
@@ -213,7 +223,7 @@ export function DefaultPublicHomePage() {
     const [bannerPositionY, setBannerPositionY] = useState(50);
     const [dotThi, setDotThi] = useState(null);
     const [thoiGianConLai, setThoiGianConLai] = useState(null);
-    const [tongLuotThi, setTongLuotThi] = useState(SO_LUOT_THI_TOI_THIEU);
+    const [tongLuotThi, setTongLuotThi] = useState(SO_LUOT_THI_MUC_TIEU_MARKETING);
     const [dsDotThi, setDsDotThi] = useState([]);
     const [isMobileViewport, setIsMobileViewport] = useState(false);
     const [activeSection, setActiveSection] = useState("thong-tin");
@@ -310,7 +320,7 @@ export function DefaultPublicHomePage() {
                     setDotThi(null);
                     setDsDotThi([]);
                     setThoiGianConLai(null);
-                    setTongLuotThi(SO_LUOT_THI_TOI_THIEU);
+                    setTongLuotThi(SO_LUOT_THI_MUC_TIEU_MARKETING);
                 });
                 return;
             }
@@ -337,7 +347,7 @@ export function DefaultPublicHomePage() {
                     setDotThi(selectedDotThi);
                     setDsDotThi(danhSachDotThi);
                     setThoiGianConLai(taoThongTinDemNguoc(selectedDotThi, selectedCuocThi, danhSachDotThi));
-                    setTongLuotThi(tongLuotThiThucTe + SO_LUOT_THI_TOI_THIEU);
+                    setTongLuotThi(tinhTongLuotThiHienThi(tongLuotThiThucTe));
                 });
             } catch (error) {
                 console.error("Không thể tải timeline đợt thi", error);
@@ -347,7 +357,7 @@ export function DefaultPublicHomePage() {
                     setDotThi(fallbackDotThi);
                     setDsDotThi([]);
                     setThoiGianConLai(taoThongTinDemNguoc(fallbackDotThi, selectedCuocThi, []));
-                    setTongLuotThi(SO_LUOT_THI_TOI_THIEU);
+                    setTongLuotThi(SO_LUOT_THI_MUC_TIEU_MARKETING);
                 });
             }
         };
@@ -486,7 +496,7 @@ export function DefaultPublicHomePage() {
                         qrValue={qrValue}
                         thongTinDuThi={thongTinDuThi}
                         hienThiTongLuotThi={hienThiTongLuotThi}
-                        minLuotThi={SO_LUOT_THI_TOI_THIEU}
+                        minLuotThi={SO_LUOT_THI_MUC_TIEU_MARKETING}
                         onJoinExam={handleJoinExam}
                         thongTinRef={(node) => {
                             sectionRefs.current["thong-tin"] = node;

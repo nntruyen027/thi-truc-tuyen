@@ -7,7 +7,7 @@ import {Button, Card, Col, Empty, Modal, QRCode, Row, Spin, Statistic, Typograph
 import {useRouter} from "next/navigation";
 
 import {layCauHinh} from "~/services/cau-hinh";
-import {layCuocThi} from "~/services/thi/cuoc-thi";
+import {layCuocThi, layLuotThiHienTai} from "~/services/thi/cuoc-thi";
 import {layDotThi} from "~/services/thi/dot-thi";
 import {getDonVi} from "~/services/dm_chung/don_vi";
 import PublicPageBanner from "~/app/(public)/components/PublicPageBanner";
@@ -21,6 +21,7 @@ import {useAuthStore} from "~/store/auth";
 import useDemoRouteAccess from "~/hooks/useDemoRouteAccess";
 import {getCachedPublicRankings, loadPublicRankings} from "~/services/thi/public-rankings-cache";
 import {alphaColor, darkenColor, parseMediaConfig} from "~/utils/workspaceTheme";
+import {SO_LUOT_THI_MUC_TIEU_MARKETING, SO_LUOT_THI_OFFSET_MARKETING} from "~/app/(public)/page.config";
 
 const {Title, Text} = Typography;
 const DEMO4_BACKGROUND_IMAGES = {
@@ -31,6 +32,10 @@ const DEMO4_BACKGROUND_IMAGES = {
 const LIVE_DATA_REFRESH_MS = 120 * 1000;
 const RESIZE_DEBOUNCE_MS = 180;
 const UNIT_RANKING_FETCH_LIMIT = 1000;
+
+function tinhTongLuotThiHienThi(tongLuotThiThucTe = 0) {
+    return Number(tongLuotThiThucTe || 0) + SO_LUOT_THI_OFFSET_MARKETING;
+}
 function chonCuocThiGanNhat(dsCuocThi = []) {
     const now = dayjs();
     const dsHopLe = [...dsCuocThi]
@@ -593,7 +598,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
     const [countdown, setCountdown] = useState(null);
     const [dotThi, setDotThi] = useState(null);
     const [dsDotThi, setDsDotThi] = useState([]);
-    const [tongLuotThi, setTongLuotThi] = useState(0);
+    const [tongLuotThi, setTongLuotThi] = useState(SO_LUOT_THI_MUC_TIEU_MARKETING);
     const [topUnits, setTopUnits] = useState([]);
     const [topUnitsByParticipants, setTopUnitsByParticipants] = useState([]);
     const [topParticipants, setTopParticipants] = useState([]);
@@ -760,7 +765,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                         setDotThi(null);
                         setDsDotThi([]);
                         setCountdown(null);
-                        setTongLuotThi(0);
+                        setTongLuotThi(tinhTongLuotThiHienThi());
                     }
                     return;
                 }
@@ -788,7 +793,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     setDotThi(null);
                     setDsDotThi([]);
                     setCountdown(null);
-                    setTongLuotThi(0);
+                    setTongLuotThi(tinhTongLuotThiHienThi());
                 }
             } finally {
                 if (active) {
@@ -817,7 +822,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                     setTopParticipants([]);
                     setTopUnits([]);
                     setTopUnitsByParticipants([]);
-                    setTongLuotThi(0);
+                    setTongLuotThi(tinhTongLuotThiHienThi());
                     setParticipantLoading(false);
                     setUnitLoading(false);
                 }
@@ -852,7 +857,6 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
 
                 if (Array.isArray(cachedAttemptRows)) {
                     setTopUnits(normalizeUnitRankings(cachedAttemptRows));
-                    setTongLuotThi(tinhTongLuotThiTuHangDonVi(cachedAttemptRows));
                 }
 
                 if (Array.isArray(cachedParticipantRows)) {
@@ -862,7 +866,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                 setUnitLoading(false);
             }
 
-            const [allUnitsResult, rankingsResult, honorBoardResult] = await Promise.allSettled([
+                const [allUnitsResult, rankingsResult, honorBoardResult, luotThiResult] = await Promise.allSettled([
                 getDonVi({
                     page: 1,
                     size: 1000,
@@ -885,6 +889,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                         UNIT_RANKING_FETCH_LIMIT
                     )
                     : Promise.resolve(null),
+                layLuotThiHienTai(),
             ]);
 
             if (!active) {
@@ -900,6 +905,14 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             const allUnits = allUnitsResult.status === "fulfilled"
                 ? allUnitsResult.value?.data || []
                 : [];
+            const tongLuotThiThucTe =
+                luotThiResult.status === "fulfilled"
+                    ? Number(
+                        luotThiResult.value?.data?.data
+                        ?? luotThiResult.value?.data
+                        ?? 0
+                    )
+                    : 0;
             const publicHonorBoard =
                 honorBoardResult.status === "fulfilled"
                     ? honorBoardResult.value?.["cuoc-thi"] || null
@@ -911,7 +924,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
 
             if (Array.isArray(publicAttemptRows)) {
                 const unitRows = normalizeUnitRankings(publicAttemptRows || []);
-                setTongLuotThi(tinhTongLuotThiTuHangDonVi(publicAttemptRows || []));
+                setTongLuotThi(tinhTongLuotThiHienThi(tongLuotThiThucTe));
 
                 setTopUnits(
                     allUnits.length
@@ -919,7 +932,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
                         : unitRows
                 );
             } else if (!topUnitsRef.current.length) {
-                setTongLuotThi(0);
+                setTongLuotThi(tinhTongLuotThiHienThi(tongLuotThiThucTe));
                 setTopUnits([]);
             }
 
