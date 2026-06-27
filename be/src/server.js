@@ -4,11 +4,13 @@ const app = require("./app")
 const { ensureBootstrapAdmin } = require("./core/bootstrap/super-admin")
 const { startMemoryWatch } = require("./core/monitoring/memory-watch");
 const { createTelegramService } = require("./integrations/telegram/telegram.service");
+const { startExamExpirationCleanup } = require("./domains/thi/exam-expiration.service");
 
 const PORT = process.env.PORT || 8080
 const telegramService = createTelegramService();
 
 startMemoryWatch();
+startExamExpirationCleanup();
 
 app.listen(PORT, async () => {
     console.log("Server running on", PORT)

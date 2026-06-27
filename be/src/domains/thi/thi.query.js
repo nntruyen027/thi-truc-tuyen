@@ -25,6 +25,9 @@ const EXAM_START_RATE_LIMIT_COUNT = Number(process.env.EXAM_START_RATE_LIMIT_COU
 const EXAM_START_RATE_LIMIT_WINDOW_MINUTES = Number(
     process.env.EXAM_START_RATE_LIMIT_WINDOW_MINUTES || 5
 );
+const EXAM_EXPIRED_CLEANUP_BATCH_SIZE = Number(
+    process.env.EXAM_EXPIRED_CLEANUP_BATCH_SIZE || 20
+);
 
 const LOAI_CAU_HOI = {
     CHON_MOT: "chon_mot",
@@ -625,6 +628,148 @@ async function finalizeBaiThiSubmission(tx, baiThiIdValue, columnSupport, trace 
         adjustedTongThoiGianDaLam: finalTongThoiGianDaLam,
         giayCongScore25: timeAdjustment.giayCong,
     };
+}
+
+function calculateElapsedSecondsSince(startTime) {
+    if (!startTime) {
+        return 0;
+    }
+
+    const diff = Math.floor((Date.now() - new Date(startTime).getTime()) / 1000);
+
+    return diff > 0 ? diff : 0;
+}
+
+function calculateRemainingExamSeconds({
+    thoiGianThi = 0,
+    tongThoiGianDaLam = 0,
+    lanBatDau = null,
+}) {
+    const elapsedSeconds = calculateElapsedSecondsSince(lanBatDau);
+    const timeLeft = (Number(thoiGianThi || 0) * 60) - (Number(tongThoiGianDaLam || 0) + elapsedSeconds);
+
+    return timeLeft > 0 ? timeLeft : 0;
+}
+
+function isExamAttemptExpired(row) {
+    if (!row) {
+        return false;
+    }
+
+    return calculateRemainingExamSeconds({
+        thoiGianThi: row.thoiGianThi,
+        tongThoiGianDaLam: row.tongThoiGianDaLam,
+        lanBatDau: row.lanBatDau,
+    }) <= 0;
+}
+
+async function loadExpiredExamAttemptCandidates(executor, {
+    baiThiId = null,
+    thiSinhId = null,
+    dotThiId = null,
+    limit = EXAM_EXPIRED_CLEANUP_BATCH_SIZE,
+} = {}) {
+    const conditions = [eq(baiThi.trangThai, 0)];
+    const normalizedBaiThiId = Number(baiThiId);
+    const normalizedThiSinhId = Number(thiSinhId);
+    const normalizedDotThiId = Number(dotThiId);
+    const normalizedLimit =
+        Number.isInteger(Number(limit)) && Number(limit) > 0
+            ? Number(limit)
+            : EXAM_EXPIRED_CLEANUP_BATCH_SIZE;
+
+    if (Number.isInteger(normalizedBaiThiId) && normalizedBaiThiId > 0) {
+        conditions.push(eq(baiThi.id, normalizedBaiThiId));
+    }
+
+    if (Number.isInteger(normalizedThiSinhId) && normalizedThiSinhId > 0) {
+        conditions.push(eq(baiThi.thiSinhId, normalizedThiSinhId));
+    }
+
+    if (Number.isInteger(normalizedDotThiId) && normalizedDotThiId > 0) {
+        conditions.push(eq(deThi.dotThiId, normalizedDotThiId));
+    }
+
+    conditions.push(sql`
+        (
+            coalesce(${baiThi.tongThoiGianDaLam}, 0) +
+            case
+                when ${baiThi.lanBatDau} is null then 0
+                else greatest(floor(extract(epoch from now() - ${baiThi.lanBatDau})), 0)::int
+            end
+        ) >= (coalesce(${dotThi.thoiGianThi}, 0) * 60)
+    `);
+
+    return executor
+        .select({
+            baiThiId: baiThi.id,
+            thiSinhId: baiThi.thiSinhId,
+            deThiId: baiThi.deThiId,
+            dotThiId: deThi.dotThiId,
+            thoiGianThi: dotThi.thoiGianThi,
+            tongThoiGianDaLam: baiThi.tongThoiGianDaLam,
+            lanBatDau: baiThi.lanBatDau,
+            dangLam: baiThi.dangLam,
+        })
+        .from(baiThi)
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
+        .where(and(...conditions))
+        .orderBy(asc(baiThi.id))
+        .limit(normalizedLimit);
+}
+
+async function finalizeExpiredExamAttempt(executor, attempt, columnSupport) {
+    if (!attempt?.baiThiId) {
+        return {
+            finalized: false,
+            reason: "invalid_attempt",
+        };
+    }
+
+    return executor.transaction(async (tx) => {
+        const [current] = await tx
+            .select({
+                baiThiId: baiThi.id,
+                trangThai: baiThi.trangThai,
+                thoiGianThi: dotThi.thoiGianThi,
+                tongThoiGianDaLam: baiThi.tongThoiGianDaLam,
+                lanBatDau: baiThi.lanBatDau,
+            })
+            .from(baiThi)
+            .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+            .innerJoin(dotThi, eq(dotThi.id, deThi.dotThiId))
+            .where(eq(baiThi.id, Number(attempt.baiThiId)))
+            .limit(1);
+
+        if (!current || Number(current.trangThai) !== 0) {
+            return {
+                finalized: false,
+                reason: "already_finalized",
+            };
+        }
+
+        if (!isExamAttemptExpired(current)) {
+            return {
+                finalized: false,
+                reason: "not_expired",
+            };
+        }
+
+        await pauseThiWithExecutor(tx, current.baiThiId);
+
+        const result = await finalizeBaiThiSubmission(
+            tx,
+            current.baiThiId,
+            columnSupport
+        );
+
+        return {
+            finalized: true,
+            baiThiId: Number(current.baiThiId),
+            tongDiem: result.tongDiem,
+        };
+    });
 }
 
 async function loadAllowedQuestionsForBaiThi(baiThiIdValue) {
@@ -1657,6 +1802,12 @@ exports.layCauHoiDeThi = async (deThiId, baiThiId, thiSinhId) => {
 };
 
 exports.layBaiDangLam = async (thiSinhId, dotThiId) => {
+    await exports.cleanupExpiredExamAttempts({
+        thiSinhId,
+        dotThiId,
+        limit: 5,
+    });
+
     const [row] = await db
         .select({
             id: baiThi.id,
@@ -1689,6 +1840,13 @@ exports.startThi = async (dotThiId, thiSinhId) => {
         dotThiId: Number(dotThiId),
         thiSinhId: Number(thiSinhId),
     });
+
+    await exports.cleanupExpiredExamAttempts({
+        thiSinhId,
+        dotThiId,
+        limit: 5,
+    });
+    trace.step("cleanupExpiredExamAttempts");
 
     return db.transaction(async (tx) => {
         const [existing] = await tx
@@ -1785,12 +1943,11 @@ exports.startThi = async (dotThiId, thiSinhId) => {
             trace.step("markDangLam");
         }
 
-        const diff = Math.floor((Date.now() - new Date(lanBatDau).getTime()) / 1000);
-        let timeLeft = (Number(thoiGianThi || 0) * 60) - (tongDaLam + diff);
-
-        if (timeLeft < 0) {
-            timeLeft = 0;
-        }
+        const timeLeft = calculateRemainingExamSeconds({
+            thoiGianThi,
+            tongThoiGianDaLam: tongDaLam,
+            lanBatDau,
+        });
 
         const [cauHoi, tuLuan] = await Promise.all([
             layCauHoiDeThiInternal(tx, deThiIdValue, baiThiIdValue),
@@ -1888,6 +2045,63 @@ exports.autoSubmitBaiThi = async (baiThiIdValue, payload = {}, thiSinhId) => {
 
         return result.tongDiem;
     });
+};
+
+exports.cleanupExpiredExamAttempts = async ({
+    baiThiId = null,
+    thiSinhId = null,
+    dotThiId = null,
+    limit = EXAM_EXPIRED_CLEANUP_BATCH_SIZE,
+} = {}) => {
+    const trace = createExamTrace("cleanupExpiredExamAttempts", {
+        baiThiId: Number(baiThiId || 0),
+        thiSinhId: Number(thiSinhId || 0),
+        dotThiId: Number(dotThiId || 0),
+    });
+    const candidates = await loadExpiredExamAttemptCandidates(db, {
+        baiThiId,
+        thiSinhId,
+        dotThiId,
+        limit,
+    });
+    trace.step("loadCandidates", {
+        candidateCount: candidates.length,
+    });
+
+    if (!candidates.length) {
+        trace.finish({
+            finalizedCount: 0,
+        });
+        return {
+            scannedCount: 0,
+            finalizedCount: 0,
+            finalizedExamIds: [],
+        };
+    }
+
+    const columnSupport = await getBaiThiChiTietColumnSupport();
+    trace.step("loadColumnSupport");
+
+    const finalizedExamIds = [];
+
+    for (const candidate of candidates) {
+        const result = await finalizeExpiredExamAttempt(db, candidate, columnSupport);
+
+        if (result.finalized) {
+            finalizedExamIds.push(Number(result.baiThiId));
+        }
+    }
+
+    trace.finish({
+        candidateCount: candidates.length,
+        finalizedCount: finalizedExamIds.length,
+    });
+
+    return {
+        scannedCount: candidates.length,
+        finalizedCount: finalizedExamIds.length,
+        finalizedExamIds,
+    };
 };
 
 async function layDanhSachBaiThiXepHang(whereClause, options = {}) {
