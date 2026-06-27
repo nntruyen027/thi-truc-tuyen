@@ -772,6 +772,39 @@ async function finalizeExpiredExamAttempt(executor, attempt, columnSupport) {
     });
 }
 
+async function finalizePendingExamAttemptsForUserAndDotThi(executor, {
+    thiSinhId,
+    dotThiId,
+    columnSupport,
+}) {
+    const pendingRows = await executor
+        .select({
+            baiThiId: baiThi.id,
+        })
+        .from(baiThi)
+        .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
+        .where(and(
+            eq(baiThi.thiSinhId, Number(thiSinhId)),
+            eq(deThi.dotThiId, Number(dotThiId)),
+            eq(baiThi.trangThai, 0)
+        ))
+        .orderBy(asc(baiThi.id));
+
+    const finalizedExamIds = [];
+
+    for (const row of pendingRows) {
+        await pauseThiWithExecutor(executor, row.baiThiId);
+        await finalizeBaiThiSubmission(
+            executor,
+            row.baiThiId,
+            columnSupport
+        );
+        finalizedExamIds.push(Number(row.baiThiId));
+    }
+
+    return finalizedExamIds;
+}
+
 async function loadAllowedQuestionsForBaiThi(baiThiIdValue) {
     const tracRows = await db
         .select({
@@ -1875,20 +1908,19 @@ exports.startThi = async (dotThiId, thiSinhId) => {
         let currentExisting = existing || null;
 
         if (currentExisting?.baiThiId && !currentExisting?.choPhepLuuBai) {
-            await pauseThiWithExecutor(tx, existing.baiThiId);
-            trace.step("autoPauseExistingNoSave");
-
             const columnSupport = await getBaiThiChiTietColumnSupport();
-            trace.step("loadColumnSupportForAutoSubmit");
+            trace.step("loadColumnSupportForAutoSubmitAllPending");
 
-            await finalizeBaiThiSubmission(
+            const finalizedExamIds = await finalizePendingExamAttemptsForUserAndDotThi(
                 tx,
-                currentExisting.baiThiId,
-                columnSupport,
-                trace
+                {
+                    thiSinhId,
+                    dotThiId,
+                    columnSupport,
+                }
             );
-            trace.step("autoSubmitExistingNoSave", {
-                baiThiId: Number(currentExisting.baiThiId),
+            trace.step("autoSubmitAllPendingNoSave", {
+                finalizedCount: finalizedExamIds.length,
             });
 
             currentExisting = null;
