@@ -1,4 +1,4 @@
-const { and, count, eq, ilike, lte, gte, asc } = require("drizzle-orm");
+const { and, count, eq, ilike, lte, gte, asc, desc } = require("drizzle-orm");
 const db = require("../../db/client");
 const { baiThi, cuocThi, deThi, dotThi } = require("../../db/schema");
 const {
@@ -223,9 +223,9 @@ exports.layThoiGianConLaiCuaCuocThi = async () => {
 
 exports.layTongLuotThiCuaCuocThiHienTai = async () => {
     const now = new Date();
-    let activeContest;
+    let selectedContest;
 
-    [activeContest] = await db
+    [selectedContest] = await db
         .select({ id: cuocThi.id })
         .from(cuocThi)
         .where(and(
@@ -236,7 +236,31 @@ exports.layTongLuotThiCuaCuocThiHienTai = async () => {
         .orderBy(asc(cuocThi.thoiGianKetThuc))
         .limit(1);
 
-    if (!activeContest?.id) {
+    if (!selectedContest?.id) {
+        [selectedContest] = await db
+            .select({ id: cuocThi.id })
+            .from(cuocThi)
+            .where(and(
+                eq(cuocThi.trangThai, true),
+                lte(cuocThi.thoiGianKetThuc, now),
+            ))
+            .orderBy(desc(cuocThi.thoiGianKetThuc))
+            .limit(1);
+    }
+
+    if (!selectedContest?.id) {
+        [selectedContest] = await db
+            .select({ id: cuocThi.id })
+            .from(cuocThi)
+            .where(and(
+                eq(cuocThi.trangThai, true),
+                gte(cuocThi.thoiGianBatDau, now),
+            ))
+            .orderBy(asc(cuocThi.thoiGianBatDau))
+            .limit(1);
+    }
+
+    if (!selectedContest?.id) {
         return 0;
     }
 
@@ -248,8 +272,7 @@ exports.layTongLuotThiCuaCuocThiHienTai = async () => {
         .innerJoin(deThi, eq(deThi.id, baiThi.deThiId))
         .innerJoin(dotThi, and(
             eq(dotThi.id, deThi.dotThiId),
-            eq(dotThi.trangThai, true),
-            eq(dotThi.cuocThiId, Number(activeContest.id))
+            eq(dotThi.cuocThiId, Number(selectedContest.id))
         ));
 
     return Number(row?.total || 0);
