@@ -4,7 +4,7 @@ import {layCauHinh} from "~/services/cau-hinh";
 import {useEffect, useMemo, useRef, useState} from "react";
 import {layDotThi} from "~/services/thi/dot-thi";
 import {Col, Row, Spin, Typography, theme} from "antd";
-import {layCuocThi} from "~/services/thi/cuoc-thi";
+import {layCuocThi, layLuotThiHienTai} from "~/services/thi/cuoc-thi";
 import {useRouter} from "next/navigation";
 import KetQuaCongBo from "~/app/(public)/KetQuaCongBo";
 import Reveal from "~/app/components/common/Reveal";
@@ -310,26 +310,34 @@ export function DefaultPublicHomePage() {
                     setDotThi(null);
                     setDsDotThi([]);
                     setThoiGianConLai(null);
-                    setTongLuotThi(0);
+                    setTongLuotThi(SO_LUOT_THI_TOI_THIEU);
                 });
                 return;
             }
 
             try {
-                const dsDotThiResult = await layDotThi(selectedCuocThi.id, {
-                    size: 50,
-                    page: 1,
-                    sortField: "thoi_gian_bat_dau",
-                    sortType: "asc",
-                });
+                const [dsDotThiResult, luotThiResult] = await Promise.all([
+                    layDotThi(selectedCuocThi.id, {
+                        size: 50,
+                        page: 1,
+                        sortField: "thoi_gian_bat_dau",
+                        sortType: "asc",
+                    }),
+                    layLuotThiHienTai(),
+                ]);
                 const danhSachDotThi = dsDotThiResult?.data || [];
                 const selectedDotThi = taoDotThiTheoCuocThi(selectedCuocThi, danhSachDotThi);
+                const tongLuotThiThucTe = Number(
+                    luotThiResult?.data?.data
+                    ?? luotThiResult?.data
+                    ?? 0
+                );
 
                 applyIfActive(() => {
                     setDotThi(selectedDotThi);
                     setDsDotThi(danhSachDotThi);
                     setThoiGianConLai(taoThongTinDemNguoc(selectedDotThi, selectedCuocThi, danhSachDotThi));
-                    setTongLuotThi(0);
+                    setTongLuotThi(tongLuotThiThucTe + SO_LUOT_THI_TOI_THIEU);
                 });
             } catch (error) {
                 console.error("Không thể tải timeline đợt thi", error);
@@ -339,7 +347,7 @@ export function DefaultPublicHomePage() {
                     setDotThi(fallbackDotThi);
                     setDsDotThi([]);
                     setThoiGianConLai(taoThongTinDemNguoc(fallbackDotThi, selectedCuocThi, []));
-                    setTongLuotThi(0);
+                    setTongLuotThi(SO_LUOT_THI_TOI_THIEU);
                 });
             }
         };

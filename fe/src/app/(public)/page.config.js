@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-export const SO_LUOT_THI_TOI_THIEU = 132;
+export const SO_LUOT_THI_TOI_THIEU = 2000168;
 
 export const tabItems = [
     {
