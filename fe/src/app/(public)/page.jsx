@@ -225,6 +225,7 @@ export function DefaultPublicHomePage() {
     const [thoiGianConLai, setThoiGianConLai] = useState(null);
     const [tongLuotThi, setTongLuotThi] = useState(SO_LUOT_THI_MUC_TIEU_MARKETING);
     const [dsDotThi, setDsDotThi] = useState([]);
+    const [selectedKetQuaDotThi, setSelectedKetQuaDotThi] = useState(null);
     const [isMobileViewport, setIsMobileViewport] = useState(false);
     const [activeSection, setActiveSection] = useState("thong-tin");
     const [compactTicker, setCompactTicker] = useState(false);
@@ -249,6 +250,7 @@ export function DefaultPublicHomePage() {
         () => buildTimelineStages(dsDotThi, dotThi?.id),
         [dotThi?.id, dsDotThi]
     );
+    const ketQuaDotThi = selectedKetQuaDotThi || dotThi;
     const qrValue = typeof window !== "undefined"
         ? `${window.location.origin}/login`
         : "";
@@ -412,6 +414,18 @@ export function DefaultPublicHomePage() {
         };
     }, [isMobileViewport]);
 
+    useEffect(() => {
+        if (!selectedKetQuaDotThi?.id) {
+            return;
+        }
+
+        const matchedDotThi =
+            dsDotThi.find((item) => Number(item?.id) === Number(selectedKetQuaDotThi.id))
+            || null;
+
+        setSelectedKetQuaDotThi(matchedDotThi);
+    }, [dsDotThi, selectedKetQuaDotThi?.id]);
+
     const handleJoinExam = () => {
         let currentUser = user;
 
@@ -468,6 +482,19 @@ export function DefaultPublicHomePage() {
         });
     };
 
+    const handleOpenKetQuaDotThi = (timelineItem) => {
+        if (!timelineItem?.id) {
+            return;
+        }
+
+        const matchedDotThi =
+            dsDotThi.find((item) => Number(item?.id) === Number(timelineItem.id))
+            || null;
+
+        setSelectedKetQuaDotThi(matchedDotThi);
+        scrollToSection("ket-qua");
+    };
+
     return (
         <div className="w-full bg-[#fffdf4]">
             <PublicPageBanner
@@ -505,7 +532,11 @@ export function DefaultPublicHomePage() {
 
                     <Col span={24}>
                         <Reveal delay={130}>
-                            <PublicContestTimeline items={timelineItems} colorPrimary={colorPrimary} />
+                            <PublicContestTimeline
+                                items={timelineItems}
+                                colorPrimary={colorPrimary}
+                                onResultClick={handleOpenKetQuaDotThi}
+                            />
                         </Reveal>
                     </Col>
 
@@ -564,7 +595,7 @@ export function DefaultPublicHomePage() {
                                             Kết quả
                                         </div>
                                     </div>
-                                    <KetQuaCongBo dotThi={dotThi} />
+                                    <KetQuaCongBo dotThi={ketQuaDotThi} />
                                 </section>
                             </Reveal>
                         </div>

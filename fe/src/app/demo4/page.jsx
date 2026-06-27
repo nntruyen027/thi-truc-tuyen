@@ -632,9 +632,20 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
         () => timDotThiSapDienRaKeTiep(dsDotThi),
         [dsDotThi]
     );
+    const cuocThiDaKetThuc = useMemo(() => {
+        const thoiGianKetThuc = dayjs(dotThi?.cuoc_thi?.thoi_gian_ket_thuc);
+
+        return thoiGianKetThuc.isValid()
+            && thoiGianKetThuc.isBefore(dayjs())
+            && !upcomingDotThi;
+    }, [dotThi?.cuoc_thi?.thoi_gian_ket_thuc, upcomingDotThi]);
     const dotThiStatusText = useMemo(() => {
         if (!dotThi?.ten) {
             return "Cuộc thi sắp diễn ra";
+        }
+
+        if (cuocThiDaKetThuc) {
+            return `${dotThi?.cuoc_thi?.ten || dotThi.ten}: Đã kết thúc`;
         }
 
         const daKetThucDotThiDaiDien =
@@ -650,7 +661,7 @@ export default function Demo4Page({skipDemoAccessCheck = false}) {
             : "Đang diễn ra";
 
         return `${dotThiHienThi.ten}: ${nhanTrangThai}`;
-    }, [dotThi, upcomingDotThi]);
+    }, [cuocThiDaKetThuc, dotThi, upcomingDotThi]);
     const qrValue = typeof window !== "undefined"
         ? `${window.location.origin}/login`
         : "";
