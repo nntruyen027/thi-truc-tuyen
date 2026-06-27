@@ -430,6 +430,43 @@ async function pauseThiWithExecutor(executor, baiThiIdValue) {
     return true;
 }
 
+async function ensureDotThiAvailableForExam(executor, dotThiIdValue) {
+    const [row] = await executor
+        .select({
+            dotThiId: dotThi.id,
+            dotThiTrangThai: dotThi.trangThai,
+            thoiGianBatDau: dotThi.thoiGianBatDau,
+            thoiGianKetThuc: dotThi.thoiGianKetThuc,
+        })
+        .from(dotThi)
+        .where(eq(dotThi.id, Number(dotThiIdValue)))
+        .limit(1);
+
+    if (!row?.dotThiId) {
+        throw "Đợt thi không tồn tại";
+    }
+
+    const nowMs = Date.now();
+    const batDauMs = new Date(row.thoiGianBatDau).getTime();
+    const ketThucMs = new Date(row.thoiGianKetThuc).getTime();
+
+    if (!row.dotThiTrangThai) {
+        throw "Đợt thi đã đóng, không thể tạo bài thi mới";
+    }
+
+    if (!Number.isFinite(batDauMs) || !Number.isFinite(ketThucMs)) {
+        throw "Thời gian đợt thi không hợp lệ";
+    }
+
+    if (nowMs < batDauMs) {
+        throw "Đợt thi chưa bắt đầu";
+    }
+
+    if (nowMs > ketThucMs) {
+        throw "Đợt thi đã kết thúc, không thể tạo bài thi mới";
+    }
+}
+
 function normalizeSubmitTimeFloor(value) {
     const normalized = Number(value);
 
@@ -1446,6 +1483,8 @@ async function layCauHoiTuLuanInternal(tx, baiThiId) {
 }
 
 async function conDuocThiWithExecutor(executor, dotThiId, thiSinhId) {
+    await ensureDotThiAvailableForExam(executor, dotThiId);
+
     const [dotThiInfo, completedRows] = await Promise.all([
         executor
             .select({
@@ -1501,6 +1540,9 @@ exports.taoDeThi = async (dotThiId, thiSinhId) => {
     });
 
     return db.transaction(async (tx) => {
+        await ensureDotThiAvailableForExam(tx, dotThiId);
+        trace.step("ensureDotThiAvailableForExam");
+
         const [lanThiRow] = await tx
             .select({
                 lanThi: sql`coalesce(max(${deThi.lanThi}), 0) + 1`,
